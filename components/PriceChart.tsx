@@ -55,15 +55,14 @@ export default function PriceChart({ data }: PriceChartProps) {
     const maxPrice = Math.max(...prices);
     const buffer = (maxPrice - minPrice) * 0.1;
 
-    // Custom Tooltip (Simplified)
+    // Custom Tooltip (Visible now)
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
-            // We rely on the Legend for values now, but keeping tooltip for date/time precision if active
             const date = new Date(payload[0].payload.time).toLocaleString();
             return (
-                <div className="bg-gray-800 border border-gray-700 p-2 rounded shadow-lg text-xs hidden">
-                    {/* Hidden to rely on Dynamic Legend, or keep minimal? Let's hide it for "TradingView" feel or just keep date */}
-                    <p className="font-bold text-gray-300">{date}</p>
+                <div className="bg-gray-800 border border-gray-600 p-2 rounded shadow-lg text-xs z-50">
+                    <p className="font-bold text-gray-200">{date}</p>
+                    {/* Values are in Legend, but we keep date here for precision */}
                 </div>
             );
         }
@@ -73,11 +72,11 @@ export default function PriceChart({ data }: PriceChartProps) {
     return (
         <div className="flex flex-col h-full space-y-2 relative">
             {/* Dynamic Legend Overlay */}
-            <div className="absolute top-2 left-16 z-10 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono pointer-events-none">
+            <div className="absolute top-2 left-16 z-10 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono pointer-events-none bg-gray-900/80 p-1 rounded backdrop-blur-sm border border-gray-800/50">
                 {activeData && (
                     <>
                         {/* OHLC */}
-                        <div className="text-gray-400">
+                        <div className="text-gray-400 font-bold">
                             O: <span className="text-white">{activeData.open.toFixed(2)}</span>{' '}
                             H: <span className="text-white">{activeData.high.toFixed(2)}</span>{' '}
                             L: <span className="text-white">{activeData.low.toFixed(2)}</span>{' '}
@@ -97,17 +96,29 @@ export default function PriceChart({ data }: PriceChartProps) {
                                 BB: {activeData.bollinger.upper?.toFixed(2)} / {activeData.bollinger.lower?.toFixed(2)}
                             </div>
                         )}
+
+                        {/* RSI & MACD Values in Legend as well */}
+                        <div className="text-gray-500">|</div>
+                        <div className="text-[#60A5FA]">RSI: {activeData.rsi14?.toFixed(1)}</div>
+                        {activeData.macd && (
+                            <div className="text-gray-400">
+                                MACD: <span className="text-[#3B82F6]">{activeData.macd.MACD?.toFixed(2)}</span>
+                                <span className="text-gray-600">/</span>
+                                <span className="text-[#F97316]">{activeData.macd.signal?.toFixed(2)}</span>
+                            </div>
+                        )}
                     </>
                 )}
             </div>
 
             {/* Price + EMA Chart */}
-            <div className="flex-1 min-h-0 pt-6"> {/* Added padding-top for legend space */}
+            <div className="flex-1 min-h-0 pt-8">
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                         data={data}
                         onMouseMove={handleMouseMove}
                         onMouseLeave={handleMouseLeave}
+                        syncId="financial-dashboard"
                     >
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.5} />
                         <XAxis
@@ -127,8 +138,9 @@ export default function PriceChart({ data }: PriceChartProps) {
                         />
                         <Tooltip
                             content={<CustomTooltip />}
-                            position={{ x: 0, y: 0 }} // Fix tooltip to avoiding blocking view? Or just hide it.
+                            position={{ y: 0 }}
                             cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '4 4' }}
+                            isAnimationActive={false}
                         />
                         {/* Legend Removed */}
 
@@ -238,10 +250,16 @@ export default function PriceChart({ data }: PriceChartProps) {
             <div className="h-[15%] min-h-[80px] border-t border-gray-700 pt-1">
                 <h4 className="text-[10px] uppercase text-gray-500 ml-2">RSI (14)</h4>
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={data}>
+                    <ComposedChart
+                        data={data}
+                        syncId="financial-dashboard"
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={handleMouseLeave}
+                    >
                         <XAxis dataKey="time" hide />
                         <YAxis domain={[0, 100]} orientation="right" tick={{ fontSize: 10 }} stroke="#6B7280" />
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1 }} />
                         <line x1="0" y1="70" x2="100%" y2="70" stroke="rgba(239, 68, 68, 0.5)" strokeDasharray="3 3" />
                         <line x1="0" y1="30" x2="100%" y2="30" stroke="rgba(34, 197, 94, 0.5)" strokeDasharray="3 3" />
                         <Line type="monotone" dataKey="rsi14" stroke="#60A5FA" dot={false} strokeWidth={1.5} />
@@ -253,10 +271,16 @@ export default function PriceChart({ data }: PriceChartProps) {
             <div className="h-[15%] min-h-[80px] border-t border-gray-700 pt-1">
                 <h4 className="text-[10px] uppercase text-gray-500 ml-2">MACD (12, 26, 9)</h4>
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={data}>
+                    <ComposedChart
+                        data={data}
+                        syncId="financial-dashboard"
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={handleMouseLeave}
+                    >
                         <XAxis dataKey="time" hide />
                         <YAxis orientation="right" tick={{ fontSize: 10 }} stroke="#6B7280" />
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1 }} />
                         <Bar dataKey="macd.histogram" fill="#4B5563" barSize={4} />
                         <Line type="monotone" dataKey="macd.MACD" stroke="#3B82F6" dot={false} strokeWidth={1.5} />
                         <Line type="monotone" dataKey="macd.signal" stroke="#F97316" dot={false} strokeWidth={1.5} />
