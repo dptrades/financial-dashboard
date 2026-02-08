@@ -1,0 +1,268 @@
+import {
+    ResponsiveContainer,
+    ComposedChart,
+    Bar,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    Cell,
+    Area,
+    Scatter
+} from 'recharts';
+import { useState, useEffect } from 'react';
+import { IndicatorData } from '../types/financial';
+
+interface PriceChartProps {
+    data: IndicatorData[];
+}
+
+export default function PriceChart({ data }: PriceChartProps) {
+    if (!data || data.length === 0) {
+        return (
+            <div className="h-full flex items-center justify-center text-gray-500">
+                No data to display
+            </div>
+        );
+    }
+
+    // State for Dynamic Legend (defaults to latest data point)
+    const [activeData, setActiveData] = useState<IndicatorData | null>(null);
+
+    useEffect(() => {
+        if (data && data.length > 0) {
+            setActiveData(data[data.length - 1]);
+        }
+    }, [data]);
+
+    const handleMouseMove = (e: any) => {
+        if (e.activePayload && e.activePayload.length > 0) {
+            setActiveData(e.activePayload[0].payload);
+        }
+    };
+
+    const handleMouseLeave = () => {
+        if (data && data.length > 0) {
+            setActiveData(data[data.length - 1]);
+        }
+    };
+
+    // Calculate min/max for Y-axis domain
+    const prices = data.map((d) => d.close);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const buffer = (maxPrice - minPrice) * 0.1;
+
+    // Custom Tooltip (Simplified)
+    const CustomTooltip = ({ active, payload, label }: any) => {
+        if (active && payload && payload.length) {
+            // We rely on the Legend for values now, but keeping tooltip for date/time precision if active
+            const date = new Date(payload[0].payload.time).toLocaleString();
+            return (
+                <div className="bg-gray-800 border border-gray-700 p-2 rounded shadow-lg text-xs hidden">
+                    {/* Hidden to rely on Dynamic Legend, or keep minimal? Let's hide it for "TradingView" feel or just keep date */}
+                    <p className="font-bold text-gray-300">{date}</p>
+                </div>
+            );
+        }
+        return null;
+    };
+
+    return (
+        <div className="flex flex-col h-full space-y-2 relative">
+            {/* Dynamic Legend Overlay */}
+            <div className="absolute top-2 left-16 z-10 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono pointer-events-none">
+                {activeData && (
+                    <>
+                        {/* OHLC */}
+                        <div className="text-gray-400">
+                            O: <span className="text-white">{activeData.open.toFixed(2)}</span>{' '}
+                            H: <span className="text-white">{activeData.high.toFixed(2)}</span>{' '}
+                            L: <span className="text-white">{activeData.low.toFixed(2)}</span>{' '}
+                            C: <span className="text-white">{activeData.close.toFixed(2)}</span>
+                        </div>
+
+                        {/* Indicators */}
+                        {activeData.ema9 && <div className="text-[#FBBF24]">EMA9: {activeData.ema9.toFixed(2)}</div>}
+                        {activeData.ema21 && <div className="text-[#F87171]">EMA21: {activeData.ema21.toFixed(2)}</div>}
+                        {activeData.ema50 && <div className="text-[#818CF8]">EMA50: {activeData.ema50.toFixed(2)}</div>}
+                        {activeData.ema200 && <div className="text-[#34D399]">EMA200: {activeData.ema200.toFixed(2)}</div>}
+
+                        {activeData.vwap && <div className="text-[#EC4899]">VWAP: {activeData.vwap.toFixed(2)}</div>}
+
+                        {activeData.bollinger && (
+                            <div className="text-blue-300 opacity-80">
+                                BB: {activeData.bollinger.upper?.toFixed(2)} / {activeData.bollinger.lower?.toFixed(2)}
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+
+            {/* Price + EMA Chart */}
+            <div className="flex-1 min-h-0 pt-6"> {/* Added padding-top for legend space */}
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                        data={data}
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={handleMouseLeave}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.5} />
+                        <XAxis
+                            dataKey="time"
+                            tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
+                            stroke="#9CA3AF"
+                            fontSize={10}
+                            minTickGap={30}
+                        />
+                        <YAxis
+                            domain={[minPrice - buffer, maxPrice + buffer]}
+                            stroke="#9CA3AF"
+                            fontSize={10}
+                            tickFormatter={(number) => `$${number.toFixed(0)}`}
+                            allowDecimals={false}
+                            orientation="right"
+                        />
+                        <Tooltip
+                            content={<CustomTooltip />}
+                            position={{ x: 0, y: 0 }} // Fix tooltip to avoiding blocking view? Or just hide it.
+                            cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '4 4' }}
+                        />
+                        {/* Legend Removed */}
+
+                        <defs>
+                            <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <Area
+                            type="monotone"
+                            dataKey="close"
+                            stroke="#3B82F6"
+                            strokeWidth={2}
+                            fill="url(#colorPrice)"
+                        />
+
+                        {/* Indicators */}
+                        <Line
+                            type="monotone"
+                            dataKey="ema9"
+                            stroke="#FBBF24" // Amber
+                            dot={false}
+                            strokeWidth={1}
+                            name="EMA 9"
+                            connectNulls
+                        />
+                        <Line
+                            type="monotone"
+                            dataKey="ema21"
+                            stroke="#F87171" // Red
+                            dot={false}
+                            strokeWidth={1}
+                            name="EMA 21"
+                            connectNulls
+                        />
+                        <Line
+                            type="monotone"
+                            dataKey="ema50"
+                            stroke="#818CF8" // Indigo
+                            dot={false}
+                            strokeWidth={2}
+                            name="EMA 50"
+                            connectNulls
+                        />
+                        <Line
+                            type="monotone"
+                            dataKey="ema200"
+                            stroke="#34D399" // Emerald
+                            dot={false}
+                            strokeWidth={2}
+                            name="EMA 200"
+                            connectNulls
+                        />
+
+                        {/* Keep VWAP as reference */}
+                        <Line
+                            type="monotone"
+                            dataKey="vwap"
+                            stroke="#EC4899" // Pink
+                            dot={false}
+                            strokeWidth={1}
+                            strokeDasharray="5 5"
+                            name="VWAP"
+                            connectNulls
+                        />
+
+                        {/* Bollinger Bands */}
+                        <Area
+                            type="monotone"
+                            dataKey="bollinger.upper"
+                            stroke="rgba(147, 197, 253, 0.3)"
+                            fill="rgba(147, 197, 253, 0.1)"
+                            strokeWidth={1}
+                            dot={false}
+                            name="BB Upper"
+                            connectNulls
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey="bollinger.lower"
+                            stroke="rgba(147, 197, 253, 0.3)"
+                            fill="rgba(147, 197, 253, 0.1)"
+                            strokeWidth={1}
+                            dot={false}
+                            name="BB Lower"
+                            connectNulls
+                        />
+                        {/* Middle Band (SMA 20) */}
+                        <Line
+                            type="monotone"
+                            dataKey="bollinger.middle"
+                            stroke="rgba(147, 197, 253, 0.5)"
+                            strokeWidth={1}
+                            strokeDasharray="3 3"
+                            dot={false}
+                            name="BB Middle"
+                            connectNulls
+                        />
+
+
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </div>
+
+            {/* RSI Chart (Separate Pane) */}
+            <div className="h-[15%] min-h-[80px] border-t border-gray-700 pt-1">
+                <h4 className="text-[10px] uppercase text-gray-500 ml-2">RSI (14)</h4>
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={data}>
+                        <XAxis dataKey="time" hide />
+                        <YAxis domain={[0, 100]} orientation="right" tick={{ fontSize: 10 }} stroke="#6B7280" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                        <line x1="0" y1="70" x2="100%" y2="70" stroke="rgba(239, 68, 68, 0.5)" strokeDasharray="3 3" />
+                        <line x1="0" y1="30" x2="100%" y2="30" stroke="rgba(34, 197, 94, 0.5)" strokeDasharray="3 3" />
+                        <Line type="monotone" dataKey="rsi14" stroke="#60A5FA" dot={false} strokeWidth={1.5} />
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </div>
+
+            {/* MACD Chart (Separate Pane) */}
+            <div className="h-[15%] min-h-[80px] border-t border-gray-700 pt-1">
+                <h4 className="text-[10px] uppercase text-gray-500 ml-2">MACD (12, 26, 9)</h4>
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={data}>
+                        <XAxis dataKey="time" hide />
+                        <YAxis orientation="right" tick={{ fontSize: 10 }} stroke="#6B7280" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                        <Bar dataKey="macd.histogram" fill="#4B5563" barSize={4} />
+                        <Line type="monotone" dataKey="macd.MACD" stroke="#3B82F6" dot={false} strokeWidth={1.5} />
+                        <Line type="monotone" dataKey="macd.signal" stroke="#F97316" dot={false} strokeWidth={1.5} />
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+}
