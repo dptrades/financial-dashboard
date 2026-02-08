@@ -48,3 +48,23 @@ export const fetchAnalystRatings = async (symbol: string): Promise<NewsItem[]> =
         return [];
     }
 };
+
+export const calculateSentimentScore = (items: NewsItem[]): { score: number, label: string } => {
+    if (!items || items.length === 0) return { score: 50, label: 'Neutral' };
+
+    let score = 50;
+    items.forEach(item => {
+        if (item.sentiment === 'positive') score += 10;
+        if (item.sentiment === 'negative') score -= 10;
+    });
+
+    score = Math.max(0, Math.min(100, score));
+
+    let label = 'Neutral';
+    if (score >= 75) label = 'Very Bullish';
+    else if (score >= 60) label = 'Bullish';
+    else if (score <= 25) label = 'Very Bearish';
+    else if (score <= 40) label = 'Bearish';
+
+    return { score, label };
+};

@@ -25,7 +25,7 @@ interface SidebarProps {
     setInterval: (i: string) => void;
     data: IndicatorData[];
     loading: boolean;
-    currentPage: 'dashboard' | 'picks' | 'sectors';
+    currentPage: 'dashboard' | 'picks' | 'sectors' | 'conviction';
     stats: PriceStats | null;
     sentimentScore: number;
 }
@@ -154,8 +154,11 @@ export default function Sidebar({
                 <Link href="/picks" className={`block px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'picks' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}>
                     Top Picks (Weekly)
                 </Link>
-                <Link href="/sectors" className={`block px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'sectors' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}>
+                <Link href="/sectors" className={`block px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'sectors' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}>
                     Sector Heatmap
+                </Link>
+                <Link href="/conviction" className={`block px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'conviction' ? 'bg-gray-800 text- text-white' : 'text-emerald-400 hover:text-white hover:bg-gray-800 bg-emerald-500/10 border border-emerald-500/20'}`}>
+                    ✨ Alpha Hunter
                 </Link>
             </nav>
 
