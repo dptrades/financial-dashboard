@@ -33,7 +33,9 @@ export async function GET(request: Request) {
         }
 
         // Final fallback: if `yf` doesn't have `chart`, but `yahooFinance` does, revert.
-        if (!(yf as any).chart && (yahooFinance as any).chart) yf = yahooFinance;
+        if (typeof (yf as any).chart !== 'function' && typeof (yahooFinance as any).chart === 'function') {
+            yf = yahooFinance;
+        }
 
         // Determine Range based on Interval
         const is4Hour = interval === '4h';
