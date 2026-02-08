@@ -176,12 +176,12 @@ export const scanMarket = async (): Promise<ScannedStock[]> => {
 
             // Fallback if WAIT (Scanner forces a pick if score > X, so we might force a direction)
             // But usually if score is high, trend is strong, so signal won't be WAIT.
-            if (!suggestedOption && trend !== 'NEUTRAL') {
+            if (!suggestedOption) {
                 // Fallback to old logic if signal says WAIT but Score says BUY
                 suggestedOption = {
                     expiry: getNextMonthlyExpiry(),
                     strike: Math.round(latest.close * (trend === 'BULLISH' ? 1.05 : 0.95)),
-                    type: trend === 'BULLISH' ? 'CALL' : 'PUT',
+                    type: (trend === 'BULLISH' ? 'CALL' : 'PUT') as 'CALL' | 'PUT',
                     description: 'Speculative Play'
                 };
             }

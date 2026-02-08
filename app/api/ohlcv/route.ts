@@ -33,13 +33,13 @@ export async function GET(request: Request) {
         }
 
         // Final fallback: if `yf` doesn't have `chart`, but `yahooFinance` does, revert.
-        if (!yf.chart && yahooFinance.chart) yf = yahooFinance;
+        if (!(yf as any).chart && (yahooFinance as any).chart) yf = yahooFinance;
 
         // Determine Range based on Interval
         const is4Hour = interval === '4h';
-        const yahooInterval = is4Hour ? '1h' : (interval as '1d' | '15m' | '1h' | '1m' | '5m'); // Type cast for library
+        const yahooInterval: any = is4Hour ? '1h' : interval;
 
-        let range: '1d' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '2y' | '5y' | '10y' | 'max' = '3mo';
+        let range: any = '3mo';
 
         switch (yahooInterval) {
             case '1m':
@@ -89,7 +89,7 @@ export async function GET(request: Request) {
         };
 
         // Call chart on the instance
-        const result = await yf.chart(ticker, queryOptions);
+        const result: any = await (yf as any).chart(ticker, queryOptions);
 
         // The library 'chart' returns: { meta, timestamp, indicators } OR a processed array if using 'historical'
         // Wait, yahoo-finance2 'chart' returns the raw result object usually?

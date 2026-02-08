@@ -44,7 +44,22 @@ export default function SectorPage() {
 
     return (
         <div className="flex h-screen bg-gray-900 text-white font-sans">
-            <Sidebar currentPage="sectors" />
+            <Sidebar
+                currentPage="sectors"
+                market="stocks"
+                setMarket={() => { }}
+                symbol="SECTOR"
+                setSymbol={() => { }}
+                stockInput=""
+                setStockInput={() => { }}
+                setDebouncedStock={() => { }}
+                interval="1d"
+                setInterval={() => { }}
+                data={[]}
+                loading={false}
+                stats={null}
+                sentimentScore={50}
+            />
 
             <main className="flex-1 p-6 flex flex-col overflow-hidden">
                 <header className="mb-6">
