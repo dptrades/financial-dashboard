@@ -55,14 +55,41 @@ export default function PriceChart({ data }: PriceChartProps) {
     const maxPrice = Math.max(...prices);
     const buffer = (maxPrice - minPrice) * 0.1;
 
-    // Custom Tooltip (Visible now)
+    // Custom Tooltip (Detailed)
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
-            const date = new Date(payload[0].payload.time).toLocaleString();
+            const data = payload[0].payload;
+            const date = new Date(data.time).toLocaleString();
             return (
-                <div className="bg-gray-800 border border-gray-600 p-2 rounded shadow-lg text-xs z-50">
-                    <p className="font-bold text-gray-200">{date}</p>
-                    {/* Values are in Legend, but we keep date here for precision */}
+                <div className="bg-gray-900/95 border border-gray-600 p-3 rounded-lg shadow-xl text-xs z-50 min-w-[180px] backdrop-blur-md">
+                    <p className="font-bold text-gray-100 border-b border-gray-700 pb-1 mb-2">{date}</p>
+
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        <span className="text-gray-400">Open:</span> <span className="text-right text-white font-mono">{data.open.toFixed(2)}</span>
+                        <span className="text-gray-400">High:</span> <span className="text-right text-white font-mono">{data.high.toFixed(2)}</span>
+                        <span className="text-gray-400">Low:</span> <span className="text-right text-white font-mono">{data.low.toFixed(2)}</span>
+                        <span className="text-gray-400">Close:</span> <span className="text-right text-white font-mono">{data.close.toFixed(2)}</span>
+
+                        <div className="col-span-2 h-1 border-b border-gray-800 my-1"></div>
+
+                        {data.ema9 && <><span className="text-[#FBBF24]">EMA 9:</span> <span className="text-right text-[#FBBF24] font-mono">{data.ema9.toFixed(2)}</span></>}
+                        {data.ema21 && <><span className="text-[#F87171]">EMA 21:</span> <span className="text-right text-[#F87171] font-mono">{data.ema21.toFixed(2)}</span></>}
+                        {data.ema50 && <><span className="text-[#818CF8]">EMA 50:</span> <span className="text-right text-[#818CF8] font-mono">{data.ema50.toFixed(2)}</span></>}
+                        {data.ema200 && <><span className="text-[#34D399]">EMA 200:</span> <span className="text-right text-[#34D399] font-mono">{data.ema200.toFixed(2)}</span></>}
+
+                        {data.vwap && <><span className="text-[#EC4899]">VWAP:</span> <span className="text-right text-[#EC4899] font-mono">{data.vwap.toFixed(2)}</span></>}
+
+                        <div className="col-span-2 h-1 border-b border-gray-800 my-1"></div>
+
+                        <span className="text-[#60A5FA]">RSI:</span> <span className="text-right text-[#60A5FA] font-mono">{data.rsi14?.toFixed(1)}</span>
+
+                        {data.macd && (
+                            <>
+                                <span className="text-[#3B82F6]">MACD:</span> <span className="text-right text-[#3B82F6] font-mono">{data.macd.MACD?.toFixed(2)}</span>
+                                <span className="text-[#F97316]">Signal:</span> <span className="text-right text-[#F97316] font-mono">{data.macd.signal?.toFixed(2)}</span>
+                            </>
+                        )}
+                    </div>
                 </div>
             );
         }
