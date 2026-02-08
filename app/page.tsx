@@ -220,11 +220,11 @@ export default function Dashboard() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 p-6 flex flex-col overflow-y-auto">
-        <header className="flex justify-between items-end mb-6">
-          <div className="flex items-end gap-6">
+      <main className="flex-1 p-4 md:p-6 flex flex-col overflow-y-auto w-full pt-16 md:pt-6"> {/* Added pt-16 for mobile toggle space */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+          <div className="flex flex-col md:flex-row items-start md:items-end gap-2 md:gap-6 w-full">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
                 {market === 'crypto' ? `${symbol} / USD` : debouncedStock}
               </h2>
               <p className="text-sm text-gray-400 mt-1">
@@ -233,7 +233,7 @@ export default function Dashboard() {
             </div>
 
             {/* Header Sentiment Widget */}
-            <div className="mb-1 flex gap-3">
+            <div className="mb-1 flex flex-wrap gap-2 md:gap-3">
               <HeaderSentiment score={sentimentScore} />
               {data.length > 0 && <HeaderSignals latestData={data[data.length - 1]} />}
               {data.length > 0 && <HeaderPattern latestData={data[data.length - 1]} />}
@@ -241,13 +241,15 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {renderViewControls()}
+          <div className="w-full md:w-auto">
+            {renderViewControls()}
+          </div>
         </header>
 
         {/* AI Insight Card */}
         <AISummaryCard symbol={market === 'crypto' ? symbol : debouncedStock} summary={aiSummary} loading={loading} />
 
-        <div className="flex-none h-[500px] bg-gray-800 rounded-xl p-1 relative shadow-xl overflow-hidden border border-gray-700 mt-4">
+        <div className="flex-none h-[350px] md:h-[500px] bg-gray-800 rounded-xl p-1 relative shadow-xl overflow-hidden border border-gray-700 mt-4">
           {loading && (
             <div className="absolute inset-0 z-20 bg-gray-900 bg-opacity-70 backdrop-blur-sm flex items-center justify-center">
               <div className="flex flex-col items-center">
