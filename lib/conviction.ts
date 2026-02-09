@@ -1,6 +1,7 @@
 import yahooFinance from 'yahoo-finance2';
 import { calculateIndicators } from './indicators';
 import { fetchSocialSentiment, calculateSentimentScore } from './news';
+import { fetchAlpacaBars } from './alpaca';
 
 export interface ConvictionStock {
     symbol: string;
@@ -89,25 +90,39 @@ export async function scanConviction(): Promise<ConvictionStock[]> {
         try {
             await new Promise(r => setTimeout(r, 200)); // 200ms delay between requests
 
-            // 1. Fetch Data (Parallel for single symbol is fine)
-            // Relaxed validation: Allow failing modules if we at least get price/chart
-            const [quote, ohlcv, socialNews] = await Promise.all([
+            // 1. Fetch Data (Hybrid: Alpaca for Live Price/Chart, Yahoo for Fundamentals)
+            const [quote, yahooChart, alpacaBars, socialNews] = await Promise.all([
                 (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }) as Promise<any>).catch(e => null),
                 (yahooFinance.chart(symbol, { period1: '3mo', interval: '1d' }) as Promise<any>).catch(e => null),
+                fetchAlpacaBars(symbol, '1Day', 100),
                 (fetchSocialSentiment(symbol) as Promise<any>).catch(e => [])
             ]);
 
-            // Essential Data Check (Need Chart at minimum for Score)
-            if (!ohlcv || !ohlcv.quotes || ohlcv.quotes.length < 30) {
-                console.warn(`⚠️ Skipping ${symbol}: Missing Chart Data`);
+            // DECISION: Use Alpaca if available, else fallback to Yahoo
+            let cleanData: any[] = [];
+            let currentPrice = 0;
+            let usingAlpaca = false;
+
+            if (alpacaBars && alpacaBars.length > 50) {
+                usingAlpaca = true;
+                cleanData = alpacaBars.map((b) => ({
+                    time: new Date(b.t).getTime(),
+                    open: b.o, high: b.h, low: b.l, close: b.c, volume: b.v
+                }));
+                currentPrice = alpacaBars[alpacaBars.length - 1].c;
+            } else if (yahooChart && yahooChart.quotes && yahooChart.quotes.length > 50) {
+                cleanData = yahooChart.quotes.map((q: any) => ({
+                    time: new Date(q.date).getTime(),
+                    open: q.open, high: q.high, low: q.low, close: q.close, volume: q.volume
+                }));
+                // currentPrice will be set from quote later, or last close
+                currentPrice = cleanData[cleanData.length - 1].close;
+            } else {
+                console.warn(`⚠️ Skipping ${symbol}: Missing Chart Data (Alpaca & Yahoo failed)`);
                 continue;
             }
 
-            // 2. Process Technicals
-            const cleanData = ohlcv.quotes.map((q: any) => ({
-                time: new Date(q.date).getTime(),
-                open: q.open, high: q.high, low: q.low, close: q.close, volume: q.volume
-            }));
+
             const indicators = calculateIndicators(cleanData);
             const latest = indicators[indicators.length - 1];
 
@@ -151,7 +166,14 @@ export async function scanConviction(): Promise<ConvictionStock[]> {
                 else { analystScore = 50; ratingText = "Hold"; }
             }
             const targetPrice = financialData.targetMeanPrice || 0;
-            const currentPrice = financialData.currentPrice?.raw || latest.close;
+            // Use Alpaca price if we have it, else valid Yahoo price, else latest close
+            const finalPrice = usingAlpaca ? currentPrice : (financialData.currentPrice?.raw || currentPrice);
+
+            // Upside potential
+            if (targetPrice > finalPrice) {
+                const upside = ((targetPrice - finalPrice) / finalPrice) * 100;
+                if (upside > 10) analystScore += 10;
+            }
 
 
             // 5. Process Social
@@ -174,8 +196,9 @@ export async function scanConviction(): Promise<ConvictionStock[]> {
             results.push({
                 symbol,
                 name: (quote?.price as any)?.longName || symbol,
-                price: currentPrice,
+                price: finalPrice,
                 score: Math.round(finalScore),
+                isMock: false, // We have real data (Alpaca or Yahoo)
                 technicalScore: Math.round(techScore),
                 fundamentalScore: Math.round(fundScore),
                 analystScore: Math.round(analystScore),
