@@ -131,22 +131,38 @@ export async function getPositions(): Promise<AlpacaPosition[]> {
 /**
  * Get current price for a symbol
  */
+import YahooFinance from 'yahoo-finance2';
+const yahooFinance = new YahooFinance();
+
+/**
+ * Get current price for a symbol
+ * Tries Alpaca first, falls back to Yahoo Finance
+ */
 export async function getLatestPrice(symbol: string): Promise<number | null> {
+    // 1. Try Alpaca first
     try {
         const response = await fetch(`${DATA_API_URL}/v2/stocks/${symbol}/quotes/latest?feed=iex`, {
             headers: getHeaders(),
             cache: 'no-store'
         });
 
-        if (!response.ok) return null;
-
-        const data = await response.json();
-        if (data.quote && data.quote.ap && data.quote.bp) {
-            return (data.quote.ap + data.quote.bp) / 2; // Mid price
+        if (response.ok) {
+            const data = await response.json();
+            if (data.quote && data.quote.ap && data.quote.bp) {
+                return (data.quote.ap + data.quote.bp) / 2;
+            }
         }
-        return null;
     } catch (e) {
-        console.error('[Alpaca Trading] Failed to get price:', e);
+        console.error(`[Alpaca Trading] Alpaca price fetch failed for ${symbol}:`, e);
+    }
+
+    // 2. Fallback to Yahoo Finance
+    try {
+        console.log(`[Alpaca Trading] Falling back to Yahoo Finance for ${symbol}`);
+        const quote = await yahooFinance.quote(symbol);
+        return quote.regularMarketPrice || null;
+    } catch (e) {
+        console.error(`[Alpaca Trading] Yahoo price fetch failed for ${symbol}:`, e);
         return null;
     }
 }
