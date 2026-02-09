@@ -125,6 +125,23 @@ export default function PortfolioPage() {
         return `${sign}${value.toFixed(2)}%`;
     };
 
+    const handleReset = async () => {
+        if (!confirm('Are you sure? This will close all positions and cancel all orders.')) return;
+
+        setLoading(true);
+        try {
+            const response = await fetch('/api/admin/reset-portfolio', { method: 'POST' });
+            if (!response.ok) throw new Error('Reset failed');
+
+            // Refresh after reset
+            await fetchPortfolio();
+        } catch (e) {
+            setError('Failed to reset portfolio');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-900 text-white">
             {/* Header */}
@@ -140,6 +157,13 @@ export default function PortfolioPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleReset}
+                            disabled={loading || executing}
+                            className="px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                        >
+                            Reset Portfolio
+                        </button>
                         <button
                             onClick={fetchPortfolio}
                             disabled={loading}
@@ -161,6 +185,7 @@ export default function PortfolioPage() {
             </header>
 
             <main className="p-6">
+                {/* ... (Error and Trade Results sections same as before) ... */}
                 {/* Error Banner */}
                 {error && (
                     <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center gap-3">
@@ -321,9 +346,9 @@ export default function PortfolioPage() {
                                                     <td className="px-4 py-3 text-right">{order.qty}</td>
                                                     <td className="px-4 py-3">
                                                         <span className={`px-2 py-1 rounded text-xs font-medium ${order.status === 'filled' ? 'bg-green-500/20 text-green-400' :
-                                                                order.status === 'canceled' ? 'bg-red-500/20 text-red-400' :
-                                                                    order.status === 'new' ? 'bg-blue-500/20 text-blue-400' :
-                                                                        'bg-gray-500/20 text-gray-400'
+                                                            order.status === 'canceled' ? 'bg-red-500/20 text-red-400' :
+                                                                order.status === 'new' ? 'bg-blue-500/20 text-blue-400' :
+                                                                    'bg-gray-500/20 text-gray-400'
                                                             }`}>
                                                             {order.status}
                                                         </span>
@@ -348,7 +373,7 @@ export default function PortfolioPage() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                 <div>
                                     <span className="text-gray-400">Position Size:</span>
-                                    <span className="ml-2 font-medium">$1,000</span>
+                                    <span className="ml-2 font-medium">$250</span>
                                 </div>
                                 <div>
                                     <span className="text-gray-400">Stop Loss:</span>
@@ -360,7 +385,7 @@ export default function PortfolioPage() {
                                 </div>
                                 <div>
                                     <span className="text-gray-400">Max Positions:</span>
-                                    <span className="ml-2 font-medium">5</span>
+                                    <span className="ml-2 font-medium">4</span>
                                 </div>
                             </div>
                         </div>

@@ -7,7 +7,7 @@ import {
     getLatestPrice,
     isMarketOpen
 } from '@/lib/alpaca-trading';
-import { scanConviction } from '@/lib/conviction';
+import { scanAlphaHunter } from '@/lib/conviction';
 import type { ConvictionStock } from '@/types/stock';
 
 // Symbols to exclude (indices, futures, commodities, ETFs tracking these)
@@ -25,10 +25,10 @@ const EXCLUDED_SYMBOLS = [
 ];
 
 // Trade parameters
-const TRADE_AMOUNT = 1000; // $1,000 per trade
+const TRADE_AMOUNT = 250; // $250 per trade
 const STOP_LOSS_PERCENT = 0.10; // 10% stop loss
 const TAKE_PROFIT_PERCENT = 0.25; // 25% take profit
-const MAX_POSITIONS = 5; // Maximum 5 positions at a time
+const MAX_POSITIONS = 4; // Max 4 positions ($1000 total limit)
 
 /**
  * GET: Returns current portfolio status
@@ -121,9 +121,9 @@ export async function POST(request: Request) {
             });
         }
 
-        // Fetch conviction scanner results directly
-        console.log('[Auto-Trade] Scanning for conviction picks...');
-        const convictionData: ConvictionStock[] = await scanConviction();
+        // Fetch Alpha Hunter scanner results directly
+        console.log('[Auto-Trade] Scanning for Alpha Hunter picks...');
+        const convictionData: ConvictionStock[] = await scanAlphaHunter();
 
         // Filter and sort picks
         const eligiblePicks = convictionData
