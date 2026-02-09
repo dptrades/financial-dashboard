@@ -17,6 +17,7 @@ import HeaderPattern from '../components/HeaderPattern';
 import HeaderAnalyst from '../components/HeaderAnalyst';
 import AISummaryCard from '../components/AISummaryCard';
 import NewsFeed from '../components/NewsFeed';
+import LivePriceDisplay from '../components/LivePriceDisplay';
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
@@ -224,12 +225,75 @@ export default function Dashboard() {
         <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
           <div className="flex flex-col md:flex-row items-start md:items-end gap-2 md:gap-6 w-full">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-                {market === 'crypto' ? `${symbol} / USD` : debouncedStock}
-              </h2>
-              <p className="text-sm text-gray-400 mt-1">
-                {loading ? 'Fetching live data...' : `Last Close: $${stats?.currentPrice?.toFixed(2) || '0.00'}`}
-              </p>
+              {/* Editable Ticker Input */}
+              <div className="flex items-center gap-2">
+                {market === 'crypto' ? (
+                  <select
+                    value={symbol}
+                    onChange={(e) => setSymbol(e.target.value)}
+                    className="text-2xl md:text-3xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none focus:border-blue-400 text-white py-1 tracking-tight"
+                    disabled={loading}
+                  >
+                    <option value="BTC" className="bg-gray-900">BTC / USD</option>
+                    <option value="ETH" className="bg-gray-900">ETH / USD</option>
+                    <option value="SOL" className="bg-gray-900">SOL / USD</option>
+                  </select>
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={stockInput}
+                      onChange={(e) => setStockInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && stockInput.trim()) {
+                          setDebouncedStock(stockInput.trim());
+                        }
+                      }}
+                      className="text-2xl md:text-3xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none focus:border-blue-400 text-white py-1 tracking-tight uppercase w-32 md:w-40"
+                      placeholder="TICKER"
+                      disabled={loading}
+                    />
+                    <button
+                      onClick={() => stockInput.trim() && setDebouncedStock(stockInput.trim())}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-300 transition-colors"
+                      disabled={loading}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {/* Market Toggle Pills */}
+                <div className="flex bg-gray-800 rounded-full p-0.5 border border-gray-700">
+                  <button
+                    onClick={() => setMarket('stocks')}
+                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${market === 'stocks' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    Stocks
+                  </button>
+                  <button
+                    onClick={() => setMarket('crypto')}
+                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${market === 'crypto' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    Crypto
+                  </button>
+                </div>
+              </div>
+              {/* Live Price Display */}
+              <div className="mt-1">
+                {market === 'stocks' ? (
+                  <LivePriceDisplay
+                    symbol={debouncedStock}
+                    fallbackPrice={stats?.currentPrice}
+                    enabled={!loading}
+                  />
+                ) : (
+                  <p className="text-sm text-gray-400">
+                    {loading ? 'Fetching live data...' : `Last Price: $${stats?.currentPrice?.toFixed(2) || '0.00'}`}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Header Sentiment Widget */}

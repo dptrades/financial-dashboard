@@ -165,57 +165,7 @@ export default function Sidebar({
             {/* Controls - Only show on Dashboard page */}
             {currentPage === 'dashboard' && setMarket && (
                 <div className="space-y-4 pt-4 border-t border-gray-700 px-4">
-                    <div>
-                        <label className="block text-xs font-semibold mb-2 text-gray-400 uppercase tracking-wider">Market</label>
-                        <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
-                            <button
-                                onClick={() => setMarket('crypto')}
-                                className={`flex-1 py-1.5 text-xs font-medium rounded ${market === 'crypto' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                Crypto
-                            </button>
-                            <button
-                                onClick={() => setMarket('stocks')}
-                                className={`flex-1 py-1.5 text-xs font-medium rounded ${market === 'stocks' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                Stocks
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-semibold mb-2 text-gray-400 uppercase tracking-wider">Asset</label>
-                        {market === 'crypto' ? (
-                            <select
-                                value={symbol}
-                                onChange={(e) => setSymbol && setSymbol(e.target.value)}
-                                className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                                disabled={loading}
-                            >
-                                <option value="BTC">Bitcoin (BTC)</option>
-                                <option value="ETH">Ethereum (ETH)</option>
-                                <option value="SOL">Solana (SOL)</option>
-                            </select>
-                        ) : (
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={stockInput}
-                                    onChange={(e) => setStockInput && setStockInput(e.target.value.toUpperCase())}
-                                    className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase placeholder-gray-500"
-                                    placeholder="Symbol (e.g. NVDA)"
-                                    disabled={loading}
-                                />
-                                <button
-                                    className="absolute right-3 top-2.5 text-gray-400 hover:text-white transition-colors"
-                                    onClick={() => setDebouncedStock && stockInput && setDebouncedStock(stockInput)}
-                                    disabled={loading}
-                                >
-                                    <Search className="h-4 w-4" />
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    {/* Market and Asset sections moved to header */}
 
                     {/* Options AI Signal */}
                     <div className="mb-6">
