@@ -3,15 +3,9 @@
  * Dynamically discovers high-potential stocks using multiple signals
  */
 
-// Stock discovery result
-export interface DiscoveredStock {
-    symbol: string;
-    name?: string;
-    source: 'volume' | 'social' | 'news' | 'technical' | 'options';
-    signal: string;
-    strength: number; // 1-100
-    timestamp: Date;
-}
+// Import and re-export types for backwards compatibility
+import type { DiscoveredStock } from '../types/stock';
+export type { DiscoveredStock } from '../types/stock';
 
 // Top gainers/volume from Yahoo Finance screener
 const YAHOO_SCREENER_URL = 'https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved';

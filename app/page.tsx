@@ -18,6 +18,8 @@ import HeaderAnalyst from '../components/HeaderAnalyst';
 import AISummaryCard from '../components/AISummaryCard';
 import NewsFeed from '../components/NewsFeed';
 import LivePriceDisplay from '../components/LivePriceDisplay';
+import { Loading } from '@/components/ui/Loading';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
@@ -25,6 +27,7 @@ export default function Dashboard() {
   const urlMarket = searchParams.get('market') as 'crypto' | 'stocks' | null;
 
   const [data, setData] = useState<IndicatorData[]>([]);
+  const [companyName, setCompanyName] = useState<string>('');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [analystData, setAnalystData] = useState<NewsItem[]>([]);
   const [stats, setStats] = useState<PriceStats | null>(null);
@@ -99,9 +102,13 @@ export default function Dashboard() {
 
       try {
         // Fetch OHLCV
-        const rawData = await fetchOHLCV(targetSymbol, '1825', market, interval);
+        const response = await fetchOHLCV(targetSymbol, '1825', market, interval);
+        const rawData = response.data;
 
         if (ignore) return;
+
+        // Set company name
+        setCompanyName(response.companyName || targetSymbol);
 
         if (!rawData || rawData.length === 0) {
           setError('Failed to load data. Invalid symbol or API error.');
@@ -280,6 +287,10 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+              {/* Company Name */}
+              {companyName && companyName !== debouncedStock && market === 'stocks' && (
+                <p className="text-sm text-gray-400 mt-0.5 truncate max-w-[250px]">{companyName}</p>
+              )}
               {/* Live Price Display */}
               <div className="mt-1">
                 {market === 'stocks' ? (
@@ -316,28 +327,20 @@ export default function Dashboard() {
         <div className="flex-none h-[350px] md:h-[500px] bg-gray-800 rounded-xl p-1 relative shadow-xl overflow-hidden border border-gray-700 mt-4">
           {loading && (
             <div className="absolute inset-0 z-20 bg-gray-900 bg-opacity-70 backdrop-blur-sm flex items-center justify-center">
-              <div className="flex flex-col items-center">
-                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                <span className="text-blue-400 font-medium">Crunching Numbers...</span>
-              </div>
+              <Loading message="Crunching numbers..." />
             </div>
           )}
 
           {error && !loading ? (
-            <div className="absolute inset-0 flex items-center justify-center text-red-400 bg-gray-900 bg-opacity-90 z-10">
-              <div className="text-center p-6 bg-gray-800 rounded-lg border border-red-900 shadow-2xl">
-                <p className="font-bold mb-2 text-red-500">Unable to Fetch Data</p>
-                <p className="text-sm text-gray-300">{error}</p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="mt-4 px-4 py-2 bg-red-900 hover:bg-red-800 rounded text-sm transition-colors"
-                >
-                  Retry
-                </button>
-              </div>
+            <div className="absolute inset-0 flex items-center justify-center z-10 p-4">
+              <ErrorMessage
+                title="Unable to Fetch Data"
+                message={error}
+                onRetry={() => window.location.reload()}
+              />
             </div>
           ) : (
-            !loading && <PriceChart data={chartData} />
+            !loading && data.length > 0 && <PriceChart data={chartData} />
           )}
         </div>
 

@@ -1,14 +1,26 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Activity, TrendingUp, TrendingDown, DollarSign, BarChart3, GripHorizontal } from 'lucide-react';
-import { scanMarket, ScannedStock } from '@/lib/scanner';
+import { Activity, TrendingUp, TrendingDown } from 'lucide-react';
+
+interface MarketData {
+    symbol: string;
+    name: string;
+    price: number;
+    change: number;
+    changePercent: number;
+}
+
+interface InternalsData {
+    vix?: MarketData;
+    sp500?: MarketData;
+    nasdaq?: MarketData;
+    dow?: MarketData;
+}
 
 export default function SidebarInternals() {
-    const [stats, setStats] = useState<{
-        vix: ScannedStock | undefined;
-        tick: ScannedStock | undefined;
-        add: ScannedStock | undefined;
+    const [internals, setInternals] = useState<InternalsData | null>(null);
+    const [convictionStats, setConvictionStats] = useState<{
         advancers: number;
         decliners: number;
         bullishPercent: number;
@@ -16,43 +28,64 @@ export default function SidebarInternals() {
 
     useEffect(() => {
         const fetchInternals = async () => {
-            const data = await scanMarket();
+            try {
+                // Fetch market internals (VIX, indices)
+                const internalsRes = await fetch('/api/market-internals');
+                if (internalsRes.ok) {
+                    const data = await internalsRes.json();
+                    setInternals(data);
+                }
+            } catch (e) {
+                console.error("Failed to fetch internals", e);
+            }
+        };
 
-            // Internals
-            const vix = data.find(s => s.symbol === '^VIX');
-            const tick = data.find(s => s.symbol === '^TICK');
-            const add = data.find(s => s.symbol === '^ADD');
+        const fetchConvictionStats = async () => {
+            try {
+                // Fetch conviction data for breadth calculation
+                const res = await fetch('/api/conviction');
+                if (!res.ok) return;
+                const data = await res.json();
 
-            // Breadth Logic (Filter out indices/internals)
-            const marketStocks = data.filter(s =>
-                !['Internals', 'Indices', 'Forex', 'Bonds'].includes(s.sector)
-            );
+                if (Array.isArray(data)) {
+                    // Breadth Logic (Filter out indices/internals)
+                    const marketStocks = data.filter((s: any) =>
+                        !['Internals', 'Indices', 'Forex', 'Bonds'].includes(s.sector || '')
+                    );
 
-            const advancers = marketStocks.filter(s => s.change24h > 0).length;
-            const decliners = marketStocks.filter(s => s.change24h < 0).length;
+                    const advancers = marketStocks.filter((s: any) => s.change24h > 0).length;
+                    const decliners = marketStocks.filter((s: any) => s.change24h < 0).length;
 
-            // Bullish Trend % (Price > EMA200 approx via 'trend' field or raw check if avail)
-            // Using 'trend' field from scanner which checks EMA50/200
-            const bullCount = marketStocks.filter(s => s.trend === 'BULLISH').length;
-            const bullishPercent = marketStocks.length > 0 ? (bullCount / marketStocks.length) * 100 : 0;
+                    // Bullish Trend %
+                    const bullCount = marketStocks.filter((s: any) => s.metrics?.trend === 'BULLISH').length;
+                    const bullishPercent = marketStocks.length > 0 ? (bullCount / marketStocks.length) * 100 : 0;
 
-            setStats({ vix, tick, add, advancers, decliners, bullishPercent });
+                    setConvictionStats({ advancers, decliners, bullishPercent });
+                }
+            } catch (e) {
+                console.error("Failed to fetch conviction stats", e);
+            }
         };
 
         fetchInternals();
-        const interval = setInterval(fetchInternals, 60000); // 60s refresh
+        fetchConvictionStats();
+
+        const interval = setInterval(() => {
+            fetchInternals();
+            fetchConvictionStats();
+        }, 60000); // 60s refresh
 
         return () => clearInterval(interval);
     }, []);
 
-    if (!stats) return (
+    if (!internals) return (
         <div className="px-4 py-4 text-xs text-gray-500 animate-pulse text-center">
             Loading Pulse...
         </div>
     );
 
-    const { vix, tick, add, advancers, decliners, bullishPercent } = stats;
-    const breadthColor = advancers > decliners ? 'text-green-400' : 'text-red-400';
+    const { vix, sp500, nasdaq } = internals;
+    const stats = convictionStats || { advancers: 0, decliners: 0, bullishPercent: 50 };
 
     return (
         <div className="mt-auto border-t border-gray-800 p-4 space-y-4">
@@ -66,57 +99,73 @@ export default function SidebarInternals() {
                 </span>
             </h4>
 
-            {/* VIX & Sentiment */}
+            {/* VIX & Bullish % */}
             <div className="grid grid-cols-2 gap-2">
                 <div className="bg-gray-800 p-2 rounded border border-gray-700">
                     <span className="text-[10px] text-gray-400 block">VIX</span>
-                    <span className={`text-sm font-bold ${vix && vix.change24h > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {vix ? vix.price.toFixed(2) : 'N/A'}
-                    </span>
+                    <div className="flex items-center gap-1">
+                        <span className={`text-sm font-bold ${vix && vix.change < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {vix ? vix.price.toFixed(2) : 'N/A'}
+                        </span>
+                        {vix && (
+                            <span className={`text-[10px] ${vix.change < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {vix.change > 0 ? '+' : ''}{vix.changePercent.toFixed(1)}%
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div className="bg-gray-800 p-2 rounded border border-gray-700">
                     <span className="text-[10px] text-gray-400 block">Bullish %</span>
-                    <span className={`text-sm font-bold ${bullishPercent > 50 ? 'text-green-400' : 'text-red-400'}`}>
-                        {bullishPercent.toFixed(0)}%
+                    <span className={`text-sm font-bold ${stats.bullishPercent > 50 ? 'text-green-400' : 'text-red-400'}`}>
+                        {stats.bullishPercent.toFixed(0)}%
                     </span>
                 </div>
+            </div>
+
+            {/* Major Indices */}
+            <div className="space-y-1">
+                {sp500 && (
+                    <div className="flex justify-between items-center text-xs bg-gray-800/50 p-1.5 rounded">
+                        <span className="text-gray-400">S&P 500</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-white font-mono">{sp500.price.toFixed(2)}</span>
+                            <span className={`${sp500.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {sp500.change >= 0 ? '+' : ''}{sp500.changePercent.toFixed(2)}%
+                            </span>
+                        </div>
+                    </div>
+                )}
+                {nasdaq && (
+                    <div className="flex justify-between items-center text-xs bg-gray-800/50 p-1.5 rounded">
+                        <span className="text-gray-400">Nasdaq</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-white font-mono">{nasdaq.price.toFixed(2)}</span>
+                            <span className={`${nasdaq.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {nasdaq.change >= 0 ? '+' : ''}{nasdaq.changePercent.toFixed(2)}%
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Breadth Bar */}
             <div className="bg-gray-800 p-2 rounded border border-gray-700">
                 <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                    <span>Adv: {advancers}</span>
-                    <span>Dec: {decliners}</span>
+                    <span className="text-green-400">▲ {stats.advancers}</span>
+                    <span className="text-gray-500">Breadth</span>
+                    <span className="text-red-400">▼ {stats.decliners}</span>
                 </div>
                 <div className="h-2 bg-gray-700 rounded-full overflow-hidden flex">
                     <div
                         className="h-full bg-green-500"
-                        style={{ width: `${(advancers / (advancers + decliners || 1)) * 100}%` }}
+                        style={{ width: `${(stats.advancers / (stats.advancers + stats.decliners || 1)) * 100}%` }}
                     />
                     <div
                         className="h-full bg-red-500"
-                        style={{ width: `${(decliners / (advancers + decliners || 1)) * 100}%` }}
+                        style={{ width: `${(stats.decliners / (stats.advancers + stats.decliners || 1)) * 100}%` }}
                     />
                 </div>
             </div>
-
-            {/* TICK / ADD (if available) - Or just general status */}
-            {tick && (
-                <div className="flex justify-between items-center text-xs border-t border-gray-800 pt-2">
-                    <span className="text-gray-500">$TICK</span>
-                    <span className={tick.price > 0 ? 'text-green-400' : 'text-red-400'}>
-                        {tick.price.toFixed(0)}
-                    </span>
-                </div>
-            )}
-            {add && (
-                <div className="flex justify-between items-center text-xs border-t border-gray-800 pt-2">
-                    <span className="text-gray-500">$ADD</span>
-                    <span className={add.price > 0 ? 'text-green-400' : 'text-red-400'}>
-                        {add.price.toFixed(0)}
-                    </span>
-                </div>
-            )}
         </div>
     );
 }

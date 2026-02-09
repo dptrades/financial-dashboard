@@ -3,8 +3,13 @@ import { OHLCVData } from '@/types/financial';
 
 const BASE_URL = 'https://api.coingecko.com/api/v3';
 
+export interface OHLCVResponse {
+    data: OHLCVData[];
+    companyName: string;
+}
+
 // Default to Bitcoin and 1 day interval for now
-export const fetchOHLCV = async (coinId: string = 'BTC', days: string = '30', market: 'crypto' | 'stocks' = 'crypto', interval: string = '1d'): Promise<OHLCVData[]> => {
+export const fetchOHLCV = async (coinId: string = 'BTC', days: string = '30', market: 'crypto' | 'stocks' = 'crypto', interval: string = '1d'): Promise<OHLCVResponse> => {
     try {
         const response = await axios.get('/api/ohlcv', {
             params: {
@@ -14,9 +19,18 @@ export const fetchOHLCV = async (coinId: string = 'BTC', days: string = '30', ma
                 interval: interval
             }
         });
-        return response.data;
+
+        // Handle both old format (array) and new format (object with data + companyName)
+        if (Array.isArray(response.data)) {
+            return { data: response.data, companyName: coinId };
+        }
+
+        return {
+            data: response.data.data || [],
+            companyName: response.data.companyName || coinId
+        };
     } catch (error) {
         console.error('Error fetching OHLCV data:', error);
-        return [];
+        return { data: [], companyName: coinId };
     }
 };

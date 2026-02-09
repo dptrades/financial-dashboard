@@ -76,12 +76,21 @@ export async function GET(request: Request) {
                         volume: bar.v
                     }));
 
-                    // 4H aggregation if needed
-                    if (interval === '4h' && data.length > 0) {
-                        return NextResponse.json(aggregate4H(data));
+                    // Alpaca doesn't provide company names, so we'll fetch it from Yahoo
+                    let companyName = ticker;
+                    try {
+                        const quoteSummary: any = await yahooFinance.quoteSummary(ticker, { modules: ['price'] });
+                        companyName = quoteSummary?.price?.longName || quoteSummary?.price?.shortName || ticker;
+                    } catch (e) {
+                        // Fallback to ticker if Yahoo fails
                     }
 
-                    return NextResponse.json(data);
+                    // 4H aggregation if needed
+                    if (interval === '4h' && data.length > 0) {
+                        return NextResponse.json({ data: aggregate4H(data), companyName });
+                    }
+
+                    return NextResponse.json({ data, companyName });
                 }
                 console.log(`[OHLCV] Alpaca returned no data for ${ticker}, falling back to Yahoo`);
             } catch (alpacaError: any) {
@@ -146,11 +155,14 @@ export async function GET(request: Request) {
             volume: q.volume
         })).filter((d: any) => d.close !== null && d.open !== null);
 
+        // Extract company name from Yahoo metadata
+        const companyName = result.meta?.longName || result.meta?.shortName || ticker;
+
         if (is4Hour && data.length > 0) {
-            return NextResponse.json(aggregate4H(data));
+            return NextResponse.json({ data: aggregate4H(data), companyName });
         }
 
-        return NextResponse.json(data);
+        return NextResponse.json({ data, companyName });
 
     } catch (error: any) {
         console.error('[OHLCV] Error:', error.message || error);

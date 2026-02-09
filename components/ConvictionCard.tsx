@@ -1,5 +1,6 @@
 import React from 'react';
-import { ConvictionStock } from '../lib/conviction';
+import Link from 'next/link';
+import type { ConvictionStock } from '../types/stock';
 import { TrendingUp, Users, BarChart3, PieChart, Info } from 'lucide-react';
 
 interface Props {
@@ -27,12 +28,20 @@ export default function ConvictionCard({ stock }: Props) {
             {/* Header */}
             <div className="flex justify-between items-start mb-4">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-2xl font-bold text-white tracking-tight">{stock.symbol}</h3>
-                        <span className="text-xs text-gray-400 bg-gray-900 px-2 py-0.5 rounded-full">{stock.name}</span>
+                    <div className="flex items-center gap-2 mb-1">
+                        <Link href={`/?symbol=${stock.symbol}&market=stocks`} className="hover:underline cursor-pointer">
+                            <h3 className="text-2xl font-bold text-white tracking-tight hover:text-blue-400 transition-colors">{stock.symbol}</h3>
+                        </Link>
+                        <span className="text-[10px] text-gray-400 bg-gray-700/50 px-2 py-0.5 rounded border border-gray-600 uppercase tracking-widest">{stock.sector || 'Stock'}</span>
                     </div>
-                    <div className="text-3xl font-mono text-white mt-1">
-                        ${stock.price.toFixed(2)}
+                    <p className="text-xs text-gray-400 mb-2 truncate max-w-[180px]">{stock.name}</p>
+                    <div className="flex items-baseline gap-3">
+                        <div className="text-3xl font-mono text-white">
+                            ${stock.price.toFixed(2)}
+                        </div>
+                        <div className={`text-sm font-bold px-2 py-0.5 rounded ${stock.change24h >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                            {stock.change24h > 0 ? '+' : ''}{stock.change24h.toFixed(2)}%
+                        </div>
                     </div>
                 </div>
 
@@ -82,6 +91,27 @@ export default function ConvictionCard({ stock }: Props) {
                     </span>
                 ))}
             </div>
+
+            {/* Option Play Suggestion */}
+            {stock.suggestedOption && (
+                <div className="mt-4 pt-4 border-t border-gray-700/50">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-purple-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse"></span>
+                            AI Option Play
+                        </span>
+                        <span className="text-xs text-gray-500">{stock.suggestedOption.expiry}</span>
+                    </div>
+                    <div className="bg-gray-900 rounded p-2 flex justify-between items-center border border-gray-800">
+                        <div className="font-mono text-sm font-bold text-gray-200">
+                            ${stock.suggestedOption.strike} <span className={stock.suggestedOption.type === 'CALL' ? 'text-green-400' : 'text-red-400'}>{stock.suggestedOption.type}</span>
+                        </div>
+                        <div className="text-[10px] text-gray-500 italic">
+                            {stock.suggestedOption.reason}
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

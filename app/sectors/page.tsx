@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
-import { scanMarket, ScannedStock } from '@/lib/scanner';
+import type { ConvictionStock } from '@/types/stock';
 
 type SectorGroup = {
     name: string;
-    stocks: ScannedStock[];
+    stocks: ConvictionStock[];
 };
 
 export default function SectorPage() {
@@ -17,26 +17,33 @@ export default function SectorPage() {
     useEffect(() => {
         const runScan = async () => {
             setLoading(true);
-            const allStocks = await scanMarket();
+            try {
+                const res = await fetch('/api/conviction');
+                if (!res.ok) throw new Error('API Error');
+                const allStocks: ConvictionStock[] = await res.json();
 
-            // Group by Sector
-            const groups: Record<string, ScannedStock[]> = {};
-            allStocks.forEach(stock => {
-                const sector = stock.sector || 'Other';
-                if (!groups[sector]) groups[sector] = [];
-                groups[sector].push(stock);
-            });
+                // Group by Sector
+                const groups: Record<string, ConvictionStock[]> = {};
+                allStocks.forEach(stock => {
+                    const sector = stock.sector || 'Other';
+                    if (!groups[sector]) groups[sector] = [];
+                    groups[sector].push(stock);
+                });
 
-            // Convert to array and sort each group by performance (Change %)
-            const sectorList = Object.keys(groups).map(name => ({
-                name,
-                stocks: groups[name].sort((a, b) => b.change24h - a.change24h)
-            }));
+                // Convert to array and sort each group by performance (Change %)
+                const sectorList = Object.keys(groups).map(name => ({
+                    name,
+                    stocks: groups[name].sort((a, b) => b.change24h - a.change24h)
+                }));
 
-            // Optional: Sort sectors by alphabet or average performance? 
-            // Alphabetical for now is fine, or custom order.
-            setSectors(sectorList.sort((a, b) => a.name.localeCompare(b.name)));
-            setLoading(false);
+                // Optional: Sort sectors by alphabet or average performance? 
+                // Alphabetical for now is fine, or custom order.
+                setSectors(sectorList.sort((a, b) => a.name.localeCompare(b.name)));
+            } catch (e) {
+                console.error("Failed to fetch sectors", e);
+            } finally {
+                setLoading(false);
+            }
         };
 
         runScan();

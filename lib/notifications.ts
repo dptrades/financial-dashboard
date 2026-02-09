@@ -3,6 +3,8 @@
  * Sends email and SMS alerts for trading discoveries
  */
 
+import { env } from './env';
+
 export interface NotificationPayload {
     subject: string;
     message: string;
@@ -13,21 +15,17 @@ export interface NotificationPayload {
     }>;
 }
 
-// Email configuration
-const ALERT_EMAIL = 'options.trade.email@gmail.com';
-const ALERT_PHONE = '+14108040291'; // Format for Twilio
-
 /**
  * Send email notification via Resend
  * Requires: RESEND_API_KEY environment variable
  */
 export async function sendEmailAlert(payload: NotificationPayload): Promise<boolean> {
-    const apiKey = process.env.RESEND_API_KEY;
-
-    if (!apiKey) {
-        console.log('[Notify] Email skipped - RESEND_API_KEY not configured');
+    if (!env.hasEmail) {
+        console.log('[Notify] Email skipped - RESEND_API_KEY or ALERT_EMAIL not configured');
         return false;
     }
+
+    const alertEmail = env.ALERT_EMAIL!;
 
     try {
         // Format stock list as HTML table
@@ -75,19 +73,19 @@ export async function sendEmailAlert(payload: NotificationPayload): Promise<bool
         const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${apiKey}`,
+                'Authorization': `Bearer ${env.RESEND_API_KEY}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 from: 'DP TradeDesk <alerts@resend.dev>',
-                to: [ALERT_EMAIL],
+                to: [alertEmail],
                 subject: payload.subject,
                 html: html
             })
         });
 
         if (response.ok) {
-            console.log(`[Notify] Email sent to ${ALERT_EMAIL}`);
+            console.log(`[Notify] Email sent to ${alertEmail}`);
             return true;
         } else {
             const error = await response.text();
@@ -105,14 +103,12 @@ export async function sendEmailAlert(payload: NotificationPayload): Promise<bool
  * Requires: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
  */
 export async function sendSMSAlert(payload: NotificationPayload): Promise<boolean> {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const fromPhone = process.env.TWILIO_PHONE_NUMBER;
-
-    if (!accountSid || !authToken || !fromPhone) {
+    if (!env.hasSMS) {
         console.log('[Notify] SMS skipped - Twilio credentials not configured');
         return false;
     }
+
+    const alertPhone = env.ALERT_SMS_PHONE!;
 
     try {
         // Format SMS message (keep it short)
@@ -130,6 +126,10 @@ export async function sendSMSAlert(payload: NotificationPayload): Promise<boolea
 
         smsBody += '\n\n📱 DP TradeDesk';
 
+        const accountSid = env.TWILIO_ACCOUNT_SID!;
+        const authToken = env.TWILIO_AUTH_TOKEN!;
+        const fromPhone = env.TWILIO_PHONE_NUMBER!;
+
         const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
         const auth = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
 
@@ -140,14 +140,14 @@ export async function sendSMSAlert(payload: NotificationPayload): Promise<boolea
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             body: new URLSearchParams({
-                To: ALERT_PHONE,
+                To: alertPhone,
                 From: fromPhone,
                 Body: smsBody
             })
         });
 
         if (response.ok) {
-            console.log(`[Notify] SMS sent to ${ALERT_PHONE}`);
+            console.log(`[Notify] SMS sent to ${alertPhone}`);
             return true;
         } else {
             const error = await response.text();

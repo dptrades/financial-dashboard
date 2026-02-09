@@ -1,10 +1,7 @@
-export interface OptionRecommendation {
-    type: 'CALL' | 'PUT' | 'WAIT';
-    strike: number;
-    expiry: string;
-    confidence: number;
-    reason: string;
-}
+// Import type for local use in functions
+import type { OptionRecommendation } from '../types/options';
+// Re-export for backwards compatibility
+export type { OptionRecommendation } from '../types/options';
 
 export function getNextMonthlyExpiry(): string {
     const d = new Date();

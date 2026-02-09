@@ -4,18 +4,25 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, TrendingUp, DollarSign, Calendar, ArrowRight } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
-import { scanMarket, ScannedStock } from '@/lib/scanner';
+import type { ConvictionStock } from '@/types/stock';
 
 export default function TopPicksPage() {
-    const [picks, setPicks] = useState<ScannedStock[]>([]);
+    const [picks, setPicks] = useState<ConvictionStock[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedStock, setExpandedStock] = useState<string | null>(null);
 
     useEffect(() => {
         const runScan = async () => {
             setLoading(true);
-            const results = await scanMarket();
-            setPicks(results);
+            try {
+                const res = await fetch('/api/conviction');
+                if (res.ok) {
+                    const results: ConvictionStock[] = await res.json();
+                    setPicks(results);
+                }
+            } catch (e) {
+                console.error("Failed to fetch picks", e);
+            }
             setLoading(false);
         };
 
@@ -46,7 +53,7 @@ export default function TopPicksPage() {
                 <header className="mb-8">
                     <h2 className="text-3xl font-bold tracking-tight text-blue-400">Weekly Top Picks</h2>
                     <p className="text-sm text-gray-400 mt-1">
-                        AI-Scanned opportunities based on Momentum, Trends, and Volume Anomalies.
+                        High Mega Cap picks from S&P 500 & Nasdaq 100 • AI-analyzed for Momentum, Trends & Technicals
                     </p>
                 </header>
 
@@ -55,7 +62,7 @@ export default function TopPicksPage() {
                         <div className="flex flex-col items-center justify-center h-64">
                             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                             <span className="text-lg text-gray-300 animate-pulse">Scanning the Market...</span>
-                            <span className="text-xs text-gray-500 mt-2">Checking 20+ High-Vol Assets</span>
+                            <span className="text-xs text-gray-500 mt-2">Analyzing High Mega Cap S&P 500 & Nasdaq 100 Stocks</span>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
@@ -73,10 +80,11 @@ export default function TopPicksPage() {
                                             <div className="flex justify-between items-start mb-4">
                                                 <div>
                                                     <Link href={`/?symbol=${pick.symbol}&market=stocks`} className="hover:underline cursor-pointer">
-                                                        <h3 className="text-2xl font-bold text-white tracking-tight">{pick.symbol}</h3>
+                                                        <h3 className="text-2xl font-bold text-white tracking-tight hover:text-blue-400 transition-colors">{pick.symbol}</h3>
                                                     </Link>
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${pick.trend === 'BULLISH' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
-                                                        {pick.trend}
+                                                    <p className="text-xs text-gray-400 mb-1 truncate max-w-[140px]">{pick.name}</p>
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${pick.metrics.trend === 'BULLISH' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
+                                                        {pick.metrics.trend}
                                                     </span>
                                                 </div>
                                                 <div className="text-right">
@@ -129,8 +137,8 @@ export default function TopPicksPage() {
                                             <div className="pt-4 border-t border-gray-700 grid grid-cols-2 gap-4 text-xs">
                                                 <div>
                                                     <span className="text-gray-500 block mb-1">RSI (14)</span>
-                                                    <span className={`font-mono px-2 py-0.5 rounded ${pick.rsi > 70 ? 'bg-red-900 text-red-200' : pick.rsi < 30 ? 'bg-green-900 text-green-200' : 'bg-gray-700 text-white'}`}>
-                                                        {pick.rsi.toFixed(1)}
+                                                    <span className={`font-mono px-2 py-0.5 rounded ${pick.metrics.rsi > 70 ? 'bg-red-900 text-red-200' : pick.metrics.rsi < 30 ? 'bg-green-900 text-green-200' : 'bg-gray-700 text-white'}`}>
+                                                        {pick.metrics.rsi.toFixed(1)}
                                                     </span>
                                                 </div>
                                                 <div className="text-right">
