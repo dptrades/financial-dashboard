@@ -50,13 +50,15 @@ export async function scanConviction(): Promise<ConvictionStock[]> {
     const promises = CONVICTION_WATCHLIST.map(async (symbol) => {
         try {
             // 1. Fetch Data (Parallel)
+            // console.log(`Fetching data for ${symbol}...`);
             const [quote, ohlcv, socialNews] = await Promise.all([
-                yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }),
-                yahooFinance.chart(symbol, { period1: '3mo', interval: '1d' }),
-                fetchSocialSentiment(symbol) // Our existing mock/sim scheduler
+                yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }).catch(e => { console.error(`YF Quote Error ${symbol}:`, e.message); return null; }),
+                yahooFinance.chart(symbol, { period1: '3mo', interval: '1d' }).catch(e => { console.error(`YF Chart Error ${symbol}:`, e.message); return null; }),
+                fetchSocialSentiment(symbol).catch(e => { console.error(`Social Error ${symbol}:`, e); return []; })
             ]) as [any, any, any];
 
-            if (!quote || !ohlcv || !ohlcv.quotes || ohlcv.quotes.length < 50) return null;
+            if (!quote) { console.warn(`Skipping ${symbol}: Missing Quote`); return null; }
+            if (!ohlcv || !ohlcv.quotes || ohlcv.quotes.length < 50) { console.warn(`Skipping ${symbol}: Missing/Insufficient OHLCV`); return null; }
 
             // 2. Process Technicals
             // Convert YF chart data to our format

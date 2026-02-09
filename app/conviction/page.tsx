@@ -14,19 +14,25 @@ export default function ConvictionPage() {
     const [stockInput, setStockInput] = useState('NVDA');
     const [stats, setStats] = useState(null);
 
-    const [stocks, setStocks] = useState<ConvictionStock[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
     const fetchConviction = async () => {
         setLoading(true);
+        setError('');
         try {
             const res = await fetch('/api/conviction');
+            if (!res.ok) throw new Error('Failed to fetch data');
+
             const data = await res.json();
             if (Array.isArray(data)) {
                 setStocks(data);
+                if (data.length === 0) setError('No results found. API might be rate-limited or returning empty data.');
+            } else {
+                setError('Invalid data format received from API.');
             }
         } catch (e) {
             console.error("Failed to fetch conviction", e);
+            setError('Failed to scan market. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -70,6 +76,12 @@ export default function ConvictionPage() {
                         Scan Market
                     </button>
                 </header>
+
+                {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg mb-6 flex items-center gap-2">
+                        <span className="font-bold">Error:</span> {error}
+                    </div>
+                )}
 
                 {loading && stocks.length === 0 ? (
                     <div className="h-96 flex flex-col items-center justify-center space-y-4">
