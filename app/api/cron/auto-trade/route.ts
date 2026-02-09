@@ -25,8 +25,11 @@ const MAX_POSITIONS = 5;
 interface ConvictionResult {
     symbol: string;
     score: number;
-    signal: string;
     price: number;
+    metrics: {
+        trend: string;
+        analystRating: string;
+    };
 }
 
 /**
@@ -101,12 +104,15 @@ export async function GET(request: Request) {
 
         const convictionData: ConvictionResult[] = await convictionResponse.json();
 
-        // Filter and sort picks
+        // Filter and sort picks - using actual data structure
         const eligiblePicks = convictionData
             .filter(pick => {
                 if (EXCLUDED_SYMBOLS.includes(pick.symbol)) return false;
                 if (currentSymbols.includes(pick.symbol)) return false;
-                if (!['Strong Buy', 'Buy', 'Bullish'].includes(pick.signal)) return false;
+                // Only bullish trend signals
+                if (pick.metrics?.trend !== 'BULLISH') return false;
+                // Prefer high score picks
+                if (pick.score < 50) return false;
                 return true;
             })
             .sort((a, b) => b.score - a.score)

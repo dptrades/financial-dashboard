@@ -31,8 +31,11 @@ const MAX_POSITIONS = 5; // Maximum 5 positions at a time
 interface ConvictionResult {
     symbol: string;
     score: number;
-    signal: string;
     price: number;
+    metrics: {
+        trend: string;
+        analystRating: string;
+    };
 }
 
 /**
@@ -143,15 +146,17 @@ export async function POST(request: Request) {
 
         const convictionData: ConvictionResult[] = await convictionResponse.json();
 
-        // Filter and sort picks
+        // Filter and sort picks - using actual data structure
         const eligiblePicks = convictionData
             .filter(pick => {
                 // Exclude indices, futures, commodities
                 if (EXCLUDED_SYMBOLS.includes(pick.symbol)) return false;
                 // Exclude already held positions
                 if (currentSymbols.includes(pick.symbol)) return false;
-                // Only bullish signals
-                if (!['Strong Buy', 'Buy', 'Bullish'].includes(pick.signal)) return false;
+                // Only bullish trend signals
+                if (pick.metrics?.trend !== 'BULLISH') return false;
+                // Prefer high score picks
+                if (pick.score < 50) return false;
                 return true;
             })
             .sort((a, b) => b.score - a.score)
@@ -162,7 +167,7 @@ export async function POST(request: Request) {
         if (eligiblePicks.length === 0) {
             return NextResponse.json({
                 message: 'No eligible picks found',
-                filters: 'Excluded indices, commodities, existing positions, and non-bullish signals'
+                filters: 'Excluded indices, commodities, existing positions, and non-bullish trends'
             });
         }
 
