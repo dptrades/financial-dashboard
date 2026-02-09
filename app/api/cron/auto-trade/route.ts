@@ -6,6 +6,8 @@ import {
     getLatestPrice,
     isMarketOpen
 } from '@/lib/alpaca-trading';
+import { scanConviction } from '@/lib/conviction';
+import type { ConvictionStock } from '@/types/stock';
 
 // Symbols to exclude (indices, futures, commodities, ETFs)
 const EXCLUDED_SYMBOLS = [
@@ -21,16 +23,6 @@ const TRADE_AMOUNT = 1000;
 const STOP_LOSS_PERCENT = 0.10;
 const TAKE_PROFIT_PERCENT = 0.25;
 const MAX_POSITIONS = 5;
-
-interface ConvictionResult {
-    symbol: string;
-    score: number;
-    price: number;
-    metrics: {
-        trend: string;
-        analystRating: string;
-    };
-}
 
 /**
  * Cron endpoint for automated trading
@@ -88,23 +80,11 @@ export async function GET(request: Request) {
             });
         }
 
-        // Fetch conviction scanner results
-        const baseUrl = process.env.VERCEL_URL
-            ? `https://${process.env.VERCEL_URL}`
-            : 'http://localhost:3000';
+        // Fetch conviction scanner results directly
+        console.log('[Cron Auto-Trade] Scanning for conviction picks...');
+        const convictionData: ConvictionStock[] = await scanConviction();
 
-        const convictionResponse = await fetch(`${baseUrl}/api/conviction`, {
-            cache: 'no-store'
-        });
-
-        if (!convictionResponse.ok) {
-            console.error('[Cron Auto-Trade] Failed to fetch conviction data');
-            return NextResponse.json({ error: 'Failed to fetch conviction data' }, { status: 500 });
-        }
-
-        const convictionData: ConvictionResult[] = await convictionResponse.json();
-
-        // Filter and sort picks - using actual data structure
+        // Filter and sort picks
         const eligiblePicks = convictionData
             .filter(pick => {
                 if (EXCLUDED_SYMBOLS.includes(pick.symbol)) return false;
