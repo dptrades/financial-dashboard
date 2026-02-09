@@ -54,18 +54,30 @@ export async function GET(request: Request) {
                     sentiment = 'negative';
                 }
 
+                const pubDate = new Date(pubDateMatch[1]);
+
                 items.push({
                     id: Math.random().toString(36).substr(2, 9),
                     title: title,
                     source: source,
-                    time: new Date(pubDateMatch[1]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                    time: pubDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                    timestamp: pubDate.getTime(), // For sorting
                     sentiment: sentiment,
                     url: linkMatch[1]
                 });
             }
         }
 
-        return NextResponse.json(items.slice(0, 10)); // Return top 10
+        // Filter to last 48 hours and sort by newest first
+        const now = Date.now();
+        const fortyEightHoursAgo = now - (48 * 60 * 60 * 1000);
+
+        const filteredItems = items
+            .filter((item: any) => item.timestamp >= fortyEightHoursAgo)
+            .sort((a: any, b: any) => b.timestamp - a.timestamp)
+            .map(({ timestamp, ...rest }: any) => rest); // Remove timestamp from response
+
+        return NextResponse.json(filteredItems.slice(0, 10)); // Return top 10
 
     } catch (error) {
         console.error("News Fetch Error:", error);
