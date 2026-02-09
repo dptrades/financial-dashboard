@@ -163,7 +163,7 @@ export default function Sidebar({
             </nav>
 
             {/* Controls - Only show on Dashboard page */}
-            {currentPage === 'dashboard' && setMarket && (
+            {currentPage === 'dashboard' && (
                 <div className="space-y-4 pt-4 border-t border-gray-700 px-4">
                     {/* Market and Asset sections moved to header */}
 
