@@ -1,4 +1,5 @@
-import yahooFinance from 'yahoo-finance2';
+import YahooFinance from 'yahoo-finance2';
+const yahooFinance = new YahooFinance();
 import { calculateIndicators } from './indicators';
 import { fetchSocialSentiment, calculateSentimentScore } from './news';
 import { fetchAlpacaBars } from './alpaca';
@@ -84,6 +85,7 @@ export async function scanConviction(): Promise<ConvictionStock[]> {
     const W_SOCIAL = 0.20;
 
     console.log("🚀 Starting Conviction Scan...");
+    console.log("🔑 Alpaca Key Status:", process.env.ALPACA_API_KEY ? "Loaded ✅" : "Missing ❌");
 
     // Sequential Loop to prevent Rate Limiting
     for (const symbol of CONVICTION_WATCHLIST) {
@@ -91,10 +93,11 @@ export async function scanConviction(): Promise<ConvictionStock[]> {
             await new Promise(r => setTimeout(r, 200)); // 200ms delay between requests
 
             // 1. Fetch Data (Hybrid: Alpaca for Live Price/Chart, Yahoo for Fundamentals)
+            console.log(`[Conviction] Fetching data for ${symbol}...`);
             const [quote, yahooChart, alpacaBars, socialNews] = await Promise.all([
-                (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }) as Promise<any>).catch(e => null),
-                (yahooFinance.chart(symbol, { period1: '3mo', interval: '1d' }) as Promise<any>).catch(e => null),
-                fetchAlpacaBars(symbol, '1Day', 100),
+                (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
+                (yahooFinance.chart(symbol, { period1: '3mo', interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
+                fetchAlpacaBars(symbol, '1Day', 253).then(b => { console.log(`[Alpaca] ${symbol} returned ${b.length} bars`); return b; }),
                 (fetchSocialSentiment(symbol) as Promise<any>).catch(e => [])
             ]);
 
