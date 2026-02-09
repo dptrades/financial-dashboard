@@ -131,7 +131,7 @@ export default function Sidebar({
         <aside className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col h-full overflow-y-auto custom-scrollbar">
             <div className="p-4 flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-blue-400 tracking-tight">Momentum Dash</h1>
+                    <h1 className="text-2xl font-bold text-blue-400 tracking-tight">DP TradeDesk</h1>
                     <p className="text-xs text-gray-500 mt-1">Scientific Price Analysis</p>
                 </div>
                 <div className="flex items-center">
