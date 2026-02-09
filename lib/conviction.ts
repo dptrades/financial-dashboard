@@ -7,6 +7,7 @@ export interface ConvictionStock {
     name: string;
     price: number;
     score: number; // 0-100
+    isMock?: boolean;
 
     // Categories
     technicalScore: number;
@@ -41,31 +42,31 @@ const CONVICTION_WATCHLIST = [
 // Mock Data for Fallback (when API fails)
 const MOCK_CONVICTION_DATA: ConvictionStock[] = [
     {
-        symbol: 'NVDA', name: 'NVIDIA Corp', price: 145.50, score: 92,
+        symbol: 'NVDA', name: 'NVIDIA Corp', price: 145.50, score: 92, isMock: true,
         technicalScore: 95, fundamentalScore: 90, analystScore: 95, sentimentScore: 88,
         metrics: { pe: 65.5, marketCap: 3500000000000, revenueGrowth: 1.25, rsi: 68, trend: 'BULLISH', analystRating: 'Strong Buy', analystTarget: 160, socialSentiment: 'Very Bullish' },
         reasons: ['AI Supercycle Leader', 'Record Revenue Growth', 'Analyst Top Pick']
     },
     {
-        symbol: 'PLTR', name: 'Palantir Technologies', price: 62.40, score: 88,
+        symbol: 'PLTR', name: 'Palantir Technologies', price: 62.40, score: 88, isMock: true,
         technicalScore: 98, fundamentalScore: 75, analystScore: 80, sentimentScore: 95,
         metrics: { pe: 110, marketCap: 140000000000, revenueGrowth: 0.35, rsi: 78, trend: 'BULLISH', analystRating: 'Buy', analystTarget: 70, socialSentiment: 'Very Bullish' },
         reasons: ['S&P 500 Inclusion Momentum', 'Government Contract Wins', 'Retail Favorite']
     },
     {
-        symbol: 'MSTR', name: 'MicroStrategy', price: 380.20, score: 85,
+        symbol: 'MSTR', name: 'MicroStrategy', price: 380.20, score: 85, isMock: true,
         technicalScore: 92, fundamentalScore: 60, analystScore: 70, sentimentScore: 98,
         metrics: { pe: 0, marketCap: 85000000000, revenueGrowth: 0.10, rsi: 72, trend: 'BULLISH', analystRating: 'Buy', analystTarget: 450, socialSentiment: 'Very Bullish' },
         reasons: ['Bitcoin Proxy Play', 'Aggressive Accumulation', 'High Beta']
     },
     {
-        symbol: 'LLY', name: 'Eli Lilly', price: 850.10, score: 82,
+        symbol: 'LLY', name: 'Eli Lilly', price: 850.10, score: 82, isMock: true,
         technicalScore: 80, fundamentalScore: 95, analystScore: 85, sentimentScore: 70,
         metrics: { pe: 105, marketCap: 800000000000, revenueGrowth: 0.28, rsi: 58, trend: 'BULLISH', analystRating: 'Strong Buy', analystTarget: 950, socialSentiment: 'Bullish' },
         reasons: ['Pharma Leader (Weight Loss)', 'Strong Moat', 'Defensive Growth']
     },
     {
-        symbol: 'TSLA', name: 'Tesla Inc', price: 350.50, score: 78,
+        symbol: 'TSLA', name: 'Tesla Inc', price: 350.50, score: 78, isMock: true,
         technicalScore: 85, fundamentalScore: 65, analystScore: 60, sentimentScore: 90,
         metrics: { pe: 85, marketCap: 1100000000000, revenueGrowth: 0.08, rsi: 62, trend: 'BULLISH', analystRating: 'Hold', analystTarget: 320, socialSentiment: 'Very Bullish' },
         reasons: ['Robotaxi Hype', 'Technical Breakout']

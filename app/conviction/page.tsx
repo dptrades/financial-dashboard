@@ -85,6 +85,12 @@ export default function ConvictionPage() {
                     </div>
                 )}
 
+                {stocks.length > 0 && stocks[0].isMock && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 p-3 rounded-lg mb-6 flex items-center gap-2 text-sm">
+                        ⚠️ <span className="font-bold">Demo Mode:</span> Live API limit reached. Showing historical example data.
+                    </div>
+                )}
+
                 {loading && stocks.length === 0 ? (
                     <div className="h-96 flex flex-col items-center justify-center space-y-4">
                         <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
