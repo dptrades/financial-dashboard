@@ -33,12 +33,20 @@ export interface ConvictionStock {
 }
 
 const CONVICTION_WATCHLIST = [
-    'NVDA', 'MSFT', 'META', 'AMZN', 'GOOGL', 'TSLA', 'AAPL', 'AMD', // Tech
-    'JPM', 'V', // Finance
-    'LLY', 'UNH', // Healthcare
-    'XOM', // Energy
-    'CAT', // Industrial
-    'COIN', 'MSTR' // Crypto Proxies
+    // Top Tech
+    'NVDA', 'MSFT', 'META', 'AMZN', 'GOOGL', 'TSLA', 'AAPL', 'AMD',
+    // Growth Momentum (Feb 2026)
+    'MU', 'CIEN', 'LUV', 'STX', 'CDE', 'AA', 'AU', 'CRWD', 'HWM', 'NGD',
+    // Finance
+    'JPM', 'V',
+    // Healthcare
+    'LLY', 'UNH',
+    // Energy
+    'XOM',
+    // Industrial
+    'CAT',
+    // Crypto Proxies
+    'COIN', 'MSTR'
 ];
 
 // Mock Data for Fallback (when API fails)
