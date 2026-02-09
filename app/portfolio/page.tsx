@@ -142,6 +142,24 @@ export default function PortfolioPage() {
         }
     };
 
+    const handleTestEmail = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch('/api/admin/test-email', { method: 'POST' });
+            const data = await response.json();
+
+            if (data.success) {
+                alert('Test email sent! Check your inbox.');
+            } else {
+                setError(data.error || 'Failed to send test email');
+            }
+        } catch (e) {
+            setError('Failed to trigger test email');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-900 text-white">
             {/* Header */}
@@ -157,6 +175,13 @@ export default function PortfolioPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleTestEmail}
+                            disabled={loading || executing}
+                            className="px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors"
+                        >
+                            Test Email
+                        </button>
                         <button
                             onClick={handleReset}
                             disabled={loading || executing}
