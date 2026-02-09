@@ -52,10 +52,10 @@ export async function scanConviction(): Promise<ConvictionStock[]> {
             // 1. Fetch Data (Parallel)
             // console.log(`Fetching data for ${symbol}...`);
             const [quote, ohlcv, socialNews] = await Promise.all([
-                yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }).catch(e => { console.error(`YF Quote Error ${symbol}:`, e.message); return null; }),
-                yahooFinance.chart(symbol, { period1: '3mo', interval: '1d' }).catch(e => { console.error(`YF Chart Error ${symbol}:`, e.message); return null; }),
-                fetchSocialSentiment(symbol).catch(e => { console.error(`Social Error ${symbol}:`, e); return []; })
-            ]) as [any, any, any];
+                (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }) as Promise<any>).catch(e => { console.error(`YF Quote Error ${symbol}:`, e.message); return null; }),
+                (yahooFinance.chart(symbol, { period1: '3mo', interval: '1d' }) as Promise<any>).catch(e => { console.error(`YF Chart Error ${symbol}:`, e.message); return null; }),
+                (fetchSocialSentiment(symbol) as Promise<any>).catch(e => { console.error(`Social Error ${symbol}:`, e); return []; })
+            ]);
 
             if (!quote) { console.warn(`Skipping ${symbol}: Missing Quote`); return null; }
             if (!ohlcv || !ohlcv.quotes || ohlcv.quotes.length < 50) { console.warn(`Skipping ${symbol}: Missing/Insufficient OHLCV`); return null; }

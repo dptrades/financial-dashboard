@@ -14,6 +14,8 @@ export default function ConvictionPage() {
     const [stockInput, setStockInput] = useState('NVDA');
     const [stats, setStats] = useState(null);
 
+    const [stocks, setStocks] = useState<ConvictionStock[]>([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     const fetchConviction = async () => {
