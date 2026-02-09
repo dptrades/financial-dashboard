@@ -58,7 +58,7 @@ export async function sendEmailAlert(payload: NotificationPayload): Promise<bool
                     <p style="font-size: 16px; color: #334155;">${payload.message}</p>
                     ${stocksHtml}
                     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-                        <a href="https://financial-dashboard-ten-sigma.vercel.app/conviction" 
+                        <a href="${env.baseUrl}/conviction" 
                            style="display: inline-block; padding: 12px 24px; background: #16a34a; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
                             View Alpha Hunter →
                         </a>

@@ -69,7 +69,7 @@ export const env = {
     get baseUrl() {
         return this.VERCEL_URL
             ? `https://${this.VERCEL_URL}`
-            : 'http://localhost:3000';
+            : 'https://dptradedesk.vercel.app';
     }
 } as const;
 
