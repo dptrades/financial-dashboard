@@ -214,6 +214,25 @@ export async function POST(request: Request) {
             }
         }
 
+        // Send email notification for executed trades
+        if (tradeResults.length > 0) {
+            const executedTrades = tradeResults.filter(t => t.status === 'submitted');
+
+            if (executedTrades.length > 0) {
+                const { sendEmailAlert } = await import('@/lib/notifications');
+
+                await sendEmailAlert({
+                    subject: `🚀 Executed ${executedTrades.length} Trades (Manual Trigger)`,
+                    message: `Successfully executed ${executedTrades.length} trades based on conviction scan.`,
+                    stocks: executedTrades.map(t => ({
+                        symbol: t.symbol,
+                        signal: 'BUY',
+                        strength: 100
+                    }))
+                });
+            }
+        }
+
         return NextResponse.json({
             success: true,
             timestamp: new Date().toISOString(),

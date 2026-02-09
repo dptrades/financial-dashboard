@@ -165,6 +165,25 @@ export async function GET(request: Request) {
             }
         }
 
+        // Send email notification for executed trades
+        if (tradeResults.length > 0) {
+            const executedTrades = tradeResults.filter(t => t.status === 'submitted');
+
+            if (executedTrades.length > 0) {
+                const { sendEmailAlert } = await import('@/lib/notifications');
+
+                await sendEmailAlert({
+                    subject: `🤖 Auto-Trade: Executed ${executedTrades.length} Trades`,
+                    message: `Daily auto-trade cycle completed. Executed ${executedTrades.length} trades based on conviction scan.`,
+                    stocks: executedTrades.map(t => ({
+                        symbol: t.symbol,
+                        signal: 'BUY',
+                        strength: 100
+                    }))
+                });
+            }
+        }
+
         console.log('[Cron Auto-Trade] Completed:', tradeResults);
 
         return NextResponse.json({
