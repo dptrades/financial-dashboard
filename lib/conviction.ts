@@ -3,6 +3,10 @@ const yahooFinance = new YahooFinance();
 import { calculateIndicators } from './indicators';
 import { fetchSocialSentiment, calculateSentimentScore } from './news';
 import { fetchAlpacaBars } from './alpaca';
+import { runSmartScan, DiscoveredStock } from './smart-scanner';
+
+// Enable dynamic stock discovery (scans market for unusual activity)
+const ENABLE_SMART_DISCOVERY = true;
 
 export interface ConvictionStock {
     symbol: string;
@@ -30,6 +34,9 @@ export interface ConvictionStock {
     };
 
     reasons: string[];
+
+    // Discovery source (if found by smart scanner)
+    discoverySource?: 'volume' | 'social' | 'news' | 'technical' | 'options' | null;
 }
 
 const CONVICTION_WATCHLIST = [
@@ -86,17 +93,42 @@ const MOCK_CONVICTION_DATA: ConvictionStock[] = [
 export async function scanConviction(): Promise<ConvictionStock[]> {
     const results: ConvictionStock[] = [];
 
-    // score weightings
-    const W_TECH = 0.35;
-    const W_FUND = 0.25;
-    const W_ANALYST = 0.20;
-    const W_SOCIAL = 0.20;
+    // Updated score weightings (now includes discovery bonus)
+    const W_TECH = 0.25;
+    const W_FUND = 0.20;
+    const W_ANALYST = 0.15;
+    const W_SOCIAL = 0.15;
+    const W_DISCOVERY = 0.25; // Bonus for smart discovery signals
 
     console.log("🚀 Starting Conviction Scan...");
     console.log("🔑 Alpaca Key Status:", process.env.ALPACA_API_KEY ? "Loaded ✅" : "Missing ❌");
 
+    // Build symbol list - combine static watchlist with dynamic discoveries
+    let symbolsToScan: string[] = [...CONVICTION_WATCHLIST];
+    let discoveryMap = new Map<string, DiscoveredStock>();
+
+    if (ENABLE_SMART_DISCOVERY) {
+        console.log("🔍 Running Smart Discovery scan...");
+        try {
+            const discoveries = await runSmartScan();
+            for (const d of discoveries) {
+                discoveryMap.set(d.symbol, d);
+                if (!symbolsToScan.includes(d.symbol)) {
+                    symbolsToScan.push(d.symbol);
+                }
+            }
+            console.log(`✨ Smart Discovery added ${discoveries.length} new candidates`);
+        } catch (e) {
+            console.error("Smart Discovery failed:", e);
+        }
+    }
+
+    // Limit total symbols to prevent timeout
+    symbolsToScan = symbolsToScan.slice(0, 35);
+    console.log(`📊 Total symbols to scan: ${symbolsToScan.length}`);
+
     // Sequential Loop to prevent Rate Limiting
-    for (const symbol of CONVICTION_WATCHLIST) {
+    for (const symbol of symbolsToScan) {
         try {
             await new Promise(r => setTimeout(r, 200)); // 200ms delay between requests
 
@@ -190,14 +222,23 @@ export async function scanConviction(): Promise<ConvictionStock[]> {
             // 5. Process Social
             const { score: socialScore, label: socialLabel } = calculateSentimentScore(socialNews);
 
+            // 6. Discovery Bonus (if stock was found by smart scanner)
+            const discovery = discoveryMap.get(symbol);
+            const discoveryScore = discovery ? discovery.strength : 0;
+            const discoverySource = discovery ? discovery.source : null;
 
-            // 6. TOTAL SCORE
+            // 7. TOTAL SCORE (with discovery bonus)
             const finalScore = (
-                (techScore * W_TECH) + (fundScore * W_FUND) + (analystScore * W_ANALYST) + (socialScore * W_SOCIAL)
+                (techScore * W_TECH) +
+                (fundScore * W_FUND) +
+                (analystScore * W_ANALYST) +
+                (socialScore * W_SOCIAL) +
+                (discoveryScore * W_DISCOVERY)
             );
 
             // Reasons
             const reasons: string[] = [];
+            if (discovery) reasons.push(`🔍 ${discovery.signal}`);
             if (trend === 'BULLISH') reasons.push("Strong Technical Uptrend");
             if (techScore > 70) reasons.push("Bullish Momentum (RSI)");
             if (fundScore > 70) reasons.push("Solid Fundamentals");
@@ -224,7 +265,8 @@ export async function scanConviction(): Promise<ConvictionStock[]> {
                     analystTarget: targetPrice,
                     socialSentiment: socialLabel
                 },
-                reasons
+                reasons,
+                discoverySource // Track how stock was discovered
             } as ConvictionStock);
 
         } catch (e) {
