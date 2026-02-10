@@ -177,22 +177,31 @@ const MOCK_ALPHA_HUNTER_DATA: ConvictionStock[] = [
 ];
 
 // Separate caches for each scan mode
+// Separate caches for each scan mode
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
-let megaCapCache: { data: ConvictionStock[], timestamp: number } | null = null;
-let alphaHunterCache: { data: ConvictionStock[], timestamp: number } | null = null;
+
+declare global {
+    var _megaCapCache: { data: ConvictionStock[], timestamp: number } | null;
+    var _alphaHunterCache: { data: ConvictionStock[], timestamp: number } | null;
+}
+
+// Initialize global cache if not exists
+if (!global._megaCapCache) global._megaCapCache = null;
+if (!global._alphaHunterCache) global._alphaHunterCache = null;
+
 let isScanning = false;
 
 export async function scanConviction(forceRefresh = false): Promise<ConvictionStock[]> {
     // Return cached data if valid
-    if (!forceRefresh && megaCapCache && (Date.now() - megaCapCache.timestamp < CACHE_TTL)) {
+    if (!forceRefresh && global._megaCapCache && (Date.now() - global._megaCapCache.timestamp < CACHE_TTL)) {
         console.log("⚡ Returning cached mega-cap conviction data");
-        return megaCapCache.data;
+        return global._megaCapCache.data;
     }
 
     // Prevent concurrent scans if one is already running (simple lock)
-    if (isScanning && !forceRefresh && megaCapCache) {
+    if (isScanning && !forceRefresh && global._megaCapCache) {
         console.log("⚠️ Scan in progress, returning stale mega-cap cache");
-        return megaCapCache.data;
+        return global._megaCapCache.data;
     }
 
     isScanning = true;
@@ -496,15 +505,15 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     const sorted = results.sort((a, b) => b.score - a.score);
 
     // Update Cache
-    megaCapCache = {
+    global._megaCapCache = {
         data: sorted,
         timestamp: Date.now()
     };
     isScanning = false;
 
     if (sorted.length === 0) {
-        console.warn("⚠️ No live data found. Returning Mock Data Fallback.");
-        return MOCK_CONVICTION_DATA;
+        console.warn("⚠️ No live data found (Alpha Hunter). Returning Mock Data Fallback.");
+        return MOCK_CONVICTION_DATA; // Or a separate mock set
     }
 
     return sorted;
@@ -513,15 +522,15 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
 // Alpha Hunter - Broader Market Scan with Smart Discovery
 export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionStock[]> {
     // Return cached data if valid
-    if (!forceRefresh && alphaHunterCache && (Date.now() - alphaHunterCache.timestamp < CACHE_TTL)) {
+    if (!forceRefresh && global._alphaHunterCache && (Date.now() - global._alphaHunterCache.timestamp < CACHE_TTL)) {
         console.log("⚡ Returning cached Alpha Hunter data");
-        return alphaHunterCache.data;
+        return global._alphaHunterCache.data;
     }
 
     // Prevent concurrent scans if one is already running (simple lock)
-    if (isScanning && !forceRefresh && alphaHunterCache) {
+    if (isScanning && !forceRefresh && global._alphaHunterCache) {
         console.log("⚠️ Scan in progress, returning stale Alpha Hunter cache");
-        return alphaHunterCache.data;
+        return global._alphaHunterCache.data;
     }
 
     isScanning = true;
@@ -796,7 +805,7 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
     const sorted = results.sort((a, b) => b.score - a.score);
 
     // Update Cache
-    alphaHunterCache = {
+    global._alphaHunterCache = {
         data: sorted,
         timestamp: Date.now()
     };

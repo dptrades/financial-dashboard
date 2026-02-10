@@ -23,7 +23,7 @@ export default function NewsFeed({ news, loading = false }: NewsFeedProps) {
                         <div key={i} className="h-24 bg-gray-800 rounded-lg animate-pulse"></div>
                     ))
                 ) : (
-                    news.map((item) => (
+                    news.slice(0, 6).map((item) => (
                         <a
                             key={item.id}
                             href={item.url}

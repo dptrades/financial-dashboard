@@ -86,17 +86,17 @@ export default function OptionsSignal({ data, loading }: OptionsSignalProps) {
             {/* === TRADE PLAN === */}
             {data.entryPrice && (
                 <div className="space-y-2 pt-3 border-t border-gray-700/50">
-                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Trade Plan</div>
+                    <div className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Trade Plan</div>
 
                     {/* Entry */}
                     <div className="flex items-center gap-2 bg-gray-900/50 rounded-lg p-2">
                         <Crosshair className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
                         <div className="flex-1">
-                            <div className="text-[9px] text-gray-500 uppercase">Entry</div>
+                            <div className="text-[11px] text-gray-300 uppercase font-semibold">Entry</div>
                             <div className="text-sm font-mono text-white font-bold">${data.entryPrice.toFixed(2)}</div>
                         </div>
                         {data.entryCondition && (
-                            <span className="text-[9px] text-gray-500 text-right max-w-[120px] leading-tight">{data.entryCondition}</span>
+                            <span className="text-[11px] text-gray-300 text-right max-w-[140px] leading-tight">{data.entryCondition}</span>
                         )}
                     </div>
 
@@ -105,14 +105,14 @@ export default function OptionsSignal({ data, loading }: OptionsSignalProps) {
                         <div className="flex-1 flex items-center gap-2 bg-red-950/30 rounded-lg p-2 border border-red-900/30">
                             <Shield className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
                             <div>
-                                <div className="text-[9px] text-red-400/70 uppercase">Stop Loss</div>
+                                <div className="text-[11px] text-red-400 uppercase font-semibold">Stop Loss</div>
                                 <div className="text-sm font-mono text-red-400 font-bold">${data.stopLoss?.toFixed(2)}</div>
                             </div>
                         </div>
                         {data.riskReward && (
                             <div className="flex items-center justify-center bg-gray-900/50 rounded-lg px-3 border border-gray-700/50">
                                 <div className="text-center">
-                                    <div className="text-[9px] text-gray-500 uppercase">R:R</div>
+                                    <div className="text-[11px] text-gray-300 uppercase font-semibold">R:R</div>
                                     <div className="text-sm font-mono text-yellow-400 font-bold">{data.riskReward}</div>
                                 </div>
                             </div>
@@ -124,14 +124,14 @@ export default function OptionsSignal({ data, loading }: OptionsSignalProps) {
                         <div className="flex-1 flex items-center gap-2 bg-green-950/30 rounded-lg p-2 border border-green-900/30">
                             <Target className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
                             <div>
-                                <div className="text-[9px] text-green-400/70 uppercase">TP1 (1x ATR)</div>
+                                <div className="text-[11px] text-green-400 uppercase font-semibold">TP1 (2x Risk)</div>
                                 <div className="text-sm font-mono text-green-400 font-bold">${data.takeProfit1?.toFixed(2)}</div>
                             </div>
                         </div>
                         <div className="flex-1 flex items-center gap-2 bg-emerald-950/30 rounded-lg p-2 border border-emerald-900/30">
                             <Target className="w-3.5 h-3.5 text-emerald-300 flex-shrink-0" />
                             <div>
-                                <div className="text-[9px] text-emerald-300/70 uppercase">TP2 (2x ATR)</div>
+                                <div className="text-[11px] text-emerald-300 uppercase font-semibold">TP2 (3x Risk)</div>
                                 <div className="text-sm font-mono text-emerald-300 font-bold">${data.takeProfit2?.toFixed(2)}</div>
                             </div>
                         </div>
@@ -140,8 +140,8 @@ export default function OptionsSignal({ data, loading }: OptionsSignalProps) {
                     {/* Max Loss Note */}
                     {data.maxLoss && (
                         <div className="flex items-start gap-1.5 pt-1">
-                            <AlertCircle className="w-3 h-3 text-gray-600 mt-0.5 flex-shrink-0" />
-                            <p className="text-[9px] text-gray-600 leading-tight">
+                            <AlertCircle className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                            <p className="text-[11px] text-gray-400 leading-tight">
                                 Max loss: {data.maxLoss}. {data.reason}.
                             </p>
                         </div>

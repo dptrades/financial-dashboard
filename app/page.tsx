@@ -7,7 +7,7 @@ import { fetchStockNews, fetchSocialSentiment, fetchAnalystRatings, NewsItem } f
 import { OHLCVData, IndicatorData } from '../types/financial';
 import { calculateIndicators } from '../lib/indicators';
 import { calculatePriceStats, PriceStats } from '../lib/stats';
-import { generateTechnicalSummary } from '../lib/ai-summary';
+
 import { detectPatterns } from '../lib/patterns';
 // import PriceChart from '../components/PriceChart'; // Removed
 import Sidebar from '../components/Sidebar';
@@ -20,7 +20,7 @@ import HeaderSentiment from '../components/HeaderSentiment';
 import HeaderSignals from '../components/HeaderSignals';
 import HeaderPattern from '../components/HeaderPattern';
 import HeaderAnalyst from '../components/HeaderAnalyst';
-import AISummaryCard from '../components/AISummaryCard';
+
 import NewsFeed from '../components/NewsFeed';
 import LivePriceDisplay from '../components/LivePriceDisplay';
 import { Loading } from '@/components/ui/Loading';
@@ -49,10 +49,7 @@ export default function Dashboard() {
   const [viewScope, setViewScope] = useState(365);
 
   // Derived Summary & Sentiment
-  const aiSummary = useMemo(() => {
-    if (data.length === 0) return '';
-    return generateTechnicalSummary(data, market === 'crypto' ? symbol : debouncedStock);
-  }, [data, symbol, debouncedStock, market]);
+
 
   const sentimentScore = useMemo(() => {
     if (!news.length) return 50;
@@ -143,15 +140,14 @@ export default function Dashboard() {
             if (latest.rsi14 < 30 && trend === 'bearish') trend = 'neutral'; // Oversold
           }
 
-          // Fetch News & Social & Analyst Concurrent
-          const [newsItems, socialItems, analystItems] = await Promise.all([
+          // Fetch News & Analyst Concurrent
+          const [newsItems, analystItems] = await Promise.all([
             fetchStockNews(targetSymbol, trend),
-            fetchSocialSentiment(targetSymbol),
             fetchAnalystRatings(targetSymbol)
           ]);
 
           if (!ignore) {
-            setNews([...newsItems, ...socialItems].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()));
+            setNews(newsItems);
             setAnalystData(analystItems);
           }
         }
@@ -167,18 +163,8 @@ export default function Dashboard() {
 
     loadData();
 
-    // 60s Auto-Refresh
-    const timer = setInterval(() => {
-      // Only refresh if tab is visible (optional optimization, but good practice)
-      if (!document.hidden && !ignore) {
-        console.log('Auto-refreshing chart data...');
-        loadData();
-      }
-    }, 60000);
-
     return () => {
       ignore = true;
-      clearInterval(timer);
     };
   }, [symbol, debouncedStock, market, interval]);
 
@@ -371,10 +357,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* ROW 4: AI Insight - BELOW Whale */}
-            <div>
-              <AISummaryCard symbol={market === 'crypto' ? symbol : debouncedStock} summary={aiSummary} loading={loading} />
-            </div>
+
 
             {/* ROW 5: Live News - BELOW AI Insight */}
             <div>
