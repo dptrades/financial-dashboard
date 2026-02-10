@@ -4,7 +4,7 @@ import { sendAlerts } from '@/lib/notifications';
 
 /**
  * Pre-Market Daily Scan
- * Runs at 6:00 AM ET to discover high-potential stocks before market open
+ * Runs at 9:00 AM ET to discover high-potential stocks before market open
  */
 
 // In-memory cache for discoveries (refreshed daily)
