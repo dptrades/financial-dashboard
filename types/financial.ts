@@ -33,6 +33,7 @@ export interface IndicatorData extends OHLCVData {
 
   vwap?: number;
   atr14?: number;
+  adx14?: number;
 
   pattern?: {
     name: 'Doji' | 'Hammer' | 'Shooting Star' | 'Bullish Engulfing' | 'Bearish Engulfing' | 'None';

@@ -5,11 +5,14 @@ import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, TrendingUp, DollarSign, Calendar, ArrowRight } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import type { ConvictionStock } from '@/types/stock';
+import ConvictionDetailModal from '@/components/ConvictionDetailModal';
+
+import { useRouter } from 'next/navigation';
 
 export default function TopPicksPage() {
+    const router = useRouter();
     const [picks, setPicks] = useState<ConvictionStock[]>([]);
     const [loading, setLoading] = useState(true);
-    const [expandedStock, setExpandedStock] = useState<string | null>(null);
 
     useEffect(() => {
         const runScan = async () => {
@@ -28,6 +31,11 @@ export default function TopPicksPage() {
 
         runScan();
     }, []);
+
+    const handleSelect = (symbol: string) => {
+        // Navigate to dashboard with this symbol
+        router.push(`/?symbol=${symbol}&market=stocks`);
+    };
 
     return (
         <div className="flex h-screen bg-gray-900 text-white font-sans">
@@ -67,10 +75,12 @@ export default function TopPicksPage() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
                             {picks.map((pick, index) => {
-                                const isExpanded = expandedStock === pick.symbol;
-
                                 return (
-                                    <div key={pick.symbol} className="bg-gray-800 rounded-xl border border-gray-700 hover:border-blue-500 transition-colors shadow-lg relative overflow-hidden group">
+                                    <div
+                                        key={pick.symbol}
+                                        onClick={() => handleSelect(pick.symbol)}
+                                        className="bg-gray-800 rounded-xl border border-gray-700 hover:border-blue-500 transition-all shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
+                                    >
                                         {/* Rank Badge */}
                                         <div className="absolute top-0 right-0 bg-gray-700 text-gray-300 text-xs font-bold px-3 py-1 rounded-bl-xl border-b border-l border-gray-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                             #{index + 1}
@@ -79,9 +89,7 @@ export default function TopPicksPage() {
                                         <div className="p-5">
                                             <div className="flex justify-between items-start mb-4">
                                                 <div>
-                                                    <Link href={`/?symbol=${pick.symbol}&market=stocks`} className="hover:underline cursor-pointer">
-                                                        <h3 className="text-2xl font-bold text-white tracking-tight hover:text-blue-400 transition-colors">{pick.symbol}</h3>
-                                                    </Link>
+                                                    <h3 className="text-2xl font-bold text-white tracking-tight group-hover:text-blue-400 transition-colors">{pick.symbol}</h3>
                                                     <p className="text-xs text-gray-400 mb-1 truncate max-w-[140px]">{pick.name}</p>
                                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${pick.metrics.trend === 'BULLISH' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
                                                         {pick.metrics.trend}
@@ -143,9 +151,14 @@ export default function TopPicksPage() {
                                                 </div>
                                                 <div className="text-right">
                                                     <span className="text-gray-500 block mb-1">Volume</span>
-                                                    <span className="font-mono text-white">
+                                                    <span className="font-mono text-white block">
                                                         {(pick.volume / 1000000).toFixed(1)}M
                                                     </span>
+                                                    {pick.volumeDiff !== undefined && (
+                                                        <span className={`text-[10px] font-bold ${pick.volumeDiff > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                            {pick.volumeDiff > 0 ? '+' : ''}{Math.round(pick.volumeDiff)}% vs 1y
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

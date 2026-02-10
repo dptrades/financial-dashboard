@@ -5,9 +5,10 @@ import { TrendingUp, Users, BarChart3, PieChart, Info } from 'lucide-react';
 
 interface Props {
     stock: ConvictionStock;
+    onSelect?: (symbol: string) => void;
 }
 
-export default function ConvictionCard({ stock }: Props) {
+export default function ConvictionCard({ stock, onSelect }: Props) {
     // Color coding for score
     const getScoreColor = (s: number) => {
         if (s >= 80) return 'text-green-400';
@@ -24,7 +25,10 @@ export default function ConvictionCard({ stock }: Props) {
     };
 
     return (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 hover:border-gray-500 transition-all shadow-lg">
+        <div
+            onClick={() => onSelect && onSelect(stock.symbol)}
+            className="bg-gray-800 border border-gray-700 rounded-xl p-5 hover:border-gray-500 transition-all shadow-lg cursor-pointer transform hover:-translate-y-1"
+        >
             {/* Header */}
             <div className="flex justify-between items-start mb-4">
                 <div>
@@ -80,6 +84,17 @@ export default function ConvictionCard({ stock }: Props) {
                 <div className="flex justify-between">
                     <span className="text-gray-500">Analyst View</span>
                     <span className="text-blue-300 font-bold">{stock.metrics.analystRating}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-gray-500">Volume</span>
+                    <div className="text-right">
+                        <span className="text-white font-mono block">{(stock.volume / 1000000).toFixed(1)}M</span>
+                        {stock.volumeDiff !== undefined && (
+                            <span className={`text-[10px] font-bold block ${stock.volumeDiff > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {stock.volumeDiff > 0 ? '+' : ''}{Math.round(stock.volumeDiff)}% vs 1y
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
 

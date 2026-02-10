@@ -165,60 +165,11 @@ export default function Sidebar({
                 </Link>
             </nav>
 
-            {/* Controls - Only show on Dashboard page */}
-            {currentPage === 'dashboard' && (
-                <div className="space-y-4 pt-4 border-t border-gray-700 px-4">
-                    {/* Market and Asset sections moved to header */}
-
-                    {/* Options AI Signal */}
-                    <div className="mb-6">
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">AI Options Pick</label>
-                            <span className="text-[10px] text-gray-600 bg-gray-800 px-1.5 rounded border border-gray-700">BETA</span>
-                        </div>
-                        <OptionsSignal data={optionsSignal} loading={loading} />
-                    </div>
-
-                    {/* Stats Carousel (High/Low) */}
-                    <div className="mb-4">
-                        <label className="block text-xs font-semibold mb-2 text-gray-400 uppercase tracking-wider">Price Stats</label>
-                        <StatsCarousel stats={stats} />
-                    </div>
-
-                    {/* Whale Watch (Stocks Only) */}
-                    {market === 'stocks' && (
-                        <div className="mb-6">
-                            <WhaleWatch symbol={debouncedStock || stockInput} />
-                        </div>
-                    )}
-
-
-
-                    {/* Interval Selector */}
-                    {setInterval && (
-                        <div>
-                            <label className="block text-xs font-semibold mb-2 text-gray-400 uppercase tracking-wider">Timeframe</label>
-                            <div className="grid grid-cols-4 gap-1 p-1 bg-gray-900 rounded-lg border border-gray-700">
-                                {['15m', '1h', '4h', '1d'].map(tf => (
-                                    <button
-                                        key={tf}
-                                        onClick={() => setInterval(tf)}
-                                        className={`text-[10px] font-bold py-1.5 rounded ${interval === tf ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
-                                    >
-                                        {tf.toUpperCase()}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
+            {/* Market Internals (Market Pulse) - Below Navigation */}
+            <SidebarInternals />
 
             {/* Space Filler */}
             <div className="flex-1"></div>
-
-            {/* Market Internals (Sidebar Widget) */}
-            <SidebarInternals />
         </aside>
     );
 }

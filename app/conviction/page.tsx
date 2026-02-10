@@ -1,15 +1,16 @@
 "use client";
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import ConvictionCard from '../../components/ConvictionCard';
 import type { ConvictionStock } from '../../types/stock';
-import { useSearchParams } from 'next/navigation';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { Loading } from '../../components/ui/Loading';
 import { ErrorMessage } from '../../components/ui/ErrorMessage';
 
 export default function ConvictionPage() {
+    const router = useRouter();
     // Sidebar Props (Standardized)
     const [market, setMarket] = useState<'stocks' | 'crypto'>('stocks');
     const [symbol, setSymbol] = useState('BTC');
@@ -46,6 +47,11 @@ export default function ConvictionPage() {
     useEffect(() => {
         fetchConviction();
     }, []);
+
+    const handleSelect = (symbol: string) => {
+        // Navigate to dashboard with this symbol
+        router.push(`/?symbol=${symbol}&market=stocks`);
+    };
 
     return (
         <div className="flex h-screen bg-gray-900 text-white font-sans overflow-hidden">
@@ -105,7 +111,11 @@ export default function ConvictionPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
                         {stocks.map((stock) => (
-                            <ConvictionCard key={stock.symbol} stock={stock} />
+                            <ConvictionCard
+                                key={stock.symbol}
+                                stock={stock}
+                                onSelect={(s) => handleSelect(s)}
+                            />
                         ))}
                     </div>
                 )}

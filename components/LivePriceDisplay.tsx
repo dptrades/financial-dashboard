@@ -7,6 +7,7 @@ interface LivePriceDisplayProps {
     symbol: string;
     fallbackPrice?: number;
     enabled?: boolean;
+    showChange?: boolean;
 }
 
 interface PriceData {
@@ -15,7 +16,7 @@ interface PriceData {
     changePercent: number;
 }
 
-export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true }: LivePriceDisplayProps) {
+export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true, showChange = false }: LivePriceDisplayProps) {
     const [priceData, setPriceData] = useState<PriceData | null>(null);
     const [isLive, setIsLive] = useState(false);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -92,15 +93,15 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
             {/* Price */}
             <span
                 className={`text-2xl font-bold transition-colors duration-300 ${priceFlash === 'up' ? 'text-green-400' :
-                        priceFlash === 'down' ? 'text-red-400' :
-                            'text-white'
+                    priceFlash === 'down' ? 'text-red-400' :
+                        'text-white'
                     }`}
             >
                 ${displayPrice.toFixed(2)}
             </span>
 
             {/* Change */}
-            {isLive && (
+            {(isLive || showChange) && (
                 <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md ${isPositive ? 'bg-green-500/10' : 'bg-red-500/10'
                     }`}>
                     {isPositive ? (

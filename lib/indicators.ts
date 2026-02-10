@@ -1,5 +1,5 @@
 import { OHLCVData, IndicatorData } from '../types/financial';
-import { EMA, RSI, VWAP, MACD, BollingerBands } from 'technicalindicators';
+import { EMA, RSI, VWAP, MACD, BollingerBands, ADX } from 'technicalindicators';
 
 export const calculateIndicators = (data: OHLCVData[]): IndicatorData[] => {
     // Extract arrays for technicalindicators
@@ -89,8 +89,25 @@ export const calculateIndicators = (data: OHLCVData[]): IndicatorData[] => {
         atrs.push(sum / 14);
     }
 
+    // -------------------------------------------------------------------------
+    // 3. ADX CALCULATION
+    // -------------------------------------------------------------------------
+    const adxInput = {
+        high: highs,
+        low: lows,
+        close: closes,
+        period: 14
+    };
+    const adx = ADX.calculate(adxInput);
+
     results.forEach((d, i) => {
         d.atr14 = atrs[i];
+        // ADX result is an object { adx: number, pdi: number, mdi: number }
+        // We need to handle the offset (usually period * 2 or similar depending on library)
+        // For technicalindicators, result array length is usually len - period + 1
+        // Let's safe map it
+        const adxVal = i >= (14) ? adx[i - 14] : undefined;
+        d.adx14 = adxVal?.adx;
     });
 
     return results;

@@ -1,7 +1,8 @@
 import YahooFinance from 'yahoo-finance2';
 const yahooFinance = new YahooFinance();
 import { calculateIndicators } from './indicators';
-import { fetchSocialSentiment, calculateSentimentScore } from './news';
+import { calculateSentimentScore } from './news';
+import { getNewsData } from './news-service';
 import { fetchAlpacaBars } from './alpaca';
 import { runSmartScan, DiscoveredStock } from './smart-scanner';
 import { SECTOR_MAP, SCANNER_WATCHLIST } from './constants';
@@ -239,9 +240,9 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                 console.log(`[Conviction] Fetching data for ${symbol}...`);
                 const [quote, yahooChart, alpacaBars, socialNews] = await Promise.all([
                     (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
-                    (yahooFinance.chart(symbol, { period1: '3mo', interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
-                    fetchAlpacaBars(symbol, '1Day', 253).then(b => { return b; }),
-                    (fetchSocialSentiment(symbol) as Promise<any>).catch(e => [])
+                    (yahooFinance.chart(symbol, { period1: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
+                    (fetchAlpacaBars(symbol, '1Day', 253).then(b => { return b; })),
+                    (getNewsData(symbol, 'social') as Promise<any>).catch(e => [])
                 ]);
 
                 // DECISION: Use Alpaca if available, else fallback to Yahoo
@@ -277,13 +278,42 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                 const rsi = latest.rsi14 || 50;
 
                 if (latest.close > (latest.ema50 || 0) && (latest.ema50 || 0) > (latest.ema200 || 0)) {
-                    techScore += 20; trend = 'BULLISH';
+                    techScore += 15; trend = 'BULLISH';
                 } else if (latest.close < (latest.ema50 || 0)) {
-                    techScore -= 20; trend = 'BEARISH';
+                    techScore -= 15; trend = 'BEARISH';
                 }
-                if (rsi > 50 && rsi < 70) techScore += 10;
-                if (rsi < 30) techScore += 15;
+                if (rsi > 50 && rsi < 70) techScore += 5;
+                if (rsi < 30) techScore += 10;
                 if (rsi > 80) techScore -= 10;
+
+                // MACD Logic
+                let macdSignal: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = 'NEUTRAL';
+                if (latest.macd && latest.macd.MACD !== undefined && latest.macd.signal !== undefined) {
+                    if (latest.macd.MACD > latest.macd.signal) {
+                        techScore += 10;
+                        macdSignal = 'BULLISH';
+                    } else {
+                        techScore -= 5;
+                        macdSignal = 'BEARISH';
+                    }
+                }
+
+                // Bollinger Logic
+                let bollingerState = 'Neutral';
+                if (latest.bollinger && latest.bollinger.upper && latest.bollinger.lower && latest.bollinger.middle) {
+                    const bandwidth = (latest.bollinger.upper - latest.bollinger.lower) / latest.bollinger.middle;
+                    // Expansion check: if price is near upper band
+                    if (latest.close > latest.bollinger.middle && latest.close < latest.bollinger.upper) {
+                        techScore += 5;
+                        bollingerState = 'Uptrend';
+                    }
+                    // Breakout
+                    if (latest.close > latest.bollinger.upper) {
+                        techScore += 10; // Momentum breakout
+                        bollingerState = 'Breakout';
+                    }
+                }
+
                 techScore = Math.max(0, Math.min(100, techScore));
 
 
@@ -339,23 +369,48 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                     (discoveryScore * W_DISCOVERY)
                 );
 
-                // Calculate 24h Change and Volume
+                // Calculate 24h Change and Volume Analysis
                 let change24h = 0;
                 let volume = 0;
+                let volumeAvg1y = 0;
+                let volumeDiff = 0;
+
+                // Helper to calc avg volume
+                const calcVolStats = (data: any[]) => {
+                    if (data.length < 10) return { avg: 0, diff: 0 };
+                    // Use up to last 252 bars (approx 1 year)
+                    const lookback = data.slice(-252);
+                    const sum = lookback.reduce((acc, val) => acc + (val.volume || 0), 0);
+                    const avg = sum / lookback.length;
+                    const lastVol = data[data.length - 1].volume || 0;
+                    const diff = avg > 0 ? ((lastVol - avg) / avg) * 100 : 0;
+                    return { avg, diff };
+                };
 
                 if (usingAlpaca && cleanData.length > 1) {
                     const last = cleanData[cleanData.length - 1];
                     const prev = cleanData[cleanData.length - 2];
                     change24h = ((last.close - prev.close) / prev.close) * 100;
                     volume = last.volume;
+                    const stats = calcVolStats(cleanData);
+                    volumeAvg1y = stats.avg;
+                    volumeDiff = stats.diff;
                 } else if (quote?.price) {
-                    change24h = (quote.price.regularMarketChangePercent || 0) * 100; // Yahoo returns 0.05 for 5%
+                    change24h = (quote.price.regularMarketChangePercent || 0) * 100;
                     volume = quote.price.regularMarketVolume || 0;
+                    if (cleanData.length > 1) {
+                        const stats = calcVolStats(cleanData);
+                        volumeAvg1y = stats.avg;
+                        volumeDiff = stats.diff;
+                    }
                 } else if (cleanData.length > 1) {
                     const last = cleanData[cleanData.length - 1];
                     const prev = cleanData[cleanData.length - 2];
                     change24h = ((last.close - prev.close) / prev.close) * 100;
                     volume = last.volume;
+                    const stats = calcVolStats(cleanData);
+                    volumeAvg1y = stats.avg;
+                    volumeDiff = stats.diff;
                 }
 
                 // Reasons
@@ -366,6 +421,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                 if (fundScore > 70) reasons.push("Solid Fundamentals");
                 if (analystScore > 80) reasons.push(`Analyst Consensus: ${ratingText}`);
                 if (socialScore > 75) reasons.push("High Social Interest");
+                if (volumeDiff > 50) reasons.push(`High Volume (+${Math.round(volumeDiff)}%)`);
 
                 // Generate Option Signal
                 // Use ATR if available, else 2% proxy
@@ -402,6 +458,8 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                     discoverySource,
                     change24h,
                     volume,
+                    volumeAvg1y,
+                    volumeDiff,
                     sector: SECTOR_MAP[symbol] || 'Other',
                     suggestedOption: optionSignal
                 } as ConvictionStock;
@@ -510,9 +568,9 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                 console.log(`[Alpha Hunter] Fetching data for ${symbol}...`);
                 const [quote, yahooChart, alpacaBars, socialNews] = await Promise.all([
                     (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
-                    (yahooFinance.chart(symbol, { period1: '3mo', interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
-                    fetchAlpacaBars(symbol, '1Day', 253).then(b => { return b; }),
-                    (fetchSocialSentiment(symbol) as Promise<any>).catch(e => [])
+                    (yahooFinance.chart(symbol, { period1: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
+                    (fetchAlpacaBars(symbol, '1Day', 253).then(b => { return b; })),
+                    (getNewsData(symbol, 'social') as Promise<any>).catch(e => [])
                 ]);
 
                 // DECISION: Use Alpaca if available, else fallback to Yahoo
@@ -610,23 +668,49 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                     (discoveryScore * W_DISCOVERY)
                 );
 
-                // Calculate 24h Change and Volume
+                // Calculate 24h Change and Volume Analysis
                 let change24h = 0;
                 let volume = 0;
+                let volumeAvg1y = 0;
+                let volumeDiff = 0;
+
+                // Helper to calc avg volume
+                const calcVolStats = (data: any[]) => {
+                    if (data.length < 10) return { avg: 0, diff: 0 };
+                    // Use up to last 252 bars (approx 1 year)
+                    const lookback = data.slice(-252);
+                    const sum = lookback.reduce((acc, val) => acc + (val.volume || 0), 0);
+                    const avg = sum / lookback.length;
+                    const lastVol = data[data.length - 1].volume || 0;
+                    const diff = avg > 0 ? ((lastVol - avg) / avg) * 100 : 0;
+                    return { avg, diff };
+                };
 
                 if (usingAlpaca && cleanData.length > 1) {
                     const last = cleanData[cleanData.length - 1];
                     const prev = cleanData[cleanData.length - 2];
                     change24h = ((last.close - prev.close) / prev.close) * 100;
                     volume = last.volume;
+                    const stats = calcVolStats(cleanData);
+                    volumeAvg1y = stats.avg;
+                    volumeDiff = stats.diff;
                 } else if (quote?.price) {
-                    change24h = (quote.price.regularMarketChangePercent || 0) * 100; // Yahoo returns 0.05 for 5%
+                    change24h = (quote.price.regularMarketChangePercent || 0) * 100;
                     volume = quote.price.regularMarketVolume || 0;
+                    // If we have chart data from Yahoo, use it for stats
+                    if (cleanData.length > 1) {
+                        const stats = calcVolStats(cleanData);
+                        volumeAvg1y = stats.avg;
+                        volumeDiff = stats.diff;
+                    }
                 } else if (cleanData.length > 1) {
                     const last = cleanData[cleanData.length - 1];
                     const prev = cleanData[cleanData.length - 2];
                     change24h = ((last.close - prev.close) / prev.close) * 100;
                     volume = last.volume;
+                    const stats = calcVolStats(cleanData);
+                    volumeAvg1y = stats.avg;
+                    volumeDiff = stats.diff;
                 }
 
                 // Reasons
@@ -637,6 +721,7 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                 if (fundScore > 70) reasons.push("Solid Fundamentals");
                 if (analystScore > 80) reasons.push(`Analyst Consensus: ${ratingText}`);
                 if (socialScore > 75) reasons.push("High Social Interest");
+                if (volumeDiff > 50) reasons.push(`High Volume (+${Math.round(volumeDiff)}%)`);
 
                 // Generate Option Signal
                 // Use ATR if available, else 2% proxy
@@ -673,6 +758,8 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                     discoverySource,
                     change24h,
                     volume,
+                    volumeAvg1y,
+                    volumeDiff,
                     sector: SECTOR_MAP[symbol] || 'Other',
                     suggestedOption: optionSignal
                 } as ConvictionStock;

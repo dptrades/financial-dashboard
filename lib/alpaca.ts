@@ -24,15 +24,24 @@ export async function fetchAlpacaBars(symbol: string, timeframe: '1Day' | '1Hour
     try {
         // Correct Logic: Request a time window, but ensure API limit is high enough to capture ALL bars in that window.
         // We want the LATEST 'limit' bars.
-        // 1. Set start date 'limit * 2' days ago (safe buffer for holidays/weekends).
-        const daysBack = limit * 2 + 10;
+
+        // Estimate bars per day based on timeframe to calculate a reasonable start date
+        let barsPerDay = 1;
+        if (timeframe === '1Hour') barsPerDay = 7; // 9:30 - 4:00
+        else if (timeframe === '15Min') barsPerDay = 26;
+        else if (timeframe === '10Min' as any) barsPerDay = 39;
+        else if (timeframe === '1Week' as any) barsPerDay = 0.2; // 1 bar per week
+
+        // Calculate days back needed ~ (limit / barsPerDay) * 1.5 (reduced from 2.5 to avoid hitting data gaps in sparse feeds like IEX)
+        // Example: 500 1h bars -> 500/7 = 71 days -> *1.5 = 106 days back.
+        const daysBack = Math.ceil((limit / barsPerDay) * 1.5) + 5;
+
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - daysBack);
         const startIso = startDate.toISOString();
 
-        // 2. Request limit * 5 bars (overhead) to ensure we don't truncate the end (today).
-        // Alpaca max is usually 10k, we just need to exceed the number of trading days in 'daysBack'.
-        // daysBack is ~ limit*2. Trading days ~ limit*1.4. So requesting limit*2 is safe.
+        // 2. Request limit * 2 (buffer) to ensure we cover the period.
+        // We just need enough to return 'limit' bars at the end.
         const apiLimit = Math.min(10000, limit * 5);
 
         const url = `${DATA_URL}/stocks/${symbol}/bars?timeframe=${timeframe}&limit=${apiLimit}&start=${startIso}&adjustment=raw&feed=iex`;

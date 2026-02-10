@@ -15,9 +15,10 @@ interface WhaleAlert {
 
 interface WhaleWatchProps {
     symbol: string;
+    layout?: 'vertical' | 'horizontal';
 }
 
-export default function WhaleWatch({ symbol }: WhaleWatchProps) {
+export default function WhaleWatch({ symbol, layout = 'vertical' }: WhaleWatchProps) {
     const [alerts, setAlerts] = useState<WhaleAlert[]>([]);
     const [spotPrice, setSpotPrice] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
@@ -46,7 +47,7 @@ export default function WhaleWatch({ symbol }: WhaleWatchProps) {
     }, [symbol]);
 
     return (
-        <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
+        <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700 overflow-hidden">
             <div className="flex items-center justify-between mb-3">
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2">
@@ -62,14 +63,14 @@ export default function WhaleWatch({ symbol }: WhaleWatchProps) {
                 {loading && <Activity className="w-3 h-3 text-gray-500 animate-spin" />}
             </div>
 
-            <div className="space-y-2">
+            <div className={layout === 'horizontal' ? "flex gap-2 overflow-x-auto custom-scrollbar pb-2" : "space-y-2"}>
                 {alerts.length === 0 && !loading ? (
-                    <div className="text-center py-4">
+                    <div className="text-center py-4 w-full">
                         <span className="text-[10px] text-gray-500">No unusual activity.</span>
                     </div>
                 ) : (
                     alerts.map((alert, i) => (
-                        <div key={i} className="flex flex-col bg-gray-900/50 p-2 rounded border border-gray-800">
+                        <div key={i} className={`flex flex-col bg-gray-900/50 p-2 rounded border border-gray-800 ${layout === 'horizontal' ? 'min-w-[200px]' : ''}`}>
                             {/* Top Row: Strike & Type */}
                             <div className="flex justify-between items-center mb-1">
                                 <div className="flex items-center gap-2">
@@ -87,7 +88,7 @@ export default function WhaleWatch({ symbol }: WhaleWatchProps) {
 
                             {/* Middle Row: Reason */}
                             <div className="flex items-center gap-1 mb-2">
-                                <span className="text-[9px] uppercase tracking-wide text-gray-500 font-semibold">
+                                <span className="text-[9px] uppercase tracking-wide text-gray-500 font-semibold truncate">
                                     {alert.reason}
                                 </span>
                             </div>

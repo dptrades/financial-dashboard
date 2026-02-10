@@ -38,7 +38,11 @@ export interface ConvictionStock {
         pe?: number;
         marketCap?: number;
         revenueGrowth?: number; // YoY
+        pegRatio?: number; // Added
+        debtToEquity?: number; // Added
         rsi: number;
+        macd?: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; // Added
+        bollingerState?: string; // Added (e.g. "Squeeze", "Expansion")
         trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
         analystRating?: string; // "Strong Buy", etc.
         analystTarget?: number;
@@ -53,6 +57,8 @@ export interface ConvictionStock {
     // Market Data
     change24h: number; // Percentage
     volume: number;
+    volumeAvg1y?: number; // 1-year average volume
+    volumeDiff?: number; // % difference from 1-year average
     sector?: string;
     suggestedOption?: OptionRecommendation;
 }

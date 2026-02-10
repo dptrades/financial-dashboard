@@ -9,8 +9,13 @@ import { calculateIndicators } from '../lib/indicators';
 import { calculatePriceStats, PriceStats } from '../lib/stats';
 import { generateTechnicalSummary } from '../lib/ai-summary';
 import { detectPatterns } from '../lib/patterns';
-import PriceChart from '../components/PriceChart';
+// import PriceChart from '../components/PriceChart'; // Removed
 import Sidebar from '../components/Sidebar';
+import HighlightStats from '../components/HighlightStats';
+import WhaleWatch from '../components/WhaleWatch';
+import OptionsSignal from '../components/OptionsSignal';
+import DeepDiveContent from '../components/DeepDiveContent';
+import { generateOptionSignal } from '../lib/options';
 import HeaderSentiment from '../components/HeaderSentiment';
 import HeaderSignals from '../components/HeaderSignals';
 import HeaderPattern from '../components/HeaderPattern';
@@ -207,6 +212,12 @@ export default function Dashboard() {
     else if (latest.close < latest.ema50) currentTrend = 'bearish';
   }
 
+  // Calculate Options Signal for Dashboard Widget
+  let optionsSignal = null;
+  if (latest && stats && latest.atr14) {
+    optionsSignal = generateOptionSignal(latest.close, latest.atr14, currentTrend, latest.rsi14 || 50, latest.ema50);
+  }
+
   return (
     <div className="flex h-screen bg-gray-900 text-white font-sans">
       <Sidebar
@@ -228,25 +239,26 @@ export default function Dashboard() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 flex flex-col overflow-y-auto w-full pt-16 md:pt-6"> {/* Added pt-16 for mobile toggle space */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
-          <div className="flex flex-col md:flex-row items-start md:items-end gap-2 md:gap-6 w-full">
-            <div>
-              {/* Editable Ticker Input */}
+      <main className="flex-1 p-4 md:p-6 flex flex-col overflow-y-auto w-full pt-16 md:pt-6">
+        <header className="flex flex-col gap-4 mb-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* LEFT: Ticker, Price, Sentiment */}
+            <div className="flex flex-wrap items-center gap-4 md:gap-8 w-full md:w-auto">
+              {/* 1. Ticker Selector */}
               <div className="flex items-center gap-2">
                 {market === 'crypto' ? (
                   <select
                     value={symbol}
                     onChange={(e) => setSymbol(e.target.value)}
-                    className="text-2xl md:text-3xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none focus:border-blue-400 text-white py-1 tracking-tight"
+                    className="text-3xl md:text-4xl font-black bg-transparent border-none focus:outline-none text-white tracking-tighter"
                     disabled={loading}
                   >
-                    <option value="BTC" className="bg-gray-900">BTC / USD</option>
-                    <option value="ETH" className="bg-gray-900">ETH / USD</option>
-                    <option value="SOL" className="bg-gray-900">SOL / USD</option>
+                    <option value="BTC" className="bg-gray-900">BTC</option>
+                    <option value="ETH" className="bg-gray-900">ETH</option>
+                    <option value="SOL" className="bg-gray-900">SOL</option>
                   </select>
                 ) : (
-                  <div className="relative">
+                  <div className="relative group">
                     <input
                       type="text"
                       value={stockInput}
@@ -256,96 +268,121 @@ export default function Dashboard() {
                           setDebouncedStock(stockInput.trim());
                         }
                       }}
-                      className="text-2xl md:text-3xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none focus:border-blue-400 text-white py-1 tracking-tight uppercase w-32 md:w-40"
+                      className="text-3xl md:text-4xl font-black bg-transparent border-none focus:outline-none text-white tracking-tighter uppercase w-32 md:w-48 placeholder-gray-700"
                       placeholder="TICKER"
                       disabled={loading}
                     />
-                    <button
-                      onClick={() => stockInput.trim() && setDebouncedStock(stockInput.trim())}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-300 transition-colors"
-                      disabled={loading}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </button>
+                    <div className="absolute bottom-0 left-0 w-0 h-1 bg-blue-500 transition-all group-hover:w-full"></div>
                   </div>
                 )}
-                {/* Market Toggle Pills */}
-                <div className="flex bg-gray-800 rounded-full p-0.5 border border-gray-700">
-                  <button
-                    onClick={() => setMarket('stocks')}
-                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${market === 'stocks' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
-                  >
-                    Stocks
-                  </button>
-                  <button
-                    onClick={() => setMarket('crypto')}
-                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${market === 'crypto' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
-                  >
-                    Crypto
-                  </button>
-                </div>
               </div>
-              {/* Company Name */}
-              {companyName && companyName !== debouncedStock && market === 'stocks' && (
-                <p className="text-sm text-gray-400 mt-0.5 truncate max-w-[250px]">{companyName}</p>
+              {companyName && market === 'stocks' && (
+                <span className="text-sm text-gray-400 font-medium hidden md:inline truncate max-w-[180px]">{companyName}</span>
               )}
-              {/* Live Price Display */}
-              <div className="mt-1">
+
+              {/* 2. Price & Change Info */}
+              <div className="flex flex-col">
                 {market === 'stocks' ? (
                   <LivePriceDisplay
                     symbol={debouncedStock}
                     fallbackPrice={stats?.currentPrice}
                     enabled={!loading}
+                    showChange={true}
                   />
                 ) : (
-                  <p className="text-sm text-gray-400">
-                    {loading ? 'Fetching live data...' : `Last Price: $${stats?.currentPrice?.toFixed(2) || '0.00'}`}
-                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                      ${stats?.currentPrice?.toLocaleString() || '---'}
+                    </span>
+                  </div>
                 )}
+              </div>
+
+              {/* 3. Conviction / Sentiment Score - Redesigned to match Picks */}
+
+
+              {/* 4. Mini Signals (HeaderSignals - Trend Only) & Analyst */}
+              <div className="flex flex-row items-center gap-2">
+                {data.length > 0 && <HeaderSignals latestData={data[data.length - 1]} showRSI={false} />}
+                <HeaderAnalyst symbol={market === 'crypto' ? symbol : debouncedStock} analystNews={analystData} />
               </div>
             </div>
 
-            {/* Header Sentiment Widget */}
-            <div className="mb-1 flex flex-wrap gap-2 md:gap-3">
-              <HeaderSentiment score={sentimentScore} />
-              {data.length > 0 && <HeaderSignals latestData={data[data.length - 1]} />}
-              {data.length > 0 && <HeaderPattern latestData={data[data.length - 1]} />}
-              {data.length > 0 && <HeaderAnalyst symbol={market === 'crypto' ? symbol : debouncedStock} analystNews={analystData} />}
+            {/* RIGHT: Controls & Market Toggle */}
+            <div className="flex items-center gap-4">
+              {/* Market Toggle */}
+              <div className="flex bg-gray-800/80 rounded-lg p-1 border border-gray-700/50">
+                <button
+                  onClick={() => setMarket('stocks')}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${market === 'stocks' ? 'bg-blue-600 shadow-lg shadow-blue-900/20 text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  STOCKS
+                </button>
+                <button
+                  onClick={() => setMarket('crypto')}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${market === 'crypto' ? 'bg-blue-600 shadow-lg shadow-blue-900/20 text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  CRYPTO
+                </button>
+              </div>
             </div>
-          </div>
-
-          <div className="w-full md:w-auto">
-            {renderViewControls()}
           </div>
         </header>
 
-        {/* AI Insight Card */}
-        <AISummaryCard symbol={market === 'crypto' ? symbol : debouncedStock} summary={aiSummary} loading={loading} />
+        {loading ? (
+          <Loading message="Fetching dashboard data..." />
+        ) : (
+          <div className="space-y-6">
 
-        <div className="flex-none h-[350px] md:h-[500px] bg-gray-800 rounded-xl p-1 relative shadow-xl overflow-hidden border border-gray-700 mt-4">
-          {loading && (
-            <div className="absolute inset-0 z-20 bg-gray-900 bg-opacity-70 backdrop-blur-sm flex items-center justify-center">
-              <Loading message="Crunching numbers..." />
+            {/* ROW 1: Deep Dive (Left, 2/3) & AI Option Play + Price Stats (Right, 1/3) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Deep Dive - Takes 2/3 - FIRST in DOM = LEFT */}
+              <div className="md:col-span-2">
+                <DeepDiveContent
+                  symbol={market === 'crypto' ? symbol : debouncedStock}
+                  showOptionsFlow={false}
+                />
+              </div>
+
+              {/* Right Column - AI Option Play + Price Stats stacked vertically */}
+              <div className="md:col-span-1 space-y-6">
+                <div className="bg-gray-800/10 rounded-xl">
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <span>🤖</span> AI Option Play
+                  </h3>
+                  <OptionsSignal data={optionsSignal} loading={loading} />
+                </div>
+
+                {/* Price Statistics - Below AI Option Play */}
+                <div>
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">Price Statistics</h3>
+                  <HighlightStats stats={stats} />
+                </div>
+              </div>
             </div>
-          )}
 
-          {error && !loading ? (
-            <div className="absolute inset-0 flex items-center justify-center z-10 p-4">
-              <ErrorMessage
-                title="Unable to Fetch Data"
-                message={error}
-                onRetry={() => window.location.reload()}
-              />
+            {/* ROW 3: Whale Watch - BELOW Stats */}
+            {market === 'stocks' && (
+              <div className="w-full">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 px-1 flex items-center gap-2">
+                  <span>🐋</span> Whale Watch
+                </h3>
+                <WhaleWatch symbol={debouncedStock || stockInput} layout="horizontal" />
+              </div>
+            )}
+
+            {/* ROW 4: AI Insight - BELOW Whale */}
+            <div>
+              <AISummaryCard symbol={market === 'crypto' ? symbol : debouncedStock} summary={aiSummary} loading={loading} />
             </div>
-          ) : (
-            !loading && data.length > 0 && <PriceChart data={chartData} />
-          )}
-        </div>
 
-        {/* News Feed */}
-        <NewsFeed news={news} loading={loading} />
+            {/* ROW 5: Live News - BELOW AI Insight */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 px-1">Live Intelligence</h3>
+              <NewsFeed news={news} loading={loading} />
+            </div>
+          </div>
+        )}
 
         <div className="h-6"></div> {/* Bottom Spacer */}
       </main>
