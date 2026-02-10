@@ -163,8 +163,18 @@ export default function Dashboard() {
 
     loadData();
 
+    // Auto-refresh chart and news every 60 seconds
+    const intervalId = setInterval(() => {
+      // Only refresh if tab is visible
+      if (!document.hidden && !ignore) {
+        console.log('Auto-refreshing dashboard data...');
+        loadData();
+      }
+    }, 60000);
+
     return () => {
       ignore = true;
+      clearInterval(intervalId);
     };
   }, [symbol, debouncedStock, market, interval]);
 

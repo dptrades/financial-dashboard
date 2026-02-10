@@ -24,6 +24,13 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
     useEffect(() => {
         if (symbol) {
             fetchDetails(symbol);
+
+            // Auto-refresh every 60 seconds
+            const interval = setInterval(() => {
+                fetchDetails(symbol);
+            }, 60000);
+
+            return () => clearInterval(interval);
         } else {
             setData(null);
         }
