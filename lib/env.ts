@@ -61,6 +61,12 @@ export const env = {
         );
     },
 
+    // Google Gemini API (Optional but recommended for AI features)
+    GEMINI_API_KEY: getEnvOrDefault('GEMINI_API_KEY', null),
+    get hasGemini() {
+        return Boolean(this.GEMINI_API_KEY);
+    },
+
     // Cron Jobs
     CRON_SECRET: getEnvOrDefault('CRON_SECRET', null),
 

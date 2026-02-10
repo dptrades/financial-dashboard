@@ -25,6 +25,7 @@ import NewsFeed from '../components/NewsFeed';
 import LivePriceDisplay from '../components/LivePriceDisplay';
 import { Loading } from '@/components/ui/Loading';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import AIStrategicInsight from '../components/AIStrategicInsight';
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
@@ -329,6 +330,9 @@ export default function Dashboard() {
           <Loading message="Fetching dashboard data..." />
         ) : (
           <div className="space-y-6">
+
+            {/* GEMINI AI STRATEGIC INSIGHT */}
+            <AIStrategicInsight symbol={market === 'crypto' ? symbol : debouncedStock} />
 
             {/* ROW 1: Deep Dive (Left, 2/3) & AI Option Play + Price Stats (Right, 1/3) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
