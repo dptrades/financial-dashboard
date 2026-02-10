@@ -19,11 +19,17 @@ export const SECTOR_MAP: Record<string, string> = {
     // Industrial
     CAT: 'Industrial', BA: 'Industrial', GE: 'Industrial', UNP: 'Industrial',
     // ETF / Crypto Proxies
-    MSTR: 'Technology', MARA: 'Technology', DKNG: 'Consumer', SPY: 'Indices', QQQ: 'Indices', IWM: 'Indices',
+    MSTR: 'Technology', MARA: 'Technology', DKNG: 'Consumer',
+    SPY: 'Indices', QQQ: 'Indices', IWM: 'Indices', DIA: 'Indices',
+    // Sector ETFs
+    XLK: 'Sector ETFs', XLF: 'Sector ETFs', XLE: 'Sector ETFs', XLY: 'Sector ETFs',
+    XLP: 'Sector ETFs', XLV: 'Sector ETFs', XLI: 'Sector ETFs', XLB: 'Sector ETFs',
+    XLU: 'Sector ETFs', XLRE: 'Sector ETFs', XLC: 'Sector ETFs',
     // Commodities
     'CL=F': 'Energy', 'NG=F': 'Energy',       // Oil, Gas
     'GC=F': 'Metals', 'SI=F': 'Metals',       // Gold, Silver
     'HG=F': 'Metals', 'ALI=F': 'Metals',      // Copper, Aluminum
+    GLD: 'Metals', SLV: 'Metals', GDX: 'Metals', GDXJ: 'Metals',
     // Market Internals
     '^VIX': 'Internals',
     '^GSPC': 'Indices', '^IXIC': 'Indices', // S&P 500, Nasdaq 100

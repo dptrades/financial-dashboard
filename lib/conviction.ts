@@ -76,6 +76,13 @@ const CONVICTION_WATCHLIST = [
     'CAT',    // Caterpillar - $200B
     'GE',     // GE Aerospace - $200B
     'HON',    // Honeywell - $200B
+
+    // Indices & Metals (Market Context)
+    'SPY', 'QQQ', 'DIA', 'IWM',
+    'GLD', 'SLV', 'GDX', 'GDXJ',
+
+    // Sector ETFs (Key for Heatmap)
+    'XLK', 'XLF', 'XLE', 'XLY', 'XLP', 'XLV', 'XLI', 'XLB', 'XLU', 'XLRE', 'XLC'
 ];
 
 // Mock Data for Fallback (when API fails) - Mega Cap Focus
