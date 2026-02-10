@@ -12,7 +12,7 @@ import { detectPatterns } from '../lib/patterns';
 // import PriceChart from '../components/PriceChart'; // Removed
 import Sidebar from '../components/Sidebar';
 import HighlightStats from '../components/HighlightStats';
-import WhaleWatch from '../components/WhaleWatch';
+
 import OptionsSignal from '../components/OptionsSignal';
 import DeepDiveContent from '../components/DeepDiveContent';
 import { generateOptionSignal } from '../lib/options';
@@ -361,15 +361,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* ROW 3: Whale Watch - BELOW Stats */}
-            {market === 'stocks' && (
-              <div className="w-full">
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 px-1 flex items-center gap-2">
-                  <span>🐋</span> Whale Watch
-                </h3>
-                <WhaleWatch symbol={debouncedStock || stockInput} layout="horizontal" />
-              </div>
-            )}
+
 
 
 
