@@ -140,25 +140,28 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
             </div>
 
             {/* 2. MULTI-TIMEFRAME EMA MATRIX */}
-            <div>
+            <div className={`rounded-xl border ${data.analysis.timeframes.find(t => t.timeframe === '1d')?.trend === 'BULLISH' ? 'border-green-500/30 bg-green-900/5' :
+                    data.analysis.timeframes.find(t => t.timeframe === '1d')?.trend === 'BEARISH' ? 'border-red-500/30 bg-red-900/5' :
+                        'border-gray-800'
+                } p-4 transition-colors duration-500`}>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <Activity className="w-5 h-5 text-blue-400" />
-                    EMA & RSI Matrix
+                    Technical Confluence Matrix
                 </h3>
-                <div className="overflow-x-auto rounded-lg border border-gray-800">
+                <div className="overflow-x-auto rounded-lg border border-gray-800/50">
                     <table className="w-full text-sm text-left whitespace-nowrap">
                         <thead className="bg-gray-800/50 text-gray-400">
                             <tr>
                                 <th className="p-3">Timeframe</th>
                                 <th className="p-3">Trend</th>
-                                <th className="p-3">RSI</th>
-                                <th className="p-3">MACD</th>
-                                <th className="p-3">Bollinger</th>
-                                <th className="p-3">VWAP</th>
                                 <th className="p-3">EMA 9</th>
                                 <th className="p-3">EMA 21</th>
                                 <th className="p-3">EMA 50</th>
                                 <th className="p-3">EMA 200</th>
+                                <th className="p-3 border-l border-gray-700/50">RSI</th>
+                                <th className="p-3">MACD</th>
+                                <th className="p-3">Bollinger</th>
+                                <th className="p-3">VWAP</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-800">
@@ -173,7 +176,15 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
                                             {tf.trend}
                                         </span>
                                     </td>
-                                    <td className={`p-3 font-mono font-bold ${(tf.rsi || 50) > 70 ? 'bg-red-500/20 text-red-200' : (tf.rsi || 50) < 30 ? 'bg-green-500/20 text-green-200' : ''}`}>
+
+                                    {/* EMA Columns First */}
+                                    <EmaCell price={tf.close} ema={tf.ema9} label="9" />
+                                    <EmaCell price={tf.close} ema={tf.ema21} label="21" />
+                                    <EmaCell price={tf.close} ema={tf.ema50} label="50" />
+                                    <EmaCell price={tf.close} ema={tf.ema200} label="200" />
+
+                                    {/* Technicals Second (with border separator) */}
+                                    <td className={`p-3 font-mono font-bold border-l border-gray-700/50 ${(tf.rsi || 50) > 70 ? 'bg-red-500/20 text-red-200' : (tf.rsi || 50) < 30 ? 'bg-green-500/20 text-green-200' : ''}`}>
                                         <span>{tf.rsi?.toFixed(0) || '-'}</span>
                                     </td>
 
@@ -218,11 +229,6 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
                                             </div>
                                         ) : <span className="text-gray-600">-</span>}
                                     </td>
-
-                                    <EmaCell price={tf.close} ema={tf.ema9} label="9" />
-                                    <EmaCell price={tf.close} ema={tf.ema21} label="21" />
-                                    <EmaCell price={tf.close} ema={tf.ema50} label="50" />
-                                    <EmaCell price={tf.close} ema={tf.ema200} label="200" />
                                 </tr>
                             ))}
                         </tbody>

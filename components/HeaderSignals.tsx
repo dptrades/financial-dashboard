@@ -108,10 +108,18 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
         }
     }
 
+    // Determine Widget Styling based on ST Trend
+    let widgetBg = "bg-gray-900/80 border-gray-800";
+    if (stTrend === "BULLISH") {
+        widgetBg = "bg-green-950/40 border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.1)]";
+    } else if (stTrend === "BEARISH") {
+        widgetBg = "bg-red-950/40 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.1)]";
+    }
+
     return (
-        <div className="flex items-center gap-6 bg-gray-900/80 px-4 py-2 rounded-xl border border-gray-800 shadow-xl">
+        <div className={`flex items-center gap-6 px-4 py-2 rounded-xl border shadow-xl transition-all duration-500 ${widgetBg}`}>
             {/* 1. Trends Section */}
-            <div className="flex items-center gap-3 border-r border-gray-800 pr-6">
+            <div className={`flex items-center gap-3 border-r pr-6 ${stTrend === 'BULLISH' ? 'border-green-500/20' : stTrend === 'BEARISH' ? 'border-red-500/20' : 'border-gray-800'}`}>
                 <TrendingUp className={`w-4 h-4 ${isGoldenCross ? 'text-yellow-400' : 'text-blue-400'}`} />
                 <div className="flex gap-4">
                     <div className="flex flex-col gap-1">
