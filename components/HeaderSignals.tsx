@@ -10,27 +10,38 @@ interface HeaderSignalsProps {
 export default function HeaderSignals({ latestData, showRSI = true }: HeaderSignalsProps) {
     if (!latestData) return null;
 
-    // Determine Trend
-    let trend = "NEUTRAL";
-    let trendColor = "text-gray-400";
-
+    // Determine Trends
     const { close, ema50, ema200 } = latestData;
 
-    if (ema50 && ema200) {
-        if (close > ema50 && ema50 > ema200) {
-            trend = "BULLISH";
-            trendColor = "text-green-400";
-        } else if (close < ema50 && ema50 < ema200) {
-            trend = "BEARISH";
-            trendColor = "text-red-400";
-        } else if (close > ema200) {
-            trend = "BULLISH (WEAK)";
-            trendColor = "text-green-300";
-        } else if (close < ema200) {
-            trend = "BEARISH (WEAK)";
-            trendColor = "text-red-300";
+    // Short Term: Price vs 20 EMA / 50 EMA
+    let stTrend = "NEUTRAL";
+    let stColor = "text-gray-400";
+    if (ema50) {
+        if (close > ema50) {
+            stTrend = "BULLISH";
+            stColor = "text-green-400";
+        } else {
+            stTrend = "BEARISH";
+            stColor = "text-red-400";
         }
     }
+
+    // Long Term: Price vs 200 EMA
+    let ltTrend = "NEUTRAL";
+    let ltColor = "text-gray-400";
+    if (ema200) {
+        if (close > ema200) {
+            ltTrend = "BULLISH";
+            ltColor = "text-green-400";
+        } else {
+            ltTrend = "BEARISH";
+            ltColor = "text-red-400";
+        }
+    }
+
+    // Golden/Death Cross status for extra signal
+    const isGoldenCross = ema50 && ema200 && ema50 > ema200;
+
 
     // Determine RSI
     let rsiStatus = "NEUTRAL";
@@ -48,11 +59,17 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
     return (
         <div className="flex items-center gap-4 bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-700">
             {/* Trend Widget */}
-            <div className={`flex items-center gap-2 ${showRSI ? 'border-r border-gray-700 pr-4' : ''}`}>
-                <TrendingUp className="w-4 h-4 text-blue-400" />
-                <div className="flex flex-col leading-none">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Trend</span>
-                    <span className={`text-sm font-bold ${trendColor}`}>{trend}</span>
+            <div className={`flex items-center gap-3 ${showRSI ? 'border-r border-gray-700 pr-4' : ''}`}>
+                <TrendingUp className={`w-4 h-4 ${isGoldenCross ? 'text-yellow-400' : 'text-blue-400'}`} />
+                <div className="flex gap-4">
+                    <div className="flex flex-col leading-none">
+                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-1">Short Term</span>
+                        <span className={`text-xs font-bold ${stColor}`}>{stTrend}</span>
+                    </div>
+                    <div className="flex flex-col leading-none">
+                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-1">Long Term</span>
+                        <span className={`text-xs font-bold ${ltColor}`}>{ltTrend}</span>
+                    </div>
                 </div>
             </div>
 
