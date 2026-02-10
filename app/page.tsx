@@ -215,7 +215,7 @@ export default function Dashboard() {
   // Calculate Options Signal for Dashboard Widget
   let optionsSignal = null;
   if (latest && stats && latest.atr14) {
-    optionsSignal = generateOptionSignal(latest.close, latest.atr14, currentTrend, latest.rsi14 || 50, latest.ema50);
+    optionsSignal = generateOptionSignal(latest.close, latest.atr14, currentTrend, latest.rsi14 || 50, latest.ema50, latest);
   }
 
   return (
