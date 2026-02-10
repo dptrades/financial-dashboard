@@ -69,7 +69,7 @@ export default function WhaleWatch({ symbol, layout = 'vertical' }: WhaleWatchPr
                         <span className="text-[10px] text-gray-500">No unusual activity.</span>
                     </div>
                 ) : (
-                    alerts.map((alert, i) => (
+                    alerts.slice(0, 5).map((alert, i) => (
                         <div key={i} className={`flex flex-col bg-gray-900/50 p-2 rounded border border-gray-800 ${layout === 'horizontal' ? 'min-w-[200px]' : ''}`}>
                             {/* Top Row: Strike & Type */}
                             <div className="flex justify-between items-center mb-1">
