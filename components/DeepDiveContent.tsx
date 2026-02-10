@@ -86,12 +86,22 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
 
             {/* 1. KEY METRICS GRID */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <MetricCard
-                    label="Today's Range"
-                    value={`$${data.analysis.metrics.dayHigh.toFixed(2)}`}
-                    subValue={`Low: $${data.analysis.metrics.dayLow.toFixed(2)}`}
-                    icon={<TrendingUp className="w-4 h-4 text-green-400" />}
-                />
+                <div className="p-3 rounded-lg border bg-gray-800/40 border-gray-700/50 flex flex-col justify-between">
+                    <div className="flex items-center gap-2 text-gray-400 text-xs uppercase tracking-wider mb-2">
+                        <TrendingUp className="w-4 h-4 text-orange-400" /> Today's Range
+                    </div>
+                    <div className="flex items-end justify-between w-full">
+                        <div>
+                            <div className="text-[10px] text-gray-500 uppercase">Low</div>
+                            <div className="text-lg font-bold text-red-400">${data.analysis.metrics.dayLow.toFixed(2)}</div>
+                        </div>
+                        <div className="h-8 w-px bg-gray-700 mx-2"></div>
+                        <div className="text-right">
+                            <div className="text-[10px] text-gray-500 uppercase">High</div>
+                            <div className="text-lg font-bold text-green-400">${data.analysis.metrics.dayHigh.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
                 <MetricCard
                     label="Daily ATR"
                     value={`$${data.analysis.metrics.atr.toFixed(2)}`}
