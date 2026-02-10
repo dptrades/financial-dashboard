@@ -80,19 +80,35 @@ export default function AIStrategicInsight({ symbol }: { symbol: string }) {
         );
     }
 
+
     if (loading) {
         return (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col items-center justify-center min-h-[300px]">
-                <Loading />
-                <p className="text-purple-400 text-sm mt-4 animate-pulse">Analyzing Options Flow & Dark Pool Signals...</p>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col items-center justify-center min-h-[200px] animate-pulse">
+                <Brain className="w-8 h-8 text-purple-500/50 mb-3" />
+                <p className="text-purple-400 text-xs font-mono">INITIALIZING GEMINI 2.0 FLASH...</p>
             </div>
         );
     }
 
-    if (error || !insight) {
-        return null; // Don't show if failed (optional) or show retry
+    if (error) {
+        return (
+            <div className="bg-gray-900 border border-red-900/30 rounded-xl p-4 flex items-center gap-3">
+                <Activity className="w-5 h-5 text-red-500" />
+                <div>
+                    <h3 className="text-red-400 text-sm font-bold">AI Analysis Unavailable</h3>
+                    <p className="text-red-500/60 text-xs">{error}</p>
+                </div>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="ml-auto text-xs bg-red-900/20 text-red-400 px-3 py-1 rounded hover:bg-red-900/40 transition-colors"
+                >
+                    Retry
+                </button>
+            </div>
+        );
     }
 
+    if (!insight) return null;
     const isBullish = insight.sentiment === 'BULLISH';
     const isBearish = insight.sentiment === 'BEARISH';
     const scoreColor = isBullish ? 'text-green-400' : isBearish ? 'text-red-400' : 'text-gray-400';
