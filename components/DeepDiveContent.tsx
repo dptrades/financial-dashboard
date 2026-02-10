@@ -146,16 +146,19 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
                     EMA & RSI Matrix
                 </h3>
                 <div className="overflow-x-auto rounded-lg border border-gray-800">
-                    <table className="w-full text-sm text-left">
+                    <table className="w-full text-sm text-left whitespace-nowrap">
                         <thead className="bg-gray-800/50 text-gray-400">
                             <tr>
                                 <th className="p-3">Timeframe</th>
                                 <th className="p-3">Trend</th>
+                                <th className="p-3">RSI</th>
+                                <th className="p-3">MACD</th>
+                                <th className="p-3">Bollinger</th>
+                                <th className="p-3">VWAP</th>
                                 <th className="p-3">EMA 9</th>
                                 <th className="p-3">EMA 21</th>
                                 <th className="p-3">EMA 50</th>
                                 <th className="p-3">EMA 200</th>
-                                <th className="p-3">RSI</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-800">
@@ -170,15 +173,56 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
                                             {tf.trend}
                                         </span>
                                     </td>
+                                    <td className={`p-3 font-mono font-bold ${(tf.rsi || 50) > 70 ? 'bg-red-500/20 text-red-200' : (tf.rsi || 50) < 30 ? 'bg-green-500/20 text-green-200' : ''}`}>
+                                        <span>{tf.rsi?.toFixed(0) || '-'}</span>
+                                    </td>
+
+                                    {/* MACD Cell */}
+                                    <td className="p-3">
+                                        {tf.macd ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-xs font-bold ${tf.macd.histogram > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {tf.macd.histogram > 0 ? 'BULL' : 'BEAR'}
+                                                </span>
+                                                <span className="text-[10px] text-gray-500 opacity-60 font-mono">
+                                                    {tf.macd.histogram.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        ) : <span className="text-gray-600">-</span>}
+                                    </td>
+
+                                    {/* Bollinger Cell */}
+                                    <td className="p-3">
+                                        {tf.bollinger ? (
+                                            <div className="flex flex-col">
+                                                {tf.close > tf.bollinger.upper ? (
+                                                    <span className="text-red-300 text-xs font-bold">ABOVE UPPER</span>
+                                                ) : tf.close < tf.bollinger.lower ? (
+                                                    <span className="text-green-300 text-xs font-bold">BELOW LOWER</span>
+                                                ) : (
+                                                    <span className="text-gray-400 text-xs">INSIDE</span>
+                                                )}
+                                                <span className="text-[10px] text-gray-600">%B: {tf.bollinger.pb.toFixed(2)}</span>
+                                            </div>
+                                        ) : <span className="text-gray-600">-</span>}
+                                    </td>
+
+                                    {/* VWAP Cell */}
+                                    <td className="p-3">
+                                        {tf.vwap ? (
+                                            <div className={`text-xs font-bold ${tf.close > tf.vwap ? 'text-green-400' : 'text-red-400'}`}>
+                                                {tf.close > tf.vwap ? '> VWAP' : '< VWAP'}
+                                                <span className="block text-[10px] text-gray-500 font-normal font-mono">
+                                                    ${tf.vwap.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        ) : <span className="text-gray-600">-</span>}
+                                    </td>
+
                                     <EmaCell price={tf.close} ema={tf.ema9} label="9" />
                                     <EmaCell price={tf.close} ema={tf.ema21} label="21" />
                                     <EmaCell price={tf.close} ema={tf.ema50} label="50" />
                                     <EmaCell price={tf.close} ema={tf.ema200} label="200" />
-                                    <td className={`p-3 font-mono font-bold ${(tf.rsi || 50) > 70 ? 'bg-red-500/20 text-red-200' : (tf.rsi || 50) < 30 ? 'bg-green-500/20 text-green-200' : ''}`}>
-                                        <span>
-                                            {tf.rsi?.toFixed(0) || '-'}
-                                        </span>
-                                    </td>
                                 </tr>
                             ))}
                         </tbody>

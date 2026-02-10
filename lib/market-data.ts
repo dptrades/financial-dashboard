@@ -16,6 +16,18 @@ export interface TimeframeData {
     rsi: number | null;
     adx: number | null;
     trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+    macd: {
+        macd: number;
+        signal: number;
+        histogram: number;
+    } | null;
+    bollinger: {
+        upper: number;
+        lower: number;
+        middle: number;
+        pb: number; // %B
+    } | null;
+    vwap: number | null;
     priceRelToEma: {
         ema9: number; // % distance
         ema21: number;
@@ -79,14 +91,10 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
     const latestDaily = dailyIndicators[dailyIndicators.length - 1];
 
     // Use live price if available and market is open/recent, otherwise last close
-    // Note: If market is closed, livePrice might be post-market or same as close.
-    // If the user wants "last close as of market close", we should stick to close unless live is "active".
-    // For simplicity, if livePrice exists and is different, we use it as current.
     currentPrice = livePrice || latestDaily.close;
 
     dailyAtr = latestDaily.atr14 || 0;
 
-    // Calculate 180d Volume Avg
     // Calculate 1y Volume Avg (~252 trading days)
     const volSlice = dailyData.slice(-252);
     avgVolume = volSlice.reduce((acc, curr) => acc + curr.volume, 0) / volSlice.length;
@@ -106,37 +114,10 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
 
         if (data && data.length > 0) {
             // INJECT LIVE PRICE FOR INTRADAY
-            // If we have a live price, we should update the last candle or append a new one
-            // to ensure the EMA reflects the CURRENT price, not just the last closed bar.
             if (livePrice && (tf === '10m' || tf === '1h')) {
                 const lastBar = data[data.length - 1];
-                const lastBarTime = lastBar.time;
-                const now = Date.now();
-
-                // If last bar is "old" (completed), append a new synthetic bar for the current period
-                // Or if it matches current period, update it.
-                // Simple heuristic: If live price is available, just assume it's the latest "close" for the active candle.
-                // We clone the data to avoid mutating shared dailyData
+                // Update the last bar with the live price for real-time calc
                 data = [...data];
-
-                // If last bar is older than timeframe duration, append.
-                // 1h = 3600000ms. 
-                // Actually, simplest way: Just valid "current" price update.
-                // We will overwrite the CLOSE of the last bar if it's "current", or append.
-                // For now, let's just Append a synthetic bar if the time diff allows, or update last if it looks like the same period.
-                // Actually, simple "Mark to Market":
-                // If the last bar is from today, update its close to livePrice.
-                // This ensures we don't have a "lagging" close from 10 mins ago if the market has moved.
-
-                // Only do this if market is effectively "Open" or we want live look.
-                // User said: "calculate ... based on last close candle as of market closed, change those values when live data comes in"
-                // This implies: If market is open (9:30-4), use live.
-                // If market is closed, use last bar.
-                // We'll check if livePrice is significantly different or just simply override the last bar's close for calculation.
-                // This is a common technique for "Live EMA".
-
-                // We'll update the last bar with the live price.
-                // This makes the indicators calculate based on the current price level.
                 data[data.length - 1] = {
                     ...lastBar,
                     close: livePrice
@@ -161,6 +142,21 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
             if (last.close > (last.ema50 || 0)) trend = 'BULLISH';
             else if (last.close < (last.ema50 || 0)) trend = 'BEARISH';
 
+            // Map MACD
+            const macdData = last.macd ? {
+                macd: last.macd.MACD || 0,
+                signal: last.macd.signal || 0,
+                histogram: last.macd.histogram || 0
+            } : null;
+
+            // Map Bollinger
+            const bbData = last.bollinger ? {
+                upper: last.bollinger.upper || 0,
+                lower: last.bollinger.lower || 0,
+                middle: last.bollinger.middle || 0,
+                pb: last.bollinger.pb || 0
+            } : null;
+
             results.push({
                 timeframe: tf,
                 open: last.open,
@@ -172,6 +168,9 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
                 rsi: last.rsi14 || null,
                 adx: last.adx14 || null,
                 trend,
+                macd: macdData,
+                bollinger: bbData,
+                vwap: last.vwap || null,
                 priceRelToEma: {
                     ema9: ema9Diff,
                     ema21: ema21Diff,
