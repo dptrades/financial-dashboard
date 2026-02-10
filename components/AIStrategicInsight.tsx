@@ -39,13 +39,16 @@ export default function AIStrategicInsight({ symbol }: { symbol: string }) {
                     }
                 }
 
-                if (!res.ok) throw new Error('Failed to analyze');
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Failed to analyze market data');
+                }
 
                 const data = await res.json();
                 setInsight(data);
-            } catch (e) {
+            } catch (e: any) {
                 console.error(e);
-                setError('Failed to generate insight');
+                setError(e.message || 'Failed to generate insight');
             } finally {
                 setLoading(false);
             }

@@ -10,7 +10,7 @@ if (env.GEMINI_API_KEY) {
         // Using "gemini-2.0-flash-exp" or standard "gemini-1.5-flash" depending on availability.
         // Let's use 1.5-flash for stability and speed, or 2.0-flash if user requested bleeding edge.
         // User mentioned "gemini", let's use the stable fast model.
-        model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
     } catch (e) {
         console.error("Failed to initialize Gemini:", e);
     }
