@@ -1,73 +1,102 @@
 import { NewsItem } from './news';
+import YahooFinance from 'yahoo-finance2';
 
-// MOCK DATA GENERATOR because RSS feeds are unreliable/blocked
+const yahooFinance = new YahooFinance();
+
 export async function getNewsData(symbol: string, type: 'news' | 'social' | 'analyst' = 'news'): Promise<NewsItem[]> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 600));
+    try {
+        const results = await yahooFinance.search(symbol, { newsCount: 20 });
 
-    const now = new Date();
-    const items: NewsItem[] = [];
-    const count = type === 'analyst' ? 5 : 8;
-
-    for (let i = 0; i < count; i++) {
-        const time = new Date(now.getTime() - Math.random() * 48 * 60 * 60 * 1000);
-
-        if (type === 'analyst') {
-            const actions = ['Upgrade', 'Downgrade', 'Maintain', 'Initiate', 'Price Target Raise'];
-            const action = actions[Math.floor(Math.random() * actions.length)];
-            const firms = ['Goldman Sachs', 'Morgan Stanley', 'JPMorgan', 'Citi', 'Barclays', 'Wedbush'];
-            const firm = firms[Math.floor(Math.random() * firms.length)];
-            const sentiment = (action === 'Upgrade' || action === 'Price Target Raise') ? 'positive' :
-                (action === 'Downgrade') ? 'negative' : 'neutral';
-
-            items.push({
-                id: `analyst-${i}`,
-                title: `${firm} performs ${action} on ${symbol}: check details inside`,
-                source: firm,
-                time: time.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                sentiment: sentiment,
-                url: `https://finance.yahoo.com/quote/${symbol}`
-            });
-        } else {
-            // News & Social
-            const sentiments: ('positive' | 'negative' | 'neutral')[] = ['positive', 'negative', 'neutral'];
-            const sentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
-
-            const bullishTitles = [
-                `${symbol} Surges as Earnings Beat Estimates`,
-                `Why ${symbol} Could Hit New Highs This Week`,
-                `Options Traders Pile into ${symbol} Calls`,
-                `${symbol} Announces Strategic Partnership`,
-                `Major Breakout Detected on ${symbol} Chart`
-            ];
-            const bearishTitles = [
-                `${symbol} Slides on Regulatory Concerns`,
-                `Why Analysts are Cautious on ${symbol}`,
-                `Profit Taking Hits ${symbol} After Rally`,
-                `${symbol} faces resistance at key technical levels`,
-                `Insider Selling Reported at ${symbol}`
-            ];
-            const neutralTitles = [
-                `${symbol} Consolidates Ahead of Fed Meeting`,
-                `Market Volatility Impacts ${symbol} Trading`,
-                `What to Expect from ${symbol} Next Quarter`,
-                `${symbol} Trading Volume Spikes`,
-                `Sector Analysis: Where ${symbol} Fits In`
-            ];
-
-            const titlePool = sentiment === 'positive' ? bullishTitles : sentiment === 'negative' ? bearishTitles : neutralTitles;
-            const sources = type === 'social' ? ['Reddit', 'StockTwits', 'Twitter'] : ['Bloomberg', 'Reuters', 'CNBC', 'MarketWatch', 'Yahoo Finance'];
-
-            items.push({
-                id: `news-${i}`,
-                title: titlePool[Math.floor(Math.random() * titlePool.length)],
-                source: sources[Math.floor(Math.random() * sources.length)],
-                time: time.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                sentiment: sentiment,
-                url: `https://finance.yahoo.com/quote/${symbol}/news`
-            });
+        if (!results.news || results.news.length === 0) {
+            return [];
         }
-    }
 
-    return items.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+        const now = Date.now();
+        const SEVENTY_TWO_HOURS = 72 * 60 * 60 * 1000;
+        const symbolUpper = symbol.toUpperCase();
+
+        const seen = new Set<string>();
+        const items: NewsItem[] = results.news
+            .filter((article: any) => {
+                if (!article.title || !article.link) return false;
+
+                // Deduplicate by title
+                const key = article.title.toLowerCase().trim();
+                if (seen.has(key)) return false;
+                seen.add(key);
+
+                // Filter: only articles from the last 72 hours
+                if (article.providerPublishTime) {
+                    // providerPublishTime is already a Date object in yahoo-finance2 v3
+                    const publishedMs = new Date(article.providerPublishTime).getTime();
+                    if (now - publishedMs > SEVENTY_TWO_HOURS) return false;
+                }
+
+                return true;
+            })
+            .sort((a: any, b: any) => {
+                // Prioritize: related articles first, then by recency
+                const aTitle = (a.title || '').toLowerCase();
+                const bTitle = (b.title || '').toLowerCase();
+                const symLower = symbol.toLowerCase();
+                const aRelated = aTitle.includes(symLower) ||
+                    (a.relatedTickers || []).some((t: string) => t.toUpperCase() === symbolUpper);
+                const bRelated = bTitle.includes(symLower) ||
+                    (b.relatedTickers || []).some((t: string) => t.toUpperCase() === symbolUpper);
+
+                if (aRelated && !bRelated) return -1;
+                if (!aRelated && bRelated) return 1;
+
+                // Then sort by recency
+                const aTime = new Date(a.providerPublishTime || 0).getTime();
+                const bTime = new Date(b.providerPublishTime || 0).getTime();
+                return bTime - aTime;
+            })
+            .slice(0, 6) // Top 6 articles
+            .map((article: any, i: number) => {
+                const title = article.title || '';
+                const titleLower = title.toLowerCase();
+                let sentiment: 'positive' | 'negative' | 'neutral' = 'neutral';
+
+                const bullishWords = ['surge', 'jump', 'rally', 'gain', 'up', 'rise', 'high', 'beat', 'bull', 'grow', 'boost', 'soar', 'upgrade', 'breakout', 'record', 'strong'];
+                const bearishWords = ['drop', 'fall', 'decline', 'down', 'slip', 'loss', 'bear', 'cut', 'warn', 'crash', 'plunge', 'sell', 'downgrade', 'risk', 'concern', 'weak'];
+
+                if (bullishWords.some(w => titleLower.includes(w))) sentiment = 'positive';
+                else if (bearishWords.some(w => titleLower.includes(w))) sentiment = 'negative';
+
+                // providerPublishTime is already a Date object
+                const publishedAt = article.providerPublishTime
+                    ? new Date(article.providerPublishTime)
+                    : new Date();
+
+                // Relative time
+                const diffMs = now - publishedAt.getTime();
+                const diffMins = Math.floor(diffMs / (1000 * 60));
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                let timeStr: string;
+                if (diffMins < 60) {
+                    timeStr = `${Math.max(1, diffMins)}m ago`;
+                } else if (diffHours < 24) {
+                    timeStr = `${diffHours}h ago`;
+                } else {
+                    const diffDays = Math.floor(diffHours / 24);
+                    timeStr = `${diffDays}d ago`;
+                }
+
+                return {
+                    id: `news-${i}-${article.uuid || i}`,
+                    title,
+                    source: article.publisher || 'Yahoo Finance',
+                    time: timeStr,
+                    sentiment,
+                    url: article.link
+                };
+            });
+
+        return items;
+
+    } catch (error) {
+        console.error(`Failed to fetch news for ${symbol}:`, error);
+        return [];
+    }
 }
