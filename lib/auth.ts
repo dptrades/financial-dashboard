@@ -46,6 +46,34 @@ export async function getSession() {
     }
 }
 
+export const VERIFICATION_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+
 export function generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
+ * Creates a signed verification token containing the OTP and user info.
+ * This allows us to verify the code without storing it on a server filesystem or DB.
+ */
+export async function createVerificationToken(data: { email: string; name: string; code: string }) {
+    return await new SignJWT(data)
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt()
+        .setExpirationTime("10m")
+        .sign(key);
+}
+
+/**
+ * Verifies a verification token and returns its payload if valid.
+ */
+export async function verifyVerificationToken(token: string) {
+    try {
+        const { payload } = await jwtVerify(token, key, {
+            algorithms: ["HS256"],
+        });
+        return payload as { email: string; name: string; code: string };
+    } catch (error) {
+        return null;
+    }
 }

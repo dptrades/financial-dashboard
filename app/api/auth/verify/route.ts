@@ -1,51 +1,34 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { login } from '@/lib/auth';
-
-const USERS_FILE = path.join(process.cwd(), 'data', 'users.json');
-const CODES_FILE = path.join(process.cwd(), 'data', 'codes.json');
+import { login, verifyVerificationToken } from '@/lib/auth';
 
 export async function POST(req: Request) {
     try {
-        const { email, code } = await req.json();
+        const { email, code, verificationToken } = await req.json();
 
-        if (!email || !code) {
-            return NextResponse.json({ error: 'Email and code are required' }, { status: 400 });
+        if (!email || !code || !verificationToken) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // 1. Verify Code
-        if (!fs.existsSync(CODES_FILE)) {
-            return NextResponse.json({ error: 'No verification code found' }, { status: 400 });
+        // 1. Verify the Stateless Token
+        const payload = await verifyVerificationToken(verificationToken);
+
+        if (!payload) {
+            return NextResponse.json({ error: 'Verification session expired or invalid' }, { status: 400 });
         }
 
-        const codes: Record<string, { code: string; expiry: number }> = JSON.parse(fs.readFileSync(CODES_FILE, 'utf-8'));
-        const entry = codes[email];
-
-        if (!entry) {
-            return NextResponse.json({ error: 'No code issued for this email' }, { status: 400 });
+        // 2. Security Check: Ensure email matches the token
+        if (payload.email !== email) {
+            return NextResponse.json({ error: 'Email mismatch' }, { status: 400 });
         }
 
-        if (Date.now() > entry.expiry) {
-            delete codes[email];
-            fs.writeFileSync(CODES_FILE, JSON.stringify(codes, null, 2));
-            return NextResponse.json({ error: 'Code expired' }, { status: 400 });
-        }
-
-        if (entry.code !== code) {
+        // 3. Verify the 6-digit code
+        if (payload.code !== code) {
             return NextResponse.json({ error: 'Invalid verification code' }, { status: 400 });
         }
 
-        // 2. Clear code
-        delete codes[email];
-        fs.writeFileSync(CODES_FILE, JSON.stringify(codes, null, 2));
-
-        // 3. Get user info
-        const users: any[] = JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
-        const user = users.find((u: any) => u.email === email);
-
         // 4. Create Session (4 hours)
-        await login({ name: user.name, email: user.email });
+        // Note: Using payload.name to ensure we use the name from the verified token
+        await login({ name: payload.name, email: payload.email });
 
         return NextResponse.json({ success: true });
     } catch (error) {

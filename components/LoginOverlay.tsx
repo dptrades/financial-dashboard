@@ -13,6 +13,7 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
     const [email, setEmail] = useState('');
     const [disclaimer, setDisclaimer] = useState(false);
     const [code, setCode] = useState('');
+    const [verificationToken, setVerificationToken] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -33,6 +34,8 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
             });
 
             if (res.ok) {
+                const data = await res.json();
+                setVerificationToken(data.verificationToken);
                 setStep('verify');
             } else {
                 const data = await res.json();
@@ -54,7 +57,7 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
             const res = await fetch('/api/auth/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, code }),
+                body: JSON.stringify({ email, code, verificationToken }),
             });
 
             if (res.ok) {
