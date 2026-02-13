@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { fetchOHLCV } from '../lib/api';
 import { fetchStockNews, fetchSocialSentiment, fetchAnalystRatings, NewsItem } from '../lib/news';
 import { OHLCVData, IndicatorData } from '../types/financial';
@@ -38,14 +38,28 @@ interface SectorGroup {
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const urlSymbol = searchParams.get('symbol');
+
   const [data, setData] = useState<IndicatorData[]>([]);
   const [companyName, setCompanyName] = useState<string>('');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [analystData, setAnalystData] = useState<NewsItem[]>([]);
   const [stats, setStats] = useState<PriceStats | null>(null);
-  const [symbol, setSymbol] = useState('SPY'); // Unified source of truth for the active ticker
+
+  // Initialize from localStorage if available, otherwise default to SPY
+  const [symbol, setSymbol] = useState('SPY');
   const [stockInput, setStockInput] = useState('SPY');
+
+  // Load initial symbol from localStorage on mount (client-side only)
+  useEffect(() => {
+    const savedSymbol = localStorage.getItem('lastTicker');
+    if (!urlSymbol && savedSymbol) {
+      setSymbol(savedSymbol);
+      setStockInput(savedSymbol);
+    }
+  }, [urlSymbol]);
 
   const [interval, setIntervalState] = useState('1d'); // 15m, 1h, 4h, 1d
   const [loading, setLoading] = useState(true);
@@ -93,6 +107,19 @@ export default function Dashboard() {
       clearTimeout(handler);
     };
   }, [stockInput, symbol]);
+
+  // Sync symbol to URL and localStorage
+  useEffect(() => {
+    if (symbol) {
+      // 1. Save to localStorage
+      localStorage.setItem('lastTicker', symbol);
+
+      // 2. Update URL silently without a full reload
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('symbol', symbol);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [symbol, router, pathname, searchParams]);
 
   // Load Data
   useEffect(() => {
