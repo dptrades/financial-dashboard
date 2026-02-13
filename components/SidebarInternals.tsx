@@ -142,7 +142,7 @@ export default function SidebarInternals({ onSectorClick }: Props) {
         const interval = setInterval(() => {
             fetchInternals();
             fetchConvictionStats();
-        }, 60000); // 60s refresh
+        }, 600000); // 10 minutes
 
         return () => clearInterval(interval);
     }, []);

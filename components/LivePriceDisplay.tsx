@@ -62,13 +62,7 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
     useEffect(() => {
         fetchLivePrice();
 
-        // Poll based on likely market hours
-        const now = new Date();
-        const hour = now.getHours();
-        const day = now.getDay();
-        const isLikelyMarketHours = day >= 1 && day <= 5 && hour >= 9 && hour <= 16;
-        const pollInterval = isLikelyMarketHours ? 5000 : 30000;
-
+        const pollInterval = 60000;
         const interval = setInterval(fetchLivePrice, pollInterval);
         return () => clearInterval(interval);
     }, [fetchLivePrice]);

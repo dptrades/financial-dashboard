@@ -18,9 +18,6 @@ interface SidebarProps {
     setSymbol: (s: string) => void;
     stockInput: string;
     setStockInput: (s: string) => void;
-
-    debouncedStock?: string; // Add this
-    setDebouncedStock: (s: string) => void;
     interval: string;
     setInterval: (i: string) => void;
     data: IndicatorData[];
@@ -101,9 +98,6 @@ export default function Sidebar({
     setSymbol,
     stockInput,
     setStockInput,
-
-    debouncedStock,
-    setDebouncedStock,
     interval,
     setInterval,
     data,
@@ -126,12 +120,12 @@ export default function Sidebar({
                 if (latest.close > (latest.ema50 || 0)) trend = 'bullish';
                 else if (latest.close < (latest.ema50 || 0)) trend = 'bearish';
 
-                const sig = await generateOptionSignal(latest.close, latest.atr14, trend, latest.rsi14 || 50, latest.ema50, undefined, debouncedStock);
+                const sig = await generateOptionSignal(latest.close, latest.atr14, trend, latest.rsi14 || 50, latest.ema50, undefined, symbol);
                 setOptionsSignal(sig);
             }
         };
         fetchSignal();
-    }, [latest, stats, debouncedStock]);
+    }, [latest, stats, symbol]);
 
     return (
         <aside className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col h-full overflow-y-auto custom-scrollbar">

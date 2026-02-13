@@ -44,9 +44,8 @@ export default function Dashboard() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [analystData, setAnalystData] = useState<NewsItem[]>([]);
   const [stats, setStats] = useState<PriceStats | null>(null);
-  const [symbol, setSymbol] = useState('SPY');
+  const [symbol, setSymbol] = useState('AAPL'); // Unified source of truth for the active ticker
   const [stockInput, setStockInput] = useState('AAPL');
-  const [debouncedStock, setDebouncedStock] = useState('AAPL');
 
   const [interval, setIntervalState] = useState('1d'); // 15m, 1h, 4h, 1d
   const [loading, setLoading] = useState(true);
@@ -75,7 +74,6 @@ export default function Dashboard() {
       setSymbol(urlSymbol);
       // Also update the stockInput to match so it doesn't look weird
       setStockInput(urlSymbol);
-      setDebouncedStock(urlSymbol);
       // Force loading state reset to ensure UI feedback
       setLoading(true);
     }
@@ -84,8 +82,10 @@ export default function Dashboard() {
   // Debounce stock input (only if user is typing, not if URL changed)
   useEffect(() => {
     const handler = setTimeout(() => {
-      if (stockInput.trim() && stockInput !== symbol) {
-        setDebouncedStock(stockInput.trim());
+      const trimmedInput = stockInput.trim().toUpperCase();
+      if (trimmedInput && trimmedInput !== symbol) {
+        console.log('[Dashboard] Debounce triggering update for:', trimmedInput);
+        setSymbol(trimmedInput);
       }
     }, 800);
 
@@ -101,8 +101,15 @@ export default function Dashboard() {
     const loadData = async () => {
       setLoading(true);
       setError('');
+      setData([]); // Clear old data immediately to prevent stale UI
+      setStats(null);
+      setNews([]);
+      setAnalystData([]);
+      setOptionsSignal(null); // Clear signal too
+      setTop3Options([]); // Clear discovery too
 
-      const targetSymbol = debouncedStock;
+      const targetSymbol = symbol;
+      console.log('[Dashboard] loadData triggered for symbol:', targetSymbol);
 
       if (!targetSymbol) {
         setLoading(false);
@@ -170,20 +177,20 @@ export default function Dashboard() {
 
     loadData();
 
-    // Auto-refresh chart and news every 15 seconds
+    // Auto-refresh chart and news every 10 minutes
     const intervalId = setInterval(() => {
       // Only refresh if tab is visible
       if (!document.hidden && !ignore) {
         console.log('Auto-refreshing dashboard data...');
         loadData();
       }
-    }, 300000); // 5 minutes
+    }, 600000); // 10 minutes
 
     return () => {
       ignore = true;
       clearInterval(intervalId);
     };
-  }, [symbol, debouncedStock, interval]);
+  }, [symbol, interval]);
 
   const chartData = data.slice(-viewScope);
 
@@ -221,7 +228,12 @@ export default function Dashboard() {
   const [top3Options, setTop3Options] = useState<OptionRecommendation[]>([]);
 
   useEffect(() => {
+    let ignore = false;
     const fetchSignal = async () => {
+      // Clear old data immediately to prevent stale UI during load
+      setOptionsSignal(null);
+      setTop3Options([]);
+
       if (latest && stats && latest.atr14) {
         try {
           // 1. Fetch Option Signal via API
@@ -235,31 +247,32 @@ export default function Dashboard() {
               rsi: latest.rsi14 || 50,
               ema50: latest.ema50,
               indicators: latest,
-              symbol: debouncedStock,
+              symbol: symbol,
               fundamentalConfirmations: analystData.filter(a => a.sentiment === (currentTrend === 'bullish' ? 'positive' : 'negative')).length,
               socialConfirmations: Math.floor(Math.abs(sentimentScore - 50) / 15) + 1
             })
           });
-          if (sigRes.ok) {
+          if (sigRes.ok && !ignore) {
             const sig = await sigRes.json();
             setOptionsSignal(sig);
           }
 
           // 2. Fetch Top 3 Options via API
-          if (debouncedStock) {
-            const topRes = await fetch(`/api/options/discovery?symbol=${debouncedStock}&price=${latest.close}&trend=${currentTrend}&rsi=${latest.rsi14 || 50}`);
-            if (topRes.ok) {
+          if (symbol && !ignore) {
+            const topRes = await fetch(`/api/options/discovery?symbol=${symbol}&price=${latest.close}&trend=${currentTrend}&rsi=${latest.rsi14 || 50}`);
+            if (topRes.ok && !ignore) {
               const top = await topRes.json();
               setTop3Options(top);
             }
           }
         } catch (e) {
-          console.error('Failed to fetch options data from server:', e);
+          if (!ignore) console.error('Failed to fetch options data from server:', e);
         }
       }
     };
     fetchSignal();
-  }, [latest, stats, currentTrend, debouncedStock]);
+    return () => { ignore = true; };
+  }, [latest, stats, currentTrend, symbol]);
 
   return (
     <div className="flex h-screen bg-gray-900 text-white font-sans">
@@ -268,8 +281,6 @@ export default function Dashboard() {
         setSymbol={setSymbol}
         stockInput={stockInput}
         setStockInput={setStockInput}
-        debouncedStock={debouncedStock}
-        setDebouncedStock={setDebouncedStock}
         interval={interval}
         setInterval={(i) => { setIntervalState(i); setViewScope(i === '1d' ? 365 : 100); }}
         data={data}
@@ -284,7 +295,7 @@ export default function Dashboard() {
       <main className="flex-1 p-4 md:p-6 flex flex-col overflow-y-auto w-full pt-16 md:pt-6">
         <header className="flex flex-col gap-4 mb-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            {/* LEFT: Ticker, Price, Sentiment */}
+            {/* LEFT: Ticker, Price */}
             <div className="flex flex-wrap items-center gap-4 md:gap-8 w-full md:w-auto">
               {/* 1. Ticker Selector */}
               <div className="flex items-center gap-2">
@@ -294,8 +305,11 @@ export default function Dashboard() {
                     value={stockInput}
                     onChange={(e) => setStockInput(e.target.value.toUpperCase())}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && stockInput.trim()) {
-                        setDebouncedStock(stockInput.trim());
+                      if (e.key === 'Enter') {
+                        const trimmedInput = stockInput.trim().toUpperCase();
+                        if (trimmedInput) {
+                          setSymbol(trimmedInput);
+                        }
                       }
                     }}
                     className="text-3xl md:text-4xl font-black bg-transparent border-none focus:outline-none text-white tracking-tighter uppercase w-24 md:w-32 placeholder-gray-700"
@@ -312,20 +326,17 @@ export default function Dashboard() {
               {/* 2. Price & Change Info */}
               <div className="flex flex-col">
                 <LivePriceDisplay
-                  symbol={debouncedStock}
+                  symbol={symbol}
                   fallbackPrice={stats?.currentPrice}
                   enabled={!loading}
                   showChange={true}
                 />
               </div>
 
-              {/* 3. Conviction / Sentiment Score - Redesigned to match Picks */}
-
-
-              {/* 4. Mini Signals (HeaderSignals - Trend Only) & Analyst */}
+              {/* 3. Mini Signals (Trend Only) & Analyst */}
               <div className="flex flex-row items-center gap-2">
                 {data.length > 0 && <HeaderSignals latestData={data[data.length - 1]} showRSI={true} />}
-                <HeaderAnalyst symbol={debouncedStock} analystNews={analystData} />
+                <HeaderAnalyst symbol={symbol} analystNews={analystData} />
               </div>
             </div>
 
@@ -344,7 +355,8 @@ export default function Dashboard() {
               {/* Deep Dive - Takes 2/3 - FIRST in DOM = LEFT */}
               <div className="md:col-span-2">
                 <DeepDiveContent
-                  symbol={debouncedStock}
+                  key={symbol}
+                  symbol={symbol}
                   showOptionsFlow={false}
                 />
               </div>
@@ -369,7 +381,7 @@ export default function Dashboard() {
             {/* TOP 3 OPTIONS DISCOVERY (Moved below Deep Dive) */}
             <TopOptionsList
               options={top3Options}
-              symbol={debouncedStock || ''}
+              symbol={symbol || ''}
               loading={loading || (top3Options.length === 0 && !error)}
             />
 
@@ -394,7 +406,6 @@ export default function Dashboard() {
         onClose={() => setSelectedSector(null)}
         onSelectStock={(s) => {
           setStockInput(s);
-          setDebouncedStock(s);
           setSymbol(s);
         }}
       />

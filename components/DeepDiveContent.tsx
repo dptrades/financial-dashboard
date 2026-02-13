@@ -25,15 +25,18 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
     const [error, setError] = useState("");
 
     useEffect(() => {
+        console.log('[DeepDiveContent] Received new symbol prop:', symbol);
         if (symbol) {
+            setData(null);
+            setError("");
             fetchDetails(symbol);
 
-            // Auto-refresh every 60 seconds
-            const interval = setInterval(() => {
+            // Auto-refresh every 10 minutes
+            const intervalId = setInterval(() => {
                 fetchDetails(symbol);
-            }, 300000); // 5 minutes
+            }, 600000); // 10 minutes
 
-            return () => clearInterval(interval);
+            return () => clearInterval(intervalId);
         } else {
             setData(null);
         }
