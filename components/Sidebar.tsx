@@ -157,8 +157,8 @@ export default function Sidebar({
                 <Link
                     href="/"
                     className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'dashboard'
-                            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                            : 'text-blue-400/70 hover:text-blue-400 hover:bg-blue-500/10'
+                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                        : 'text-blue-400/70 hover:text-blue-400 hover:bg-blue-500/10'
                         }`}
                 >
                     Live Dashboard
@@ -166,17 +166,17 @@ export default function Sidebar({
                 <Link
                     href="/picks"
                     className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'picks'
-                            ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                            : 'text-purple-400/70 hover:text-purple-400 hover:bg-purple-500/10'
+                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                        : 'text-purple-400/70 hover:text-purple-400 hover:bg-purple-500/10'
                         }`}
                 >
-                    Top Picks (Weekly)
+                    Top Picks
                 </Link>
                 <Link
                     href="/sectors"
                     className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'sectors'
-                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                            : 'text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/10'
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        : 'text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/10'
                         }`}
                 >
                     Sector Heatmap
@@ -184,8 +184,8 @@ export default function Sidebar({
                 <Link
                     href="/conviction"
                     className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'conviction'
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                            : 'text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-500/10'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-500/10'
                         }`}
                 >
                     ✨ Alpha Hunter

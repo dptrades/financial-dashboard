@@ -30,7 +30,17 @@ export async function GET(request: Request) {
         let change = publicQuote?.change || 0;
         let changePercent = publicQuote?.changePercent || 0;
         let previousClose = 0;
-        let source = publicQuote ? 'public.com' : (alpacaPrice !== null ? 'alpaca' : 'yahoo');
+
+        let source = 'public.com';
+        if (!publicQuote) {
+            if (publicClient.lastError) {
+                source = `public.com (${publicClient.lastError.toLowerCase()})`;
+            } else if (alpacaPrice !== null) {
+                source = 'alpaca';
+            } else {
+                source = 'yahoo';
+            }
+        }
 
         // 3. Fallback/Complement with Yahoo for metrics
         try {

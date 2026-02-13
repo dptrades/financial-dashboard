@@ -93,7 +93,11 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
     if (!publicClient.isConfigured()) {
         dataSource = 'Public.com (Estimated)';
     } else if (!publicQuote) {
-        dataSource = 'Alpaca (Fallback)';
+        if (publicClient.lastError) {
+            dataSource = `Public.com (${publicClient.lastError})`;
+        } else {
+            dataSource = 'Alpaca (Fallback)';
+        }
     } else {
         dataSource = 'Public.com';
         marketSession = publicQuote.session || 'REG';

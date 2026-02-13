@@ -1,5 +1,6 @@
 import YahooFinance from 'yahoo-finance2';
 import { OptionsChain, OptionContract } from '../types/options';
+import { publicClient } from './public-api';
 
 const yahooFinance = new YahooFinance();
 
@@ -17,11 +18,55 @@ export interface UnusualOption {
 }
 
 export async function scanUnusualOptions(symbol: string): Promise<UnusualOption[]> {
+    // 1. Try Public.com First (Primary Source for Options)
+    if (publicClient.isConfigured()) {
+        try {
+            console.log(`[OptionsFlow] Fetching unusual options from Public.com for ${symbol}...`);
+            const chain = await publicClient.getOptionChain(symbol);
+            if (chain) {
+                const unusual: UnusualOption[] = [];
+                for (const exp in chain.options) {
+                    for (const strikeStr in chain.options[exp]) {
+                        const strike = parseFloat(strikeStr);
+                        const data = chain.options[exp][strike];
+
+                        const process = (opt: any, type: 'CALL' | 'PUT') => {
+                            if (opt && opt.volume > (opt.openInterest || 0) && opt.volume > 100) {
+                                const ratio = opt.openInterest > 0 ? (opt.volume / opt.openInterest) : opt.volume;
+                                unusual.push({
+                                    symbol: opt.symbol,
+                                    type,
+                                    strike: opt.strike,
+                                    expiry: opt.expiration,
+                                    lastPrice: opt.last,
+                                    volume: opt.volume,
+                                    openInterest: opt.openInterest,
+                                    volToOiRatio: parseFloat(ratio.toFixed(2)),
+                                    impliedVolatility: opt.greeks?.impliedVolatility ? parseFloat((opt.greeks.impliedVolatility * 100).toFixed(1)) : 0,
+                                    bias: type === 'CALL' ? 'BULLISH' : 'BEARISH'
+                                });
+                            }
+                        };
+                        process(data.call, 'CALL');
+                        process(data.put, 'PUT');
+                    }
+                }
+                if (unusual.length > 0) {
+                    console.log(`[OptionsFlow] Found ${unusual.length} unusual options on Public.com`);
+                    return unusual.sort((a, b) => b.volume - a.volume);
+                }
+            }
+        } catch (e) {
+            console.error(`Public.com Options Scan failed for ${symbol}`, e);
+        }
+    }
+
+    // 2. Fallback to Yahoo Finance
     try {
-        // Fetch option chain for next expiry
-        // Yahoo Finance query usually requires specific date or it returns nearest
+        console.log(`[OptionsFlow] Falling back to Yahoo Finance for ${symbol}...`);
         const queryOptions = { lang: 'en-US', region: 'US' };
         const result = await yahooFinance.options(symbol, queryOptions);
+        // ... (rest of the existing Yahoo logic)
 
         if (!result || !result.options || result.options.length === 0) return [];
 

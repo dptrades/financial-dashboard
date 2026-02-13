@@ -268,10 +268,18 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
             {/* 3. UNUSUAL OPTIONS FLOW */}
             {showOptionsFlow && (
                 <div>
-                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5 text-yellow-400" />
-                        Unusual Options Flow (Next 90 Days)
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5 text-yellow-400" />
+                            Unusual Options Flow (Next 90 Days)
+                        </h3>
+                        {data.analysis.dataSource !== 'Public.com' && (
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-[10px] text-yellow-500 font-bold uppercase tracking-wider animate-pulse">
+                                <AlertCircle className="w-3 h-3" />
+                                Fallback Data (Yahoo/Estimated)
+                            </div>
+                        )}
+                    </div>
                     {data.optionsFlow.length === 0 ? (
                         <div className="p-6 text-center border border-gray-800 rounded-lg text-gray-300">
                             No unusual activity detected (Vol {'>'} OI) for upcoming expiries.

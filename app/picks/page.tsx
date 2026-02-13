@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, TrendingUp, DollarSign, Calendar, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, TrendingUp, DollarSign, Calendar, ArrowRight, X } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import type { ConvictionStock } from '@/types/stock';
 import ConvictionDetailModal from '@/components/ConvictionDetailModal';
@@ -13,6 +13,7 @@ export default function TopPicksPage() {
     const router = useRouter();
     const [picks, setPicks] = useState<ConvictionStock[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showLogic, setShowLogic] = useState(false);
 
     useEffect(() => {
         const runScan = async () => {
@@ -59,7 +60,15 @@ export default function TopPicksPage() {
 
             <main className="flex-1 p-6 flex flex-col overflow-hidden">
                 <header className="mb-8">
-                    <h2 className="text-3xl font-bold tracking-tight text-blue-400">Weekly Top Picks</h2>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-3xl font-bold tracking-tight text-blue-400">Top Picks</h2>
+                        <button
+                            onClick={() => setShowLogic(true)}
+                            className="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium underline underline-offset-4 mt-2"
+                        >
+                            (How did I do that?)
+                        </button>
+                    </div>
                     <p className="text-sm text-gray-200 mt-1">
                         High Mega Cap picks from S&P 500 & Nasdaq 100 • AI-analyzed for Momentum, Trends & Technicals
                     </p>
@@ -168,6 +177,87 @@ export default function TopPicksPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Top Picks Logic Modal */}
+                {showLogic && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowLogic(false)} />
+                        <div className="relative z-50 bg-gray-900 border border-gray-700/50 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                            <div className="p-1 bg-gradient-to-r from-blue-500 to-purple-500" />
+                            <div className="p-6 md:p-8">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-white mb-1">Top Picks Logic</h2>
+                                        <p className="text-gray-400 text-sm">How we identify high-conviction mega-caps</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowLogic(false)}
+                                        className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <p className="text-gray-100 text-[15px] font-medium leading-relaxed mb-6">
+                                        Unlike Alpha Hunter which scans the broader market, **Top Picks** is hyper-focused on the most liquid, institutional-grade companies in the S&P 500 and Nasdaq 100.
+                                    </p>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+                                                <span className="font-bold text-blue-400 text-sm">Institutional Universe</span>
+                                            </div>
+                                            <p className="text-sm text-gray-200 leading-relaxed">
+                                                Limited to stocks with market caps &gt;$200B. We filter for companies with the highest institutional ownership to ensure stability and liquidity.
+                                            </p>
+                                        </div>
+
+                                        <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]" />
+                                                <span className="font-bold text-purple-400 text-sm">Momentum Scoring</span>
+                                            </div>
+                                            <p className="text-sm text-gray-200 leading-relaxed">
+                                                Prioritizes stocks trading above key psychological levels (50/200 EMAs) with positive MACD divergence and RSI between 40-70.
+                                            </p>
+                                        </div>
+
+                                        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                                                <span className="font-bold text-emerald-400 text-sm">Growth & Value Balance</span>
+                                            </div>
+                                            <p className="text-sm text-gray-200 leading-relaxed">
+                                                Cross-references Revenue Growth against P/E ratios to identify "GARP" (Growth at a Reasonable Price) setups.
+                                            </p>
+                                        </div>
+
+                                        <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
+                                                <span className="font-bold text-yellow-400 text-sm">Consensus Overdrive</span>
+                                            </div>
+                                            <p className="text-sm text-gray-200 leading-relaxed">
+                                                Requires at least 3 recent "Strong Buy" ratings from Tier-1 investment banks and &gt;10% upside potential to the mean price target.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 flex justify-end">
+                                    <button
+                                        onClick={() => setShowLogic(false)}
+                                        className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2 rounded-xl border border-gray-700 transition-all font-bold text-sm"
+                                    >
+                                        I Understand
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );

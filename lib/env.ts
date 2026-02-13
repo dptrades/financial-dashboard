@@ -44,8 +44,14 @@ export const env = {
     // Notification Services
     RESEND_API_KEY: getEnvOrDefault('RESEND_API_KEY', null),
     ALERT_EMAIL: getEnvOrDefault('ALERT_EMAIL', null),
+    ALERT_EMAILS: getEnvOrDefault('ALERT_EMAILS', null),
     get hasEmail() {
-        return Boolean(this.RESEND_API_KEY && this.ALERT_EMAIL);
+        return Boolean(this.RESEND_API_KEY && (this.ALERT_EMAIL || this.ALERT_EMAILS));
+    },
+    get emailRecipients(): string[] {
+        if (this.ALERT_EMAILS) return this.ALERT_EMAILS.split(',').map(e => e.trim());
+        if (this.ALERT_EMAIL) return [this.ALERT_EMAIL];
+        return [];
     },
 
     TWILIO_ACCOUNT_SID: getEnvOrDefault('TWILIO_ACCOUNT_SID', null),

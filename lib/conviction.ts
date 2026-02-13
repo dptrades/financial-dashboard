@@ -206,7 +206,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     const W_SOCIAL = 0.15;
     const W_DISCOVERY = 0.25; // Bonus for smart discovery signals
 
-    console.log("🚀 Starting Mega-Cap Conviction Scan (Weekly Top Picks)...");
+    console.log("🚀 Starting Mega-Cap Conviction Scan (Top Picks)...");
     console.log("🔑 Public.com API Status:", publicClient.isConfigured() ? "Configured (Live) ✅" : "Missing (Estimated) ⚠️");
 
     // Build symbol list - combine static watchlist with dynamic discoveries

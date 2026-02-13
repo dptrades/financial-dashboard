@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Activity, TrendingUp, TrendingDown } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, Info, X } from 'lucide-react';
 
 interface MarketData {
     symbol: string;
@@ -68,6 +68,7 @@ export default function SidebarInternals({ onSectorClick }: Props) {
         decliners: number;
         bullishPercent: number;
     } | null>(null);
+    const [activeLogic, setActiveLogic] = useState<'bullish' | 'breadth' | null>(null);
 
     useEffect(() => {
         const fetchInternals = async () => {
@@ -182,12 +183,18 @@ export default function SidebarInternals({ onSectorClick }: Props) {
                         )}
                     </div>
                 </div>
-                <div className="bg-gray-800 p-2 rounded border border-gray-700">
-                    <span className="text-[10px] text-gray-200 block">Bullish %</span>
+                <button
+                    onClick={() => setActiveLogic('bullish')}
+                    className="bg-gray-800 p-2 rounded border border-gray-700 hover:border-blue-500/50 hover:bg-gray-700/50 transition-all text-left group"
+                >
+                    <div className="flex justify-between items-center mb-0.5">
+                        <span className="text-[10px] text-gray-200 block">Bullish %</span>
+                        <Info className="w-2.5 h-2.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                    </div>
                     <span className={`text-sm font-bold ${stats.bullishPercent > 50 ? 'text-green-400' : 'text-red-400'}`}>
                         {stats.bullishPercent.toFixed(0)}%
                     </span>
-                </div>
+                </button>
             </div>
 
             {/* Major Indices */}
@@ -212,23 +219,33 @@ export default function SidebarInternals({ onSectorClick }: Props) {
             </div>
 
             {/* Breadth Bar */}
-            <div className="bg-gray-800 p-2 rounded border border-gray-700">
+            <button
+                onClick={() => setActiveLogic('breadth')}
+                className="w-full bg-gray-800 p-2 rounded border border-gray-700 hover:border-blue-500/50 hover:bg-gray-700/50 transition-all text-left group"
+            >
                 <div className="flex justify-between text-[10px] text-gray-200 mb-1">
-                    <span className="text-green-400">▲ {stats.advancers}</span>
-                    <span className="text-gray-300">Breadth</span>
-                    <span className="text-red-400">▼ {stats.decliners}</span>
+                    <span className="text-green-400 font-bold flex items-center gap-1">
+                        ▲ {stats.advancers}
+                    </span>
+                    <span className="text-gray-300 font-medium flex items-center gap-1">
+                        Breadth
+                        <Info className="w-2.5 h-2.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                    </span>
+                    <span className="text-red-400 font-bold flex items-center gap-1">
+                        ▼ {stats.decliners}
+                    </span>
                 </div>
                 <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden flex">
                     <div
-                        className="h-full bg-green-500"
+                        className="h-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]"
                         style={{ width: `${(stats.advancers / (stats.advancers + stats.decliners || 1)) * 100}%` }}
                     />
                     <div
-                        className="h-full bg-red-500"
+                        className="h-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]"
                         style={{ width: `${(stats.decliners / (stats.advancers + stats.decliners || 1)) * 100}%` }}
                     />
                 </div>
-            </div>
+            </button>
 
             {/* Sector Performance (Stacked like Indexes) */}
             <div className="pt-2 border-t border-gray-800 space-y-1">
@@ -251,6 +268,88 @@ export default function SidebarInternals({ onSectorClick }: Props) {
                 )}
             </div>
 
+            {/* Logic Explanation Modal */}
+            {activeLogic && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setActiveLogic(null)} />
+                    <div className="relative z-50 bg-gray-900 border border-gray-700/50 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className={`p-1 bg-gradient-to-r ${activeLogic === 'bullish' ? 'from-blue-500 to-emerald-500' : 'from-emerald-500 to-red-500'}`} />
+                        <div className="p-6">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white mb-1">
+                                        {activeLogic === 'bullish' ? 'Bullish % Indicator' : 'Market Breadth'}
+                                    </h2>
+                                    <p className="text-gray-400 text-xs">Internal Market Health Metric</p>
+                                </div>
+                                <button
+                                    onClick={() => setActiveLogic(null)}
+                                    className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {activeLogic === 'bullish' ? (
+                                    <>
+                                        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                                            <p className="text-[15px] text-white font-medium leading-relaxed">
+                                                This monitors our curated universe of **~120 Institutional Mega-Caps** to measure structural market health.
+                                            </p>
+                                        </div>
+                                        <div className="space-y-4 pt-2">
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(96,165,250,0.6)]" />
+                                                <p className="text-sm text-gray-200 leading-snug">Calculates the percentage of these leading stocks currently trading above both their **50-day and 200-day EMAs**.</p>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(96,165,250,0.6)]" />
+                                                <p className="text-sm text-gray-200 leading-snug">A reading **above 50%** means the majority of the market's "General" stocks are in a technical uptrend.</p>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+                                                <p className="text-sm text-gray-200 leading-snug">**Warning Signal**: If the index is rising but Bullish % is falling, it indicates "Narrow Breadth" — a potential trap where only 2-3 stocks are holding up the entire market.</p>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                            <p className="text-[15px] text-white font-medium leading-relaxed">
+                                                Breadth tracks the **immediate raw participation** of our ~120 stock mega-cap universe.
+                                            </p>
+                                        </div>
+                                        <div className="space-y-4 pt-2">
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-green-400 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
+                                                <p className="text-sm text-gray-200 leading-snug">**Advancers (▲)**: The live count of stocks from our 120-symbol list currently trading **higher** than yesterday's close.</p>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-red-400 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
+                                                <p className="text-sm text-gray-200 leading-snug">**Decliners (▼)**: The live count of stocks from that same list currently trading **lower** than yesterday's close.</p>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-white mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.6)]" />
+                                                <p className="text-sm text-gray-200 leading-snug">The ratio reveals if a rally is "Full Participation" (whole army moving) or a "Fake Out" (just a few names moving).</p>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="mt-8 flex justify-end">
+                                <button
+                                    onClick={() => setActiveLogic(null)}
+                                    className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2 rounded-xl border border-gray-700 transition-all font-bold text-sm"
+                                >
+                                    I Understand
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

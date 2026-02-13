@@ -20,12 +20,11 @@ export interface NotificationPayload {
  * Requires: RESEND_API_KEY environment variable
  */
 export async function sendEmailAlert(payload: NotificationPayload): Promise<boolean> {
-    if (!env.hasEmail) {
-        console.log('[Notify] Email skipped - RESEND_API_KEY or ALERT_EMAIL not configured');
+    const recipients = env.emailRecipients;
+    if (recipients.length === 0) {
+        console.log('[Notify] Email skipped - no recipients configured');
         return false;
     }
-
-    const alertEmail = env.ALERT_EMAIL!;
 
     try {
         // Format stock list as HTML table
@@ -78,14 +77,14 @@ export async function sendEmailAlert(payload: NotificationPayload): Promise<bool
             },
             body: JSON.stringify({
                 from: 'DP TradeDesk <alerts@resend.dev>',
-                to: [alertEmail],
+                to: recipients,
                 subject: payload.subject,
                 html: html
             })
         });
 
         if (response.ok) {
-            console.log(`[Notify] Email sent to ${alertEmail}`);
+            console.log(`[Notify] Email sent to ${recipients.join(', ')}`);
             return true;
         } else {
             const error = await response.text();
