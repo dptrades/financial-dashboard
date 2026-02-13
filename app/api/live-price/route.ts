@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import YahooFinance from 'yahoo-finance2';
 import { fetchAlpacaPrice } from '@/lib/alpaca';
+import { publicClient } from '@/lib/public-api';
 
 const yahooFinance = new YahooFinance();
 
@@ -18,26 +19,29 @@ export async function GET(request: Request) {
     try {
         const ticker = symbol.toUpperCase();
 
-        // Try to get live price from Alpaca first
-        const alpacaPrice = await fetchAlpacaPrice(ticker);
+        // 1. Try Public.com First (Primary Source)
+        const publicQuote = await publicClient.getQuote(ticker);
 
-        // Fetch quote data from Yahoo for change info
-        let change = 0;
-        let changePercent = 0;
+        // 2. Fallback to Alpaca
+        const alpacaPrice = publicQuote ? null : await fetchAlpacaPrice(ticker);
+
+        // Fetch quote data from Yahoo for change info (if Public.com didn't provide it)
+        let price = publicQuote?.price || alpacaPrice;
+        let change = publicQuote?.change || 0;
+        let changePercent = publicQuote?.changePercent || 0;
         let previousClose = 0;
-        let price = alpacaPrice;
+        let source = publicQuote ? 'public.com' : (alpacaPrice !== null ? 'alpaca' : 'yahoo');
 
+        // 3. Fallback/Complement with Yahoo for metrics
         try {
             const quote: any = await yahooFinance.quote(ticker);
             if (quote) {
-                change = quote.regularMarketChange || 0;
-                changePercent = quote.regularMarketChangePercent || 0;
-                previousClose = quote.regularMarketPreviousClose || 0;
-
-                // Use Yahoo price if Alpaca isn't available
-                if (price === null) {
-                    price = quote.regularMarketPrice || null;
+                if (price === null) price = quote.regularMarketPrice || null;
+                if (!publicQuote) {
+                    change = quote.regularMarketChange || 0;
+                    changePercent = quote.regularMarketChangePercent || 0;
                 }
+                previousClose = quote.regularMarketPreviousClose || 0;
             }
         } catch (yahooError) {
             console.warn('[Live Price] Yahoo quote error:', yahooError);
@@ -58,7 +62,7 @@ export async function GET(request: Request) {
             change,
             changePercent,
             previousClose,
-            source: alpacaPrice !== null ? 'alpaca' : 'yahoo',
+            source,
             timestamp: new Date().toISOString()
         });
     } catch (error) {

@@ -90,9 +90,12 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
     ]);
 
     // Track which source we are using
-    if (!publicQuote) {
+    if (!publicClient.isConfigured()) {
+        dataSource = 'Public.com (Estimated)';
+    } else if (!publicQuote) {
         dataSource = 'Alpaca (Fallback)';
     } else {
+        dataSource = 'Public.com';
         marketSession = publicQuote.session || 'REG';
     }
 

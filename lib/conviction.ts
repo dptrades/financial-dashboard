@@ -4,6 +4,7 @@ import { calculateIndicators } from './indicators';
 import { calculateSentimentScore } from './news';
 import { getNewsData } from './news-service';
 import { fetchAlpacaBars } from './alpaca';
+import { publicClient } from './public-api';
 import { runSmartScan, DiscoveredStock } from './smart-scanner';
 import { SECTOR_MAP, SCANNER_WATCHLIST } from './constants';
 import { generateOptionSignal } from './options';
@@ -206,7 +207,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     const W_DISCOVERY = 0.25; // Bonus for smart discovery signals
 
     console.log("🚀 Starting Mega-Cap Conviction Scan (Weekly Top Picks)...");
-    console.log("🔑 Alpaca Key Status:", process.env.ALPACA_API_KEY ? "Loaded ✅" : "Missing ❌");
+    console.log("🔑 Public.com API Status:", publicClient.isConfigured() ? "Configured (Live) ✅" : "Missing (Estimated) ⚠️");
 
     // Build symbol list - combine static watchlist with dynamic discoveries
     let symbolsToScan: string[] = [...CONVICTION_WATCHLIST];
@@ -238,16 +239,17 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
             try {
                 // 1. Fetch Data (Hybrid: Alpaca for Live Price/Chart, Yahoo for Fundamentals)
                 console.log(`[Conviction] Fetching data for ${symbol}...`);
-                const [quote, yahooChart, alpacaBars, socialNews] = await Promise.all([
+                const [quote, yahooChart, alpacaBars, socialNews, publicQuote] = await Promise.all([
                     (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price', 'assetProfile'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
                     (yahooFinance.chart(symbol, { period1: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
                     (fetchAlpacaBars(symbol, '1Day', 253).then(b => { return b; })),
-                    (getNewsData(symbol, 'social') as Promise<any>).catch(e => [])
+                    (getNewsData(symbol, 'social') as Promise<any>).catch(e => []),
+                    publicClient.getQuote(symbol)
                 ]);
 
-                // DECISION: Use Alpaca if available, else fallback to Yahoo
+                // DECISION: Use Public.com for live price, Alpaca for Chart, Yahoo as fallback
                 let cleanData: any[] = [];
-                let currentPrice = 0;
+                let currentPrice = publicQuote?.price || 0;
                 let usingAlpaca = false;
 
                 if (alpacaBars && alpacaBars.length > 50) {
@@ -538,7 +540,7 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
     const W_DISCOVERY = 0.25; // Bonus for smart discovery signals
 
     console.log("🚀 Starting Alpha Hunter Scan (Full Market)...");
-    console.log("🔑 Alpaca Key Status:", process.env.ALPACA_API_KEY ? "Loaded ✅" : "Missing ❌");
+    console.log("🔑 Public.com API Status:", publicClient.isConfigured() ? "Configured (Live) ✅" : "Missing (Estimated) ⚠️");
 
     // Build symbol list - combine broader watchlist with dynamic discoveries
     let symbolsToScan: string[] = [...ALPHA_HUNTER_WATCHLIST];
@@ -569,16 +571,17 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
             try {
                 // 1. Fetch Data (Hybrid: Alpaca for Live Price/Chart, Yahoo for Fundamentals)
                 console.log(`[Alpha Hunter] Fetching data for ${symbol}...`);
-                const [quote, yahooChart, alpacaBars, socialNews] = await Promise.all([
+                const [quote, yahooChart, alpacaBars, socialNews, publicQuote] = await Promise.all([
                     (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price', 'assetProfile'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
                     (yahooFinance.chart(symbol, { period1: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
                     (fetchAlpacaBars(symbol, '1Day', 253).then(b => { return b; })),
-                    (getNewsData(symbol, 'social') as Promise<any>).catch(e => [])
+                    (getNewsData(symbol, 'social') as Promise<any>).catch(e => []),
+                    publicClient.getQuote(symbol)
                 ]);
 
-                // DECISION: Use Alpaca if available, else fallback to Yahoo
+                // DECISION: Use Public.com for live price, Alpaca for Chart, Yahoo as fallback
                 let cleanData: any[] = [];
-                let currentPrice = 0;
+                let currentPrice = publicQuote?.price || 0;
                 let usingAlpaca = false;
 
                 if (alpacaBars && alpacaBars.length > 50) {
@@ -587,8 +590,9 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                         time: new Date(b.t).getTime(),
                         open: b.o, high: b.h, low: b.l, close: b.c, volume: b.v
                     }));
-                    currentPrice = alpacaBars[alpacaBars.length - 1].c;
-                } else if (yahooChart && yahooChart.quotes && yahooChart.quotes.length > 50) {
+                    if (!currentPrice) currentPrice = alpacaBars[alpacaBars.length - 1].c;
+                }
+                else if (yahooChart && yahooChart.quotes && yahooChart.quotes.length > 50) {
                     cleanData = yahooChart.quotes.map((q: any) => ({
                         time: new Date(q.date).getTime(),
                         open: q.open, high: q.high, low: q.low, close: q.close, volume: q.volume

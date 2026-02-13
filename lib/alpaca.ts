@@ -1,3 +1,4 @@
+import { env } from './env';
 
 const BASE_URL = 'https://paper-api.alpaca.markets/v2';
 const DATA_URL = 'https://data.alpaca.markets/v2';
@@ -13,8 +14,8 @@ export interface AlpacaBar {
 
 export async function fetchAlpacaBars(symbol: string, timeframe: '1Day' | '1Hour' | '15Min' = '1Day', limit: number = 100): Promise<AlpacaBar[]> {
     // Fallback to provided keys if env vars fail
-    const apiKey = process.env.ALPACA_API_KEY || 'PK3ADSJ3QHTXXWDUDT7SJDQSDG';
-    const apiSecret = process.env.ALPACA_API_SECRET || '2dj3HdJqjX1VSncZrygyCFRicSPonSNTyJSYh5M5Z7z1';
+    const apiKey = env.ALPACA_API_KEY;
+    const apiSecret = env.ALPACA_API_SECRET;
 
     if (!apiKey || !apiSecret) {
         console.warn(`[Alpaca] Missing Keys for ${symbol}`);
@@ -75,8 +76,8 @@ export async function fetchAlpacaBars(symbol: string, timeframe: '1Day' | '1Hour
 }
 
 export async function fetchAlpacaPrice(symbol: string): Promise<number | null> {
-    const apiKey = process.env.ALPACA_API_KEY || 'PK3ADSJ3QHTXXWDUDT7SJDQSDG';
-    const apiSecret = process.env.ALPACA_API_SECRET || '2dj3HdJqjX1VSncZrygyCFRicSPonSNTyJSYh5M5Z7z1';
+    const apiKey = env.ALPACA_API_KEY;
+    const apiSecret = env.ALPACA_API_SECRET;
 
     if (!apiKey || !apiSecret) return null;
 
