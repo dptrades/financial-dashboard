@@ -42,12 +42,11 @@ export default function TopPicksPage() {
             {/* Sidebar with "picks" active */}
             <Sidebar
                 currentPage="picks"
-                market="stocks"
-                setMarket={() => { }}
                 symbol="PICK"
                 setSymbol={() => { }}
                 stockInput=""
                 setStockInput={() => { }}
+                debouncedStock=""
                 setDebouncedStock={() => { }}
                 interval="1d"
                 setInterval={() => { }}
@@ -55,6 +54,7 @@ export default function TopPicksPage() {
                 loading={false}
                 stats={null}
                 sentimentScore={50}
+                onSectorClick={() => { }}
             />
 
             <main className="flex-1 p-6 flex flex-col overflow-hidden">

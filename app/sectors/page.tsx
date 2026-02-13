@@ -53,12 +53,11 @@ export default function SectorPage() {
         <div className="flex h-screen bg-gray-900 text-white font-sans">
             <Sidebar
                 currentPage="sectors"
-                market="stocks"
-                setMarket={() => { }}
                 symbol="SECTOR"
                 setSymbol={() => { }}
                 stockInput=""
                 setStockInput={() => { }}
+                debouncedStock=""
                 setDebouncedStock={() => { }}
                 interval="1d"
                 setInterval={() => { }}
@@ -66,6 +65,7 @@ export default function SectorPage() {
                 loading={false}
                 stats={null}
                 sentimentScore={50}
+                onSectorClick={() => { }}
             />
 
             <main className="flex-1 p-6 flex flex-col overflow-hidden">
