@@ -56,12 +56,27 @@ interface TradeResult {
     reason?: string;
 }
 
+import LoginOverlay from '../../components/LoginOverlay';
+
 export default function PortfolioPage() {
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
     const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
     const [loading, setLoading] = useState(true);
     const [executing, setExecuting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [tradeResults, setTradeResults] = useState<TradeResult[] | null>(null);
+
+    useEffect(() => {
+        const checkSession = async () => {
+            try {
+                const res = await fetch('/api/auth/session');
+                setIsAuthenticated(res.ok);
+            } catch (e) {
+                setIsAuthenticated(false);
+            }
+        };
+        checkSession();
+    }, []);
 
     const fetchPortfolio = useCallback(async () => {
         setLoading(true);
@@ -159,6 +174,12 @@ export default function PortfolioPage() {
             setLoading(false);
         }
     };
+
+    if (isAuthenticated === null) return null;
+
+    if (!isAuthenticated) {
+        return <LoginOverlay onLoginSuccess={() => setIsAuthenticated(true)} />;
+    }
 
     return (
         <div className="min-h-screen bg-gray-900 text-white">

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, TrendingUp, DollarSign, Calendar, ArrowRight, X } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
+import LoginOverlay from '@/components/LoginOverlay';
 import type { ConvictionStock } from '@/types/stock';
 import ConvictionDetailModal from '@/components/ConvictionDetailModal';
 
@@ -11,6 +12,7 @@ import { useRouter } from 'next/navigation';
 
 export default function TopPicksPage() {
     const router = useRouter();
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
     const [picks, setPicks] = useState<ConvictionStock[]>([]);
     const [loading, setLoading] = useState(true);
     const [showLogic, setShowLogic] = useState(false);
@@ -31,6 +33,15 @@ export default function TopPicksPage() {
             setLoading(false);
         };
 
+        const checkSession = async () => {
+            try {
+                const res = await fetch('/api/auth/session');
+                setIsAuthenticated(res.ok);
+            } catch (e) {
+                setIsAuthenticated(false);
+            }
+        };
+        checkSession();
         runScan();
     }, []);
 
@@ -38,6 +49,12 @@ export default function TopPicksPage() {
         // Navigate to dashboard with this symbol
         router.push(`/?symbol=${symbol}&market=stocks`);
     };
+
+    if (isAuthenticated === null) return null;
+
+    if (!isAuthenticated) {
+        return <LoginOverlay onLoginSuccess={() => setIsAuthenticated(true)} />;
+    }
 
     return (
         <div className="flex h-screen bg-gray-900 text-white font-sans">

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
+import LoginOverlay from '../../components/LoginOverlay';
 import ConvictionCard from '../../components/ConvictionCard';
 import type { ConvictionStock } from '../../types/stock';
 import { Loader2, RefreshCw, X } from 'lucide-react';
@@ -14,6 +15,7 @@ const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 export default function ConvictionPage() {
     const router = useRouter();
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
     // Sidebar Props (Standardized)
     const [symbol, setSymbol] = useState('AAPL');
     const [stockInput, setStockInput] = useState('NVDA');
@@ -79,6 +81,15 @@ export default function ConvictionPage() {
     };
 
     useEffect(() => {
+        const checkSession = async () => {
+            try {
+                const res = await fetch('/api/auth/session');
+                setIsAuthenticated(res.ok);
+            } catch (e) {
+                setIsAuthenticated(false);
+            }
+        };
+        checkSession();
         fetchConviction();
     }, []);
 
@@ -86,6 +97,12 @@ export default function ConvictionPage() {
         // Navigate to dashboard with this symbol
         router.push(`/?symbol=${symbol}`);
     };
+
+    if (isAuthenticated === null) return null;
+
+    if (!isAuthenticated) {
+        return <LoginOverlay onLoginSuccess={() => setIsAuthenticated(true)} />;
+    }
 
     return (
         <div className="flex h-screen bg-gray-900 text-white font-sans overflow-hidden">

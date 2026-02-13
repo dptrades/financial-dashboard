@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
+import LoginOverlay from '@/components/LoginOverlay';
 import type { ConvictionStock } from '@/types/stock';
 
 type SectorGroup = {
@@ -12,6 +13,7 @@ type SectorGroup = {
 
 export default function SectorPage() {
     const [sectors, setSectors] = useState<SectorGroup[]>([]);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -47,8 +49,23 @@ export default function SectorPage() {
             }
         };
 
+        const checkSession = async () => {
+            try {
+                const res = await fetch('/api/auth/session');
+                setIsAuthenticated(res.ok);
+            } catch (e) {
+                setIsAuthenticated(false);
+            }
+        };
+        checkSession();
         runScan();
     }, []);
+
+    if (isAuthenticated === null) return null;
+
+    if (!isAuthenticated) {
+        return <LoginOverlay onLoginSuccess={() => setIsAuthenticated(true)} />;
+    }
 
     return (
         <div className="flex h-screen bg-gray-900 text-white font-sans">
