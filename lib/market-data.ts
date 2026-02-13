@@ -1,7 +1,8 @@
-import { fetchAlpacaBars, fetchAlpacaPrice } from './alpaca';
+import { fetchAlpacaBars } from './alpaca';
 import YahooFinance from 'yahoo-finance2';
 import { calculateIndicators } from './indicators';
 import { ConvictionStock } from '../types/stock';
+import { publicClient } from './public-api';
 
 const yahooFinance = new YahooFinance();
 
@@ -49,6 +50,8 @@ export interface MultiTimeframeAnalysis {
         dayHigh: number;
         dayLow: number;
     };
+    dataSource: string;
+    marketSession: 'PRE' | 'REG' | 'POST' | 'OFF';
 }
 
 // Helper to map timeframe to Alpaca/Yahoo format
@@ -76,10 +79,25 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
 
     // 1. Fetch Daily Data First (Primary)
     // Run concurrently with live price fetch
-    const [dailyData, livePrice] = await Promise.all([
+    // 1. Fetch Daily Data First (Primary)
+    // Run concurrently with live price fetch and source checks
+    let dataSource = 'Public.com';
+    let marketSession: 'PRE' | 'REG' | 'POST' | 'OFF' = 'REG';
+
+    const [dailyData, publicQuote] = await Promise.all([
         fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars),
-        fetchAlpacaPrice(symbol)
+        publicClient.getQuote(symbol)
     ]);
+
+    // Track which source we are using
+    if (!publicQuote) {
+        dataSource = 'Alpaca (Fallback)';
+    } else {
+        marketSession = publicQuote.session || 'REG';
+    }
+
+    // Use Public.com price if available, fallback to daily close
+    const livePrice = publicQuote?.price || 0;
 
     if (!dailyData || dailyData.length < 50) {
         console.error(`Insufficient daily data for ${symbol}`);
@@ -197,7 +215,9 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
             volatility: (dailyAtr / currentPrice) * 100,
             dayHigh: dailyData[dailyData.length - 1].high,
             dayLow: dailyData[dailyData.length - 1].low
-        }
+        },
+        dataSource,
+        marketSession
     };
 }
 

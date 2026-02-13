@@ -33,42 +33,48 @@ export default function AIAnalysisWidget({ symbol, analysis, optionsFlow, fundam
             <div className="flex flex-row gap-4 items-center">
 
                 {/* LEFT: SIGNAL & SCORE (compact) */}
-                <div className="flex-shrink-0 flex items-center gap-3">
+                <div className="flex-shrink-0 flex flex-col items-center gap-2">
                     <div className="text-center">
-                        <div className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">AI Signal</div>
-                        <div className={`text-lg font-extrabold ${scoreColor} leading-tight`}>{signal}</div>
-                        <div className="text-2xl font-black text-white/90 leading-none">{score}<span className="text-sm text-gray-500">/10</span></div>
+                        <div className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-1">AI Signal</div>
+                        <div className={`text-xl font-bold ${scoreColor} leading-tight mb-0.5`}>{signal}</div>
+                        <div className="text-3xl font-black text-white leading-none">
+                            {score}<span className="text-sm text-gray-400">/10</span>
+                        </div>
                     </div>
                     {fundamentals.targetMeanPrice && (
-                        <div className="text-[10px] text-gray-400 bg-gray-800/50 px-2 py-1 rounded-full flex items-center gap-1">
-                            <Target className="w-2.5 h-2.5" />
-                            Target: <span className="text-white font-bold">${fundamentals.targetMeanPrice.toFixed(0)}</span>
-                            <span className={analysis.currentPrice < fundamentals.targetMeanPrice ? "text-green-400" : "text-red-400"}>
-                                ({((fundamentals.targetMeanPrice - analysis.currentPrice) / analysis.currentPrice * 100).toFixed(1)}%)
-                            </span>
+                        <div className="text-xs text-gray-200 bg-gray-800/80 px-3 py-1.5 rounded-lg border border-gray-700/50 flex flex-col items-center gap-0.5 mt-1 shadow-md">
+                            <div className="flex items-center gap-1 font-bold uppercase text-[9px] text-gray-400 tracking-wider">
+                                <Target className="w-2.5 h-2.5 text-blue-400" /> Target Price
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-white text-base font-bold">${fundamentals.targetMeanPrice.toFixed(0)}</span>
+                                <span className={`text-[10px] font-bold px-1 py-0.5 rounded ${analysis.currentPrice < fundamentals.targetMeanPrice ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                                    {((fundamentals.targetMeanPrice - analysis.currentPrice) / analysis.currentPrice * 100).toFixed(1)}%
+                                </span>
+                            </div>
                         </div>
                     )}
                 </div>
 
                 {/* DIVIDER */}
-                <div className="w-px h-14 bg-gray-700/50 flex-shrink-0 hidden md:block" />
+                <div className="w-px h-16 bg-gray-700/50 flex-shrink-0 hidden md:block" />
 
                 {/* RIGHT: SUMMARY + DRIVERS (compact) */}
                 <div className="flex-grow min-w-0">
-                    <p className="text-gray-300 text-xs leading-relaxed mb-2 line-clamp-2">
+                    <p className="text-gray-200 text-sm md:text-base leading-relaxed mb-3 font-medium">
                         {summary}
                     </p>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                         {reasons.slice(0, 4).map((reason, i) => (
-                            <span key={i} className="flex items-center gap-1 text-[11px] text-gray-300 bg-gray-800/40 px-2 py-0.5 rounded-full border border-gray-700/30">
+                            <span key={i} className="flex items-center gap-1.5 text-[11px] text-gray-200 bg-gray-800/60 px-2.5 py-1.5 rounded-lg border border-gray-700/50 shadow-sm">
                                 {reason.sentiment === 'positive' ? (
-                                    <TrendingUp className="w-3 h-3 text-green-400" />
+                                    <TrendingUp className="w-3.5 h-3.5 text-green-400" />
                                 ) : reason.sentiment === 'negative' ? (
-                                    <TrendingDown className="w-3 h-3 text-red-400" />
+                                    <TrendingDown className="w-3.5 h-3.5 text-red-400" />
                                 ) : (
-                                    <Activity className="w-3 h-3 text-yellow-400" />
+                                    <Activity className="w-3.5 h-3.5 text-yellow-400" />
                                 )}
-                                {reason.text}
+                                <span className="font-semibold">{reason.text}</span>
                             </span>
                         ))}
                     </div>

@@ -61,11 +61,6 @@ export const env = {
         );
     },
 
-    // Google Gemini API (Optional but recommended for AI features)
-    GEMINI_API_KEY: getEnvOrDefault('GEMINI_API_KEY', null),
-    get hasGemini() {
-        return Boolean(this.GEMINI_API_KEY);
-    },
 
     // Cron Jobs
     CRON_SECRET: getEnvOrDefault('CRON_SECRET', null),
@@ -76,6 +71,13 @@ export const env = {
         return this.VERCEL_URL
             ? `https://${this.VERCEL_URL}`
             : 'https://dptradedesk.vercel.app';
+    },
+
+    // Public.com API
+    PUBLIC_API_KEY: getEnvOrDefault('PUBLIC_API_KEY', null),
+    PUBLIC_API_SECRET: getEnvOrDefault('PUBLIC_API_SECRET', null),
+    get hasPublic() {
+        return Boolean(this.PUBLIC_API_SECRET);
     }
 } as const;
 

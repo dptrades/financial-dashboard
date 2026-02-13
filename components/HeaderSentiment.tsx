@@ -6,7 +6,7 @@ interface HeaderSentimentProps {
 }
 
 export default function HeaderSentiment({ score }: HeaderSentimentProps) {
-    const color = score >= 60 ? 'text-green-400' : score <= 40 ? 'text-red-400' : 'text-gray-400';
+    const color = score >= 60 ? 'text-green-400' : score <= 40 ? 'text-red-400' : 'text-gray-200';
     const barColor = score >= 50 ? 'bg-green-500' : 'bg-red-500';
     const label = score >= 60 ? 'Bullish' : score <= 40 ? 'Bearish' : 'Neutral';
 
@@ -15,7 +15,7 @@ export default function HeaderSentiment({ score }: HeaderSentimentProps) {
             <div className="flex items-center gap-2">
                 <Newspaper className="w-4 h-4 text-purple-400" />
                 <div className="flex flex-col leading-none">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Crowd Sentiment</span>
+                    <span className="text-[10px] text-gray-200 font-bold uppercase tracking-wider">Crowd Sentiment</span>
                     <div className="flex items-center gap-2 mt-1">
                         <span className={`text-sm font-bold ${color}`}>{label}</span>
                         <div className="w-16 h-1.5 bg-gray-700 rounded-full overflow-hidden">
@@ -24,7 +24,7 @@ export default function HeaderSentiment({ score }: HeaderSentimentProps) {
                                 style={{ width: `${score}%` }}
                             ></div>
                         </div>
-                        <span className="text-[10px] text-gray-500">({score}%)</span>
+                        <span className="text-[10px] text-gray-300">({score}%)</span>
                     </div>
                 </div>
             </div>

@@ -9,11 +9,13 @@ import { Loader2, RefreshCw } from 'lucide-react';
 import { Loading } from '../../components/ui/Loading';
 import { ErrorMessage } from '../../components/ui/ErrorMessage';
 
+const CACHE_KEY = 'alpha_hunter_results';
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
+
 export default function ConvictionPage() {
     const router = useRouter();
     // Sidebar Props (Standardized)
-    const [market, setMarket] = useState<'stocks' | 'crypto'>('stocks');
-    const [symbol, setSymbol] = useState('BTC');
+    const [symbol, setSymbol] = useState('AAPL');
     const [stockInput, setStockInput] = useState('NVDA');
     const [stats, setStats] = useState(null);
 
@@ -22,6 +24,29 @@ export default function ConvictionPage() {
     const [error, setError] = useState('');
 
     const fetchConviction = async (forceRefresh = false) => {
+        // 1. Check Cache first unless forceRefresh is true
+        if (!forceRefresh) {
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                try {
+                    const { data, timestamp } = JSON.parse(cached);
+                    const age = Date.now() - timestamp;
+                    if (age < CACHE_DURATION) {
+                        console.log(`🚀 Using cached Alpha Hunter results (${Math.round(age / 1000)}s old)`);
+                        setStocks(data);
+                        setLoading(false);
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse cached Alpha Hunter data", e);
+                }
+            }
+        }
+
+        if (forceRefresh) {
+            setStocks([]); // Clear current results to show loading state
+        }
+
         setLoading(true);
         setError('');
         try {
@@ -32,6 +57,13 @@ export default function ConvictionPage() {
             const data = await res.json();
             if (Array.isArray(data)) {
                 setStocks(data);
+
+                // 2. Save to Cache
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    data,
+                    timestamp: Date.now()
+                }));
+
                 if (data.length === 0) setError('No results found. API might be rate-limited or returning empty data.');
             } else {
                 setError('Invalid data format received from API.');
@@ -50,20 +82,20 @@ export default function ConvictionPage() {
 
     const handleSelect = (symbol: string) => {
         // Navigate to dashboard with this symbol
-        router.push(`/?symbol=${symbol}&market=stocks`);
+        router.push(`/?symbol=${symbol}`);
     };
 
     return (
         <div className="flex h-screen bg-gray-900 text-white font-sans overflow-hidden">
             <Sidebar
                 currentPage="conviction"
-                market={market} setMarket={setMarket}
                 symbol={symbol} setSymbol={setSymbol}
                 stockInput={stockInput} setStockInput={setStockInput}
                 // No-op props for sidebar internal logic
                 debouncedStock={stockInput} setDebouncedStock={() => { }}
                 interval="1d" setInterval={() => { }}
                 data={[]} loading={false} stats={null} sentimentScore={50}
+                onSectorClick={() => { }}
             />
 
             <main className="flex-1 p-4 md:p-8 overflow-y-auto">
@@ -72,7 +104,7 @@ export default function ConvictionPage() {
                         <h1 className="text-4xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
                             Alpha Hunter
                         </h1>
-                        <p className="text-gray-400 mt-2 max-w-2xl">
+                        <p className="text-gray-200 mt-2 max-w-2xl">
                             Scans the entire market for high-probability setups with Smart Discovery.
                             Combines <span className="text-blue-400">Technicals</span>, <span className="text-green-400">Fundamentals</span>, <span className="text-yellow-400">Analyst Ratings</span>, and <span className="text-purple-400">Social Sentiment</span>.
                         </p>

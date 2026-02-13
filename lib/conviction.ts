@@ -135,8 +135,8 @@ const ALPHA_HUNTER_WATCHLIST = Array.from(new Set([
     // Core holdings + Specific growth names not in scanner
     'NVDA', 'MSFT', 'META', 'AMZN', 'GOOGL', 'TSLA', 'AAPL', 'AMD',
     'MU', 'CIEN', 'LUV', 'STX', 'CDE', 'AA', 'AU', 'CRWD', 'HWM', 'NGD',
-    'JPM', 'V', 'LLY', 'UNH', 'XOM', 'CAT', 'COIN', 'MSTR', 'PLTR',
-    'MARA', 'RIOT', 'HOOD', 'SOFI', 'RIVN', 'LCID', 'GME'
+    'JPM', 'V', 'LLY', 'UNH', 'XOM', 'CAT', 'PLTR',
+    'HOOD', 'SOFI', 'RIVN', 'LCID', 'GME'
 ]));
 
 // Mock Data for Alpha Hunter Fallback (when API fails) - Broader market
@@ -146,7 +146,7 @@ const MOCK_ALPHA_HUNTER_DATA: ConvictionStock[] = [
         technicalScore: 95, fundamentalScore: 90, analystScore: 95, sentimentScore: 88,
         metrics: { pe: 65.5, marketCap: 2500000000000, revenueGrowth: 1.25, rsi: 68, trend: 'BULLISH', analystRating: 'Strong Buy', analystTarget: 160, socialSentiment: 'Very Bullish' },
         reasons: ['AI Supercycle Leader', 'Record Revenue Growth', 'Analyst Top Pick'],
-        change24h: 2.5, volume: 45000000, sector: 'Technology',
+        change24h: 2.5, volume: 45000000, sector: 'Information Technology',
         suggestedOption: { type: 'CALL', strike: 150, expiry: 'Mar 15', confidence: 85, reason: 'Strong Bullish Trend' }
     },
     {
@@ -154,31 +154,15 @@ const MOCK_ALPHA_HUNTER_DATA: ConvictionStock[] = [
         technicalScore: 98, fundamentalScore: 75, analystScore: 80, sentimentScore: 95,
         metrics: { pe: 110, marketCap: 140000000000, revenueGrowth: 0.35, rsi: 78, trend: 'BULLISH', analystRating: 'Buy', analystTarget: 70, socialSentiment: 'Very Bullish' },
         reasons: ['S&P 500 Inclusion Momentum', 'Government Contract Wins', 'Retail Favorite'],
-        change24h: 4.2, volume: 85000000, sector: 'Technology',
+        change24h: 4.2, volume: 85000000, sector: 'Information Technology',
         suggestedOption: { type: 'CALL', strike: 65, expiry: 'Mar 15', confidence: 80, reason: 'Breakout Momentum' }
-    },
-    {
-        symbol: 'MSTR', name: 'MicroStrategy', price: 380.20, score: 85, isMock: true,
-        technicalScore: 92, fundamentalScore: 60, analystScore: 70, sentimentScore: 98,
-        metrics: { pe: 0, marketCap: 85000000000, revenueGrowth: 0.10, rsi: 72, trend: 'BULLISH', analystRating: 'Buy', analystTarget: 450, socialSentiment: 'Very Bullish' },
-        reasons: ['Bitcoin Proxy Play', 'Aggressive Accumulation', 'High Beta'],
-        change24h: 5.5, volume: 12000000, sector: 'Technology',
-        suggestedOption: { type: 'CALL', strike: 400, expiry: 'Mar 15', confidence: 75, reason: 'Bitcoin Correlation' }
-    },
-    {
-        symbol: 'COIN', name: 'Coinbase', price: 245.50, score: 82, isMock: true,
-        technicalScore: 85, fundamentalScore: 65, analystScore: 75, sentimentScore: 92,
-        metrics: { pe: 45, marketCap: 60000000000, revenueGrowth: 0.45, rsi: 65, trend: 'BULLISH', analystRating: 'Buy', analystTarget: 280, socialSentiment: 'Very Bullish' },
-        reasons: ['Crypto Exchange Leader', 'Institutional Adoption', 'High Volatility Play'],
-        change24h: 3.8, volume: 15000000, sector: 'Finance',
-        suggestedOption: { type: 'CALL', strike: 260, expiry: 'Mar 15', confidence: 72, reason: 'Crypto Momentum' }
     },
     {
         symbol: 'CRWD', name: 'CrowdStrike', price: 385.20, score: 80, isMock: true,
         technicalScore: 78, fundamentalScore: 85, analystScore: 88, sentimentScore: 70,
         metrics: { pe: 95, marketCap: 92000000000, revenueGrowth: 0.32, rsi: 55, trend: 'BULLISH', analystRating: 'Strong Buy', analystTarget: 420, socialSentiment: 'Bullish' },
         reasons: ['Cybersecurity Leader', 'ARR Growth', 'Enterprise Demand'],
-        change24h: 1.5, volume: 3500000, sector: 'Technology',
+        change24h: 1.5, volume: 3500000, sector: 'Information Technology',
         suggestedOption: { type: 'CALL', strike: 400, expiry: 'Mar 15', confidence: 75, reason: 'Sector Tailwind' }
     },
 ];
@@ -255,7 +239,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                 // 1. Fetch Data (Hybrid: Alpaca for Live Price/Chart, Yahoo for Fundamentals)
                 console.log(`[Conviction] Fetching data for ${symbol}...`);
                 const [quote, yahooChart, alpacaBars, socialNews] = await Promise.all([
-                    (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
+                    (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price', 'assetProfile'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
                     (yahooFinance.chart(symbol, { period1: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
                     (fetchAlpacaBars(symbol, '1Day', 253).then(b => { return b; })),
                     (getNewsData(symbol, 'social') as Promise<any>).catch(e => [])
@@ -335,8 +319,9 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
 
                 // 3. Process Fundamentals (Graceful Fallback)
                 const financialData = quote?.financialData || {};
+                const stats = quote?.defaultKeyStatistics || {};
                 let fundScore = 50;
-                const pe = financialData.trailingPE || 0;
+                const pe = financialData.trailingPE || stats.forwardPE || 0;
                 const revGrowth = financialData.revenueGrowth || 0;
 
                 if (revGrowth > 0.10) fundScore += 15;
@@ -443,7 +428,8 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                 // Use ATR if available, else 2% proxy
                 const atr = latest.atr14 || (latest.close * 0.02);
                 const trendLower = trend.toLowerCase() as 'bullish' | 'bearish' | 'neutral';
-                const optionSignal = generateOptionSignal(latest.close, atr, trendLower, rsi, latest.ema50);
+                const optionSignal = await generateOptionSignal(latest.close, atr, trendLower, rsi, latest.ema50, latest, symbol);
+
 
                 // Add option reason if high confidence
                 if (optionSignal.type !== 'WAIT') {
@@ -476,7 +462,8 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                     volume,
                     volumeAvg1y,
                     volumeDiff,
-                    sector: SECTOR_MAP[symbol] || 'Other',
+                    sector: SECTOR_MAP[symbol] || quote?.assetProfile?.sector || 'Other',
+
                     suggestedOption: optionSignal
                 } as ConvictionStock;
 
@@ -583,7 +570,7 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                 // 1. Fetch Data (Hybrid: Alpaca for Live Price/Chart, Yahoo for Fundamentals)
                 console.log(`[Alpha Hunter] Fetching data for ${symbol}...`);
                 const [quote, yahooChart, alpacaBars, socialNews] = await Promise.all([
-                    (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
+                    (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price', 'assetProfile'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
                     (yahooFinance.chart(symbol, { period1: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
                     (fetchAlpacaBars(symbol, '1Day', 253).then(b => { return b; })),
                     (getNewsData(symbol, 'social') as Promise<any>).catch(e => [])
@@ -634,8 +621,9 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
 
                 // 3. Process Fundamentals (Graceful Fallback)
                 const financialData = quote?.financialData || {};
+                const stats = quote?.defaultKeyStatistics || {};
                 let fundScore = 50;
-                const pe = financialData.trailingPE || 0;
+                const pe = financialData.trailingPE || stats.forwardPE || 0;
                 const revGrowth = financialData.revenueGrowth || 0;
 
                 if (revGrowth > 0.10) fundScore += 15;
@@ -743,7 +731,8 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                 // Use ATR if available, else 2% proxy
                 const atr = latest.atr14 || (latest.close * 0.02);
                 const trendLower = trend.toLowerCase() as 'bullish' | 'bearish' | 'neutral';
-                const optionSignal = generateOptionSignal(latest.close, atr, trendLower, rsi, latest.ema50);
+                const optionSignal = await generateOptionSignal(latest.close, atr, trendLower, rsi, latest.ema50, latest, symbol);
+
 
                 // Add option reason if high confidence
                 if (optionSignal.type !== 'WAIT') {
@@ -776,7 +765,8 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                     volume,
                     volumeAvg1y,
                     volumeDiff,
-                    sector: SECTOR_MAP[symbol] || 'Other',
+                    sector: SECTOR_MAP[symbol] || quote?.assetProfile?.sector || 'Other',
+
                     suggestedOption: optionSignal
                 } as ConvictionStock;
 

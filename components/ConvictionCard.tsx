@@ -36,9 +36,9 @@ export default function ConvictionCard({ stock, onSelect }: Props) {
                         <Link href={`/?symbol=${stock.symbol}&market=stocks`} className="hover:underline cursor-pointer">
                             <h3 className="text-2xl font-bold text-white tracking-tight hover:text-blue-400 transition-colors">{stock.symbol}</h3>
                         </Link>
-                        <span className="text-[10px] text-gray-400 bg-gray-700/50 px-2 py-0.5 rounded border border-gray-600 uppercase tracking-widest">{stock.sector || 'Stock'}</span>
+                        <span className="text-[10px] text-gray-200 bg-gray-700/50 px-2 py-0.5 rounded border border-gray-600 uppercase tracking-widest">{stock.sector || 'Stock'}</span>
                     </div>
-                    <p className="text-xs text-gray-400 mb-2 truncate max-w-[180px]">{stock.name}</p>
+                    <p className="text-xs text-gray-200 mb-2 truncate max-w-[180px]">{stock.name}</p>
                     <div className="flex items-baseline gap-3">
                         <div className="text-3xl font-mono text-white">
                             ${stock.price.toFixed(2)}
@@ -51,7 +51,7 @@ export default function ConvictionCard({ stock, onSelect }: Props) {
 
                 <div className="text-center bg-gray-900 p-2 rounded-lg border border-gray-800">
                     <div className={`text-3xl font-bold ${getScoreColor(stock.score)}`}>{stock.score}</div>
-                    <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Alpha Score</div>
+                    <div className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">Alpha Score</div>
                 </div>
             </div>
 
@@ -66,27 +66,27 @@ export default function ConvictionCard({ stock, onSelect }: Props) {
             {/* Deep Dive Details */}
             <div className="bg-gray-900/50 rounded-lg p-3 text-xs space-y-2 mb-4 border border-gray-800/50">
                 <div className="flex justify-between">
-                    <span className="text-gray-500">Trend Structure</span>
+                    <span className="text-gray-300">Trend Structure</span>
                     <span className={`font-mono font-bold ${stock.metrics.trend === 'BULLISH' ? 'text-green-400' : 'text-gray-300'}`}>
                         {stock.metrics.trend}
                     </span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-gray-500">P/E Ratio</span>
+                    <span className="text-gray-300">P/E Ratio</span>
                     <span className="text-gray-300 font-mono">{stock.metrics.pe?.toFixed(1) || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-gray-500">Rev Growth (YoY)</span>
+                    <span className="text-gray-300">Rev Growth (YoY)</span>
                     <span className="text-green-400 font-mono">
                         {stock.metrics.revenueGrowth ? `+${(stock.metrics.revenueGrowth * 100).toFixed(1)}%` : 'N/A'}
                     </span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-gray-500">Analyst View</span>
+                    <span className="text-gray-300">Analyst View</span>
                     <span className="text-blue-300 font-bold">{stock.metrics.analystRating}</span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-gray-500">Volume</span>
+                    <span className="text-gray-300">Volume</span>
                     <div className="text-right">
                         <span className="text-white font-mono block">{(stock.volume / 1000000).toFixed(1)}M</span>
                         {stock.volumeDiff !== undefined && (
@@ -115,13 +115,13 @@ export default function ConvictionCard({ stock, onSelect }: Props) {
                             <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse"></span>
                             AI Option Play
                         </span>
-                        <span className="text-xs text-gray-500">{stock.suggestedOption.expiry}</span>
+                        <span className="text-xs text-gray-300">{stock.suggestedOption.expiry}</span>
                     </div>
                     <div className="bg-gray-900 rounded p-2 flex justify-between items-center border border-gray-800">
                         <div className="font-mono text-sm font-bold text-gray-200">
                             ${stock.suggestedOption.strike} <span className={stock.suggestedOption.type === 'CALL' ? 'text-green-400' : 'text-red-400'}>{stock.suggestedOption.type}</span>
                         </div>
-                        <div className="text-[10px] text-gray-500 italic">
+                        <div className="text-[10px] text-gray-300 italic">
                             {stock.suggestedOption.reason}
                         </div>
                     </div>
@@ -143,7 +143,7 @@ function ScoreBar({ label, score, icon }: { label: string, score: number, icon: 
     return (
         <div>
             <div className="flex justify-between items-center mb-1 text-xs">
-                <span className="text-gray-400 flex items-center gap-1">{icon} {label}</span>
+                <span className="text-gray-200 flex items-center gap-1">{icon} {label}</span>
                 <span className="text-gray-300 font-mono">{score}</span>
             </div>
             <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">

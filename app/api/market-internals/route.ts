@@ -7,7 +7,7 @@ const yahooFinance = new YahooFinance();
 export const dynamic = 'force-dynamic';
 
 // Market internals symbols
-const INTERNALS = ['^VIX', '^GSPC', '^IXIC', '^DJI'];
+const INTERNALS = ['^VIX', '^GSPC', '^IXIC', '^NDX', '^DJI', '^RUT'];
 
 export async function GET() {
     try {
@@ -41,13 +41,17 @@ export async function GET() {
         const vix = results.find(r => r.symbol === '^VIX');
         const sp500 = results.find(r => r.symbol === '^GSPC');
         const nasdaq = results.find(r => r.symbol === '^IXIC');
+        const ndx = results.find(r => r.symbol === '^NDX');
         const dow = results.find(r => r.symbol === '^DJI');
+        const russell = results.find(r => r.symbol === '^RUT');
 
         return NextResponse.json({
             vix,
             sp500,
             nasdaq,
+            ndx,
             dow,
+            russell,
             timestamp: new Date().toISOString()
         });
     } catch (error) {

@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { OHLCVData } from '@/types/financial';
 
-const BASE_URL = 'https://api.coingecko.com/api/v3';
 
 export interface OHLCVResponse {
     data: OHLCVData[];
@@ -9,7 +8,7 @@ export interface OHLCVResponse {
 }
 
 // Default to Bitcoin and 1 day interval for now
-export const fetchOHLCV = async (coinId: string = 'BTC', days: string = '30', market: 'crypto' | 'stocks' = 'crypto', interval: string = '1d'): Promise<OHLCVResponse> => {
+export const fetchOHLCV = async (coinId: string = 'AAPL', days: string = '30', market: 'stocks' = 'stocks', interval: string = '1d'): Promise<OHLCVResponse> => {
     try {
         const response = await axios.get('/api/ohlcv', {
             params: {

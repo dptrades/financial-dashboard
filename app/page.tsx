@@ -7,6 +7,7 @@ import { fetchStockNews, fetchSocialSentiment, fetchAnalystRatings, NewsItem } f
 import { OHLCVData, IndicatorData } from '../types/financial';
 import { calculateIndicators } from '../lib/indicators';
 import { calculatePriceStats, PriceStats } from '../lib/stats';
+import { OptionRecommendation } from '../lib/options';
 
 import { detectPatterns } from '../lib/patterns';
 // import PriceChart from '../components/PriceChart'; // Removed
@@ -14,8 +15,8 @@ import Sidebar from '../components/Sidebar';
 import HighlightStats from '../components/HighlightStats';
 
 import OptionsSignal from '../components/OptionsSignal';
+import TopOptionsList from '../components/TopOptionsList';
 import DeepDiveContent from '../components/DeepDiveContent';
-import { generateOptionSignal } from '../lib/options';
 import HeaderSentiment from '../components/HeaderSentiment';
 import HeaderSignals from '../components/HeaderSignals';
 import HeaderPattern from '../components/HeaderPattern';
@@ -25,19 +26,24 @@ import NewsFeed from '../components/NewsFeed';
 import LivePriceDisplay from '../components/LivePriceDisplay';
 import { Loading } from '@/components/ui/Loading';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import AIStrategicInsight from '../components/AIStrategicInsight';
+import { Zap } from 'lucide-react';
+import SectorPerformanceWidget from '../components/SectorPerformanceWidget';
+import SectorDetailModal from '../components/SectorDetailModal';
+
+interface SectorGroup {
+  name: string;
+  avgChange: number;
+  stocks: any[];
+}
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
   const urlSymbol = searchParams.get('symbol');
-  const urlMarket = searchParams.get('market') as 'crypto' | 'stocks' | null;
-
   const [data, setData] = useState<IndicatorData[]>([]);
   const [companyName, setCompanyName] = useState<string>('');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [analystData, setAnalystData] = useState<NewsItem[]>([]);
   const [stats, setStats] = useState<PriceStats | null>(null);
-  const [market, setMarket] = useState<'crypto' | 'stocks'>('stocks');
   const [symbol, setSymbol] = useState('SPY');
   const [stockInput, setStockInput] = useState('AAPL');
   const [debouncedStock, setDebouncedStock] = useState('AAPL');
@@ -50,6 +56,7 @@ export default function Dashboard() {
   const [viewScope, setViewScope] = useState(365);
 
   // Derived Summary & Sentiment
+  const [selectedSector, setSelectedSector] = useState<SectorGroup | null>(null);
 
 
   const sentimentScore = useMemo(() => {
@@ -66,14 +73,13 @@ export default function Dashboard() {
   useEffect(() => {
     if (urlSymbol) {
       setSymbol(urlSymbol);
-      if (urlMarket) setMarket(urlMarket);
       // Also update the stockInput to match so it doesn't look weird
       setStockInput(urlSymbol);
       setDebouncedStock(urlSymbol);
       // Force loading state reset to ensure UI feedback
       setLoading(true);
     }
-  }, [urlSymbol, urlMarket]);
+  }, [urlSymbol]);
 
   // Debounce stock input (only if user is typing, not if URL changed)
   useEffect(() => {
@@ -96,7 +102,7 @@ export default function Dashboard() {
       setLoading(true);
       setError('');
 
-      const targetSymbol = market === 'crypto' ? symbol : debouncedStock;
+      const targetSymbol = debouncedStock;
 
       if (!targetSymbol) {
         setLoading(false);
@@ -105,7 +111,7 @@ export default function Dashboard() {
 
       try {
         // Fetch OHLCV
-        const response = await fetchOHLCV(targetSymbol, '1825', market, interval);
+        const response = await fetchOHLCV(targetSymbol, '1825', 'stocks', interval);
         const rawData = response.data;
 
         if (ignore) return;
@@ -164,20 +170,20 @@ export default function Dashboard() {
 
     loadData();
 
-    // Auto-refresh chart and news every 60 seconds
+    // Auto-refresh chart and news every 15 seconds
     const intervalId = setInterval(() => {
       // Only refresh if tab is visible
       if (!document.hidden && !ignore) {
         console.log('Auto-refreshing dashboard data...');
         loadData();
       }
-    }, 60000);
+    }, 300000); // 5 minutes
 
     return () => {
       ignore = true;
       clearInterval(intervalId);
     };
-  }, [symbol, debouncedStock, market, interval]);
+  }, [symbol, debouncedStock, interval]);
 
   const chartData = data.slice(-viewScope);
 
@@ -186,14 +192,14 @@ export default function Dashboard() {
     if (interval === '1d') {
       return (
         <div className="flex space-x-2">
-          <button onClick={() => setViewScope(90)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 90 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-400 border-gray-700 hover:border-gray-500'}`}>3M</button>
-          <button onClick={() => setViewScope(365)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 365 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-400 border-gray-700 hover:border-gray-500'}`}>1Y</button>
-          <button onClick={() => setViewScope(1825)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 1825 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-400 border-gray-700 hover:border-gray-500'}`}>5Y</button>
+          <button onClick={() => setViewScope(90)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 90 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-200 border-gray-700 hover:border-gray-500'}`}>3M</button>
+          <button onClick={() => setViewScope(365)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 365 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-200 border-gray-700 hover:border-gray-500'}`}>1Y</button>
+          <button onClick={() => setViewScope(1825)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 1825 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-200 border-gray-700 hover:border-gray-500'}`}>5Y</button>
         </div>
       );
     }
     const setBars = (label: string, bars: number) => (
-      <button key={label} onClick={() => setViewScope(bars)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === bars ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-400 border-gray-700 hover:border-gray-500'}`}>{label}</button>
+      <button key={label} onClick={() => setViewScope(bars)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === bars ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-200 border-gray-700 hover:border-gray-500'}`}>{label}</button>
     );
 
     if (interval === '15m') return <div className="flex space-x-2">{[setBars('1D', 96), setBars('3D', 288), setBars('1W', 672)]}</div>;
@@ -210,16 +216,54 @@ export default function Dashboard() {
   }
 
   // Calculate Options Signal for Dashboard Widget
-  let optionsSignal = null;
-  if (latest && stats && latest.atr14) {
-    optionsSignal = generateOptionSignal(latest.close, latest.atr14, currentTrend, latest.rsi14 || 50, latest.ema50, latest);
-  }
+  // Now async, so we use a state effect
+  const [optionsSignal, setOptionsSignal] = useState<OptionRecommendation | null>(null);
+  const [top3Options, setTop3Options] = useState<OptionRecommendation[]>([]);
+
+  useEffect(() => {
+    const fetchSignal = async () => {
+      if (latest && stats && latest.atr14) {
+        try {
+          // 1. Fetch Option Signal via API
+          const sigRes = await fetch('/api/options/signal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              currentPrice: latest.close,
+              atr: latest.atr14,
+              trend: currentTrend,
+              rsi: latest.rsi14 || 50,
+              ema50: latest.ema50,
+              indicators: latest,
+              symbol: debouncedStock,
+              fundamentalConfirmations: analystData.filter(a => a.sentiment === (currentTrend === 'bullish' ? 'positive' : 'negative')).length,
+              socialConfirmations: Math.floor(Math.abs(sentimentScore - 50) / 15) + 1
+            })
+          });
+          if (sigRes.ok) {
+            const sig = await sigRes.json();
+            setOptionsSignal(sig);
+          }
+
+          // 2. Fetch Top 3 Options via API
+          if (debouncedStock) {
+            const topRes = await fetch(`/api/options/discovery?symbol=${debouncedStock}&price=${latest.close}&trend=${currentTrend}&rsi=${latest.rsi14 || 50}`);
+            if (topRes.ok) {
+              const top = await topRes.json();
+              setTop3Options(top);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to fetch options data from server:', e);
+        }
+      }
+    };
+    fetchSignal();
+  }, [latest, stats, currentTrend, debouncedStock]);
 
   return (
     <div className="flex h-screen bg-gray-900 text-white font-sans">
       <Sidebar
-        market={market}
-        setMarket={setMarket}
         symbol={symbol}
         setSymbol={setSymbol}
         stockInput={stockInput}
@@ -233,6 +277,7 @@ export default function Dashboard() {
         currentPage="dashboard"
         stats={stats}
         sentimentScore={sentimentScore}
+        onSectorClick={(s) => setSelectedSector(s)}
       />
 
       {/* Main Content */}
@@ -243,56 +288,35 @@ export default function Dashboard() {
             <div className="flex flex-wrap items-center gap-4 md:gap-8 w-full md:w-auto">
               {/* 1. Ticker Selector */}
               <div className="flex items-center gap-2">
-                {market === 'crypto' ? (
-                  <select
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value)}
-                    className="text-3xl md:text-4xl font-black bg-transparent border-none focus:outline-none text-white tracking-tighter"
+                <div className="relative group">
+                  <input
+                    type="text"
+                    value={stockInput}
+                    onChange={(e) => setStockInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && stockInput.trim()) {
+                        setDebouncedStock(stockInput.trim());
+                      }
+                    }}
+                    className="text-3xl md:text-4xl font-black bg-transparent border-none focus:outline-none text-white tracking-tighter uppercase w-24 md:w-32 placeholder-gray-700"
+                    placeholder="TICKER"
                     disabled={loading}
-                  >
-                    <option value="BTC" className="bg-gray-900">BTC</option>
-                    <option value="ETH" className="bg-gray-900">ETH</option>
-                    <option value="SOL" className="bg-gray-900">SOL</option>
-                  </select>
-                ) : (
-                  <div className="relative group">
-                    <input
-                      type="text"
-                      value={stockInput}
-                      onChange={(e) => setStockInput(e.target.value.toUpperCase())}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && stockInput.trim()) {
-                          setDebouncedStock(stockInput.trim());
-                        }
-                      }}
-                      className="text-3xl md:text-4xl font-black bg-transparent border-none focus:outline-none text-white tracking-tighter uppercase w-32 md:w-48 placeholder-gray-700"
-                      placeholder="TICKER"
-                      disabled={loading}
-                    />
-                    <div className="absolute bottom-0 left-0 w-0 h-1 bg-blue-500 transition-all group-hover:w-full"></div>
-                  </div>
-                )}
+                  />
+                  <div className="absolute bottom-0 left-0 w-0 h-1 bg-blue-500 transition-all group-hover:w-full"></div>
+                </div>
               </div>
-              {companyName && market === 'stocks' && (
-                <span className="text-sm text-gray-400 font-medium hidden md:inline truncate max-w-[180px]">{companyName}</span>
+              {companyName && (
+                <span className="text-sm text-gray-200 font-medium hidden md:inline truncate max-w-[180px]">{companyName}</span>
               )}
 
               {/* 2. Price & Change Info */}
               <div className="flex flex-col">
-                {market === 'stocks' ? (
-                  <LivePriceDisplay
-                    symbol={debouncedStock}
-                    fallbackPrice={stats?.currentPrice}
-                    enabled={!loading}
-                    showChange={true}
-                  />
-                ) : (
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                      ${stats?.currentPrice?.toLocaleString() || '---'}
-                    </span>
-                  </div>
-                )}
+                <LivePriceDisplay
+                  symbol={debouncedStock}
+                  fallbackPrice={stats?.currentPrice}
+                  enabled={!loading}
+                  showChange={true}
+                />
               </div>
 
               {/* 3. Conviction / Sentiment Score - Redesigned to match Picks */}
@@ -300,28 +324,12 @@ export default function Dashboard() {
 
               {/* 4. Mini Signals (HeaderSignals - Trend Only) & Analyst */}
               <div className="flex flex-row items-center gap-2">
-                {data.length > 0 && <HeaderSignals latestData={data[data.length - 1]} showRSI={false} />}
-                <HeaderAnalyst symbol={market === 'crypto' ? symbol : debouncedStock} analystNews={analystData} />
+                {data.length > 0 && <HeaderSignals latestData={data[data.length - 1]} showRSI={true} />}
+                <HeaderAnalyst symbol={debouncedStock} analystNews={analystData} />
               </div>
             </div>
 
-            {/* RIGHT: Controls & Market Toggle */}
             <div className="flex items-center gap-4">
-              {/* Market Toggle */}
-              <div className="flex bg-gray-800/80 rounded-lg p-1 border border-gray-700/50">
-                <button
-                  onClick={() => setMarket('stocks')}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${market === 'stocks' ? 'bg-blue-600 shadow-lg shadow-blue-900/20 text-white' : 'text-gray-400 hover:text-white'}`}
-                >
-                  STOCKS
-                </button>
-                <button
-                  onClick={() => setMarket('crypto')}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${market === 'crypto' ? 'bg-blue-600 shadow-lg shadow-blue-900/20 text-white' : 'text-gray-400 hover:text-white'}`}
-                >
-                  CRYPTO
-                </button>
-              </div>
             </div>
           </div>
         </header>
@@ -331,15 +339,12 @@ export default function Dashboard() {
         ) : (
           <div className="space-y-6">
 
-            {/* GEMINI AI STRATEGIC INSIGHT */}
-            <AIStrategicInsight symbol={market === 'crypto' ? symbol : debouncedStock} />
-
             {/* ROW 1: Deep Dive (Left, 2/3) & AI Option Play + Price Stats (Right, 1/3) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               {/* Deep Dive - Takes 2/3 - FIRST in DOM = LEFT */}
               <div className="md:col-span-2">
                 <DeepDiveContent
-                  symbol={market === 'crypto' ? symbol : debouncedStock}
+                  symbol={debouncedStock}
                   showOptionsFlow={false}
                 />
               </div>
@@ -347,19 +352,26 @@ export default function Dashboard() {
               {/* Right Column - AI Option Play + Price Stats stacked vertically */}
               <div className="md:col-span-1 space-y-6">
                 <div className="bg-gray-800/10 rounded-xl">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <span>🤖</span> AI Option Play
+                  <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-blue-400" /> Tactical Option Play
                   </h3>
                   <OptionsSignal data={optionsSignal} loading={loading} />
                 </div>
 
                 {/* Price Statistics - Below AI Option Play */}
                 <div>
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">Price Statistics</h3>
+                  <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-2 px-1">Price Statistics</h3>
                   <HighlightStats stats={stats} />
                 </div>
               </div>
             </div>
+
+            {/* TOP 3 OPTIONS DISCOVERY (Moved below Deep Dive) */}
+            <TopOptionsList
+              options={top3Options}
+              symbol={debouncedStock || ''}
+              loading={loading || (top3Options.length === 0 && !error)}
+            />
 
 
 
@@ -367,7 +379,7 @@ export default function Dashboard() {
 
             {/* ROW 5: Live News - BELOW AI Insight */}
             <div>
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 px-1">Live Intelligence</h3>
+              <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-4 px-1">Live Intelligence</h3>
               <NewsFeed news={news} loading={loading} />
             </div>
           </div>
@@ -375,6 +387,17 @@ export default function Dashboard() {
 
         <div className="h-6"></div> {/* Bottom Spacer */}
       </main>
+
+      {/* Sector Detail Modal */}
+      <SectorDetailModal
+        sector={selectedSector}
+        onClose={() => setSelectedSector(null)}
+        onSelectStock={(s) => {
+          setStockInput(s);
+          setDebouncedStock(s);
+          setSymbol(s);
+        }}
+      />
     </div>
   );
 }

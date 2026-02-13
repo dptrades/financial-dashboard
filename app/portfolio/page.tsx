@@ -166,12 +166,12 @@ export default function PortfolioPage() {
             <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Link href="/" className="text-gray-400 hover:text-white transition-colors">
+                        <Link href="/" className="text-gray-200 hover:text-white transition-colors">
                             <ArrowLeft className="w-5 h-5" />
                         </Link>
                         <div>
                             <h1 className="text-xl font-bold">Paper Trading Portfolio</h1>
-                            <p className="text-sm text-gray-400">Automated trades via Alpaca</p>
+                            <p className="text-sm text-gray-200">Automated trades via Alpaca</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -237,7 +237,7 @@ export default function PortfolioPage() {
                                         <XCircle className="w-4 h-4 text-red-400" />
                                     )}
                                     <span className="font-medium">{result.symbol}</span>
-                                    <span className="text-gray-400">
+                                    <span className="text-gray-200">
                                         {result.status === 'submitted'
                                             ? `${result.qty} shares @ ~${formatCurrency(result.estimatedCost! / result.qty!)}`
                                             : result.reason}
@@ -257,7 +257,7 @@ export default function PortfolioPage() {
                         {/* Account Stats */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                             <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                                <div className="flex items-center gap-2 text-gray-400 mb-1">
+                                <div className="flex items-center gap-2 text-gray-200 mb-1">
                                     <DollarSign className="w-4 h-4" />
                                     <span className="text-sm">Portfolio Value</span>
                                 </div>
@@ -266,7 +266,7 @@ export default function PortfolioPage() {
                                 </div>
                             </div>
                             <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                                <div className="flex items-center gap-2 text-gray-400 mb-1">
+                                <div className="flex items-center gap-2 text-gray-200 mb-1">
                                     <Activity className="w-4 h-4" />
                                     <span className="text-sm">Equity</span>
                                 </div>
@@ -275,7 +275,7 @@ export default function PortfolioPage() {
                                 </div>
                             </div>
                             <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                                <div className="flex items-center gap-2 text-gray-400 mb-1">
+                                <div className="flex items-center gap-2 text-gray-200 mb-1">
                                     <TrendingUp className="w-4 h-4" />
                                     <span className="text-sm">Buying Power</span>
                                 </div>
@@ -284,7 +284,7 @@ export default function PortfolioPage() {
                                 </div>
                             </div>
                             <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                                <div className="flex items-center gap-2 text-gray-400 mb-1">
+                                <div className="flex items-center gap-2 text-gray-200 mb-1">
                                     <DollarSign className="w-4 h-4" />
                                     <span className="text-sm">Cash</span>
                                 </div>
@@ -300,7 +300,7 @@ export default function PortfolioPage() {
                                 <h2 className="text-lg font-semibold">Open Positions ({portfolio.positions.length})</h2>
                             </div>
                             {portfolio.positions.length === 0 ? (
-                                <div className="p-8 text-center text-gray-400">
+                                <div className="p-8 text-center text-gray-200">
                                     No open positions. Click "Execute Trades" to start.
                                 </div>
                             ) : (
@@ -308,13 +308,13 @@ export default function PortfolioPage() {
                                     <table className="w-full">
                                         <thead className="bg-gray-700/50">
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Symbol</th>
-                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">Qty</th>
-                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">Avg Price</th>
-                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">Current</th>
-                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">Market Value</th>
-                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">P&L</th>
-                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">P&L %</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-200 uppercase">Symbol</th>
+                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-200 uppercase">Qty</th>
+                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-200 uppercase">Avg Price</th>
+                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-200 uppercase">Current</th>
+                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-200 uppercase">Market Value</th>
+                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-200 uppercase">P&L</th>
+                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-200 uppercase">P&L %</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-700">
@@ -345,7 +345,7 @@ export default function PortfolioPage() {
                                 <h2 className="text-lg font-semibold">Recent Orders</h2>
                             </div>
                             {portfolio.recentOrders.length === 0 ? (
-                                <div className="p-8 text-center text-gray-400">
+                                <div className="p-8 text-center text-gray-200">
                                     No orders yet.
                                 </div>
                             ) : (
@@ -353,12 +353,12 @@ export default function PortfolioPage() {
                                     <table className="w-full">
                                         <thead className="bg-gray-700/50">
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Symbol</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Side</th>
-                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">Qty</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Status</th>
-                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">Filled Price</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Time</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-200 uppercase">Symbol</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-200 uppercase">Side</th>
+                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-200 uppercase">Qty</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-200 uppercase">Status</th>
+                                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-200 uppercase">Filled Price</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-200 uppercase">Time</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-700">
@@ -373,7 +373,7 @@ export default function PortfolioPage() {
                                                         <span className={`px-2 py-1 rounded text-xs font-medium ${order.status === 'filled' ? 'bg-green-500/20 text-green-400' :
                                                             order.status === 'canceled' ? 'bg-red-500/20 text-red-400' :
                                                                 order.status === 'new' ? 'bg-blue-500/20 text-blue-400' :
-                                                                    'bg-gray-500/20 text-gray-400'
+                                                                    'bg-gray-500/20 text-gray-200'
                                                             }`}>
                                                             {order.status}
                                                         </span>
@@ -381,7 +381,7 @@ export default function PortfolioPage() {
                                                     <td className="px-4 py-3 text-right">
                                                         {order.filledPrice ? formatCurrency(order.filledPrice) : '-'}
                                                     </td>
-                                                    <td className="px-4 py-3 text-sm text-gray-400">
+                                                    <td className="px-4 py-3 text-sm text-gray-200">
                                                         {new Date(order.createdAt).toLocaleString()}
                                                     </td>
                                                 </tr>
@@ -397,19 +397,19 @@ export default function PortfolioPage() {
                             <h3 className="font-semibold mb-2">Trade Settings</h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                 <div>
-                                    <span className="text-gray-400">Position Size:</span>
+                                    <span className="text-gray-200">Position Size:</span>
                                     <span className="ml-2 font-medium">$250</span>
                                 </div>
                                 <div>
-                                    <span className="text-gray-400">Stop Loss:</span>
+                                    <span className="text-gray-200">Stop Loss:</span>
                                     <span className="ml-2 font-medium text-red-400">-10%</span>
                                 </div>
                                 <div>
-                                    <span className="text-gray-400">Take Profit:</span>
+                                    <span className="text-gray-200">Take Profit:</span>
                                     <span className="ml-2 font-medium text-green-400">+25%</span>
                                 </div>
                                 <div>
-                                    <span className="text-gray-400">Max Positions:</span>
+                                    <span className="text-gray-200">Max Positions:</span>
                                     <span className="ml-2 font-medium">4</span>
                                 </div>
                             </div>

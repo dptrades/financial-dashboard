@@ -9,7 +9,6 @@ function isUSStock(ticker: string): boolean {
     // Indices, forex, and futures use special characters
     if (ticker.startsWith('^')) return false; // Indices (^VIX, ^GSPC)
     if (ticker.includes('=')) return false; // Forex (EURUSD=X, JPY=X)
-    if (ticker.includes('-USD')) return false; // Crypto (BTC-USD)
     if (ticker.endsWith('=F')) return false; // Futures/Commodities (GC=F)
     return true;
 }
@@ -17,7 +16,6 @@ function isUSStock(ticker: string): boolean {
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const symbol = searchParams.get('symbol');
-    const market = searchParams.get('market') || 'crypto';
     const interval = searchParams.get('interval') || '1d';
 
     if (!symbol) {
@@ -27,9 +25,6 @@ export async function GET(request: Request) {
     try {
         // Map symbol to ticker
         let ticker = symbol.toUpperCase();
-        if (market === 'crypto' && !ticker.endsWith('-USD')) {
-            ticker = `${ticker}-USD`;
-        }
 
         // Determine timeframe for Alpaca
         let alpacaTimeframe: '1Day' | '1Hour' | '15Min' = '1Day';
@@ -59,7 +54,7 @@ export async function GET(request: Request) {
         }
 
         // ===== TRY ALPACA FIRST (for US Stocks only) =====
-        if (isUSStock(ticker) && market === 'stocks') {
+        if (isUSStock(ticker)) {
             try {
                 console.log(`[OHLCV] Trying Alpaca for ${ticker} (${alpacaTimeframe})`);
                 const alpacaBars = await fetchAlpacaBars(ticker, alpacaTimeframe, alpacaLimit);

@@ -18,6 +18,21 @@ export interface OptionRecommendation {
     riskReward?: string;       // Risk:Reward ratio
     maxLoss?: string;          // Estimated max loss description
     strategy?: string;         // Strategy name
+    volume?: number;           // Trading volume
+    openInterest?: number;     // Open interest
+    iv?: number;               // Implied Volatility (0.0 to 1.0+)
+    contractPrice?: number;    // Current market price of the option contract
+    isUnusual?: boolean;       // True if Volume > Open Interest
+    rsi?: number;              // RSI level of the underlying stock
+    technicalConfirmations?: number;
+    fundamentalConfirmations?: number;
+    socialConfirmations?: number;
+    technicalDetails?: string[];
+    fundamentalDetails?: string[];
+    socialDetails?: string[];
+    symbol?: string;           // OSI Symbol (e.g. AAPL260320C00185000)
+    putCallRatio?: number;     // Put/Call ratio based on volume
+    probabilityITM?: number;    // Estimated probability of expiring ITM (0.0 to 1.0)
 }
 
 export interface OptionsChain {

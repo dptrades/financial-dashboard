@@ -71,7 +71,7 @@ export default function SectorPage() {
             <main className="flex-1 p-6 flex flex-col overflow-hidden">
                 <header className="mb-6">
                     <h2 className="text-3xl font-bold tracking-tight text-purple-400">Sector Heatmap</h2>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <p className="text-sm text-gray-200 mt-1">
                         Market Performance by Sector • Top Gainers & Losers
                     </p>
                 </header>
@@ -100,7 +100,7 @@ export default function SectorPage() {
                                             <div className="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-850">
                                                 <div>
                                                     <h3 className="text-lg font-bold text-white">{sector.name}</h3>
-                                                    <span className="text-xs text-gray-500">{sector.stocks.length} Assets</span>
+                                                    <span className="text-xs text-gray-300">{sector.stocks.length} Assets</span>
                                                 </div>
                                                 <div className={`px-2 py-1 rounded text-xs font-bold ${avgChange >= 0 ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
                                                     {avgChange > 0 ? '+' : ''}{avgChange.toFixed(2)}%
@@ -112,7 +112,7 @@ export default function SectorPage() {
 
                                                 {/* Gainers */}
                                                 <div>
-                                                    <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2 flex items-center">
+                                                    <h4 className="text-[10px] uppercase tracking-wider text-gray-300 font-bold mb-2 flex items-center">
                                                         <svg className="w-3 h-3 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
                                                         Daily Leaders
                                                     </h4>
@@ -129,12 +129,12 @@ export default function SectorPage() {
                                                                 </Link>
                                                             ))}
                                                         </div>
-                                                    ) : <span className="text-xs text-gray-600 italic">No gainers today</span>}
+                                                    ) : <span className="text-xs text-gray-200 italic">No gainers today</span>}
                                                 </div>
 
                                                 {/* Losers */}
                                                 <div>
-                                                    <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2 flex items-center">
+                                                    <h4 className="text-[10px] uppercase tracking-wider text-gray-300 font-bold mb-2 flex items-center">
                                                         <svg className="w-3 h-3 mr-1 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
                                                         Daily Laggers
                                                     </h4>
@@ -151,7 +151,7 @@ export default function SectorPage() {
                                                                 </Link>
                                                             ))}
                                                         </div>
-                                                    ) : <span className="text-xs text-gray-600 italic">No losers today</span>}
+                                                    ) : <span className="text-xs text-gray-200 italic">No losers today</span>}
                                                 </div>
 
                                             </div>

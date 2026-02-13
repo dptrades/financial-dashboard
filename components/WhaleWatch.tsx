@@ -55,18 +55,18 @@ export default function WhaleWatch({ symbol, layout = 'vertical' }: WhaleWatchPr
                         <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">Whale Watch</span>
                     </div>
                     {spotPrice && (
-                        <span className="text-[10px] text-gray-500 mt-0.5">
+                        <span className="text-[10px] text-gray-300 mt-0.5">
                             Spot: <span className="text-white font-mono">${spotPrice.toFixed(2)}</span>
                         </span>
                     )}
                 </div>
-                {loading && <Activity className="w-3 h-3 text-gray-500 animate-spin" />}
+                {loading && <Activity className="w-3 h-3 text-gray-300 animate-spin" />}
             </div>
 
             <div className={layout === 'horizontal' ? "flex gap-2 overflow-x-auto custom-scrollbar pb-2" : "space-y-2"}>
                 {alerts.length === 0 && !loading ? (
                     <div className="text-center py-4 w-full">
-                        <span className="text-[10px] text-gray-500">No unusual activity.</span>
+                        <span className="text-[10px] text-gray-300">No unusual activity.</span>
                     </div>
                 ) : (
                     alerts.slice(0, 5).map((alert, i) => (
@@ -81,14 +81,14 @@ export default function WhaleWatch({ symbol, layout = 'vertical' }: WhaleWatchPr
                                         ${alert.strike}
                                     </span>
                                 </div>
-                                <span className="text-[10px] text-gray-400">
+                                <span className="text-[10px] text-gray-200">
                                     Exp: <span className="text-gray-300">{new Date(alert.expiry).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })}</span>
                                 </span>
                             </div>
 
                             {/* Middle Row: Reason */}
                             <div className="flex items-center gap-1 mb-2">
-                                <span className="text-[9px] uppercase tracking-wide text-gray-500 font-semibold truncate">
+                                <span className="text-[9px] uppercase tracking-wide text-gray-300 font-semibold truncate">
                                     {alert.reason}
                                 </span>
                             </div>
@@ -96,15 +96,15 @@ export default function WhaleWatch({ symbol, layout = 'vertical' }: WhaleWatchPr
                             {/* Bottom Row: Stats */}
                             <div className="grid grid-cols-3 gap-1 pt-2 border-t border-gray-800">
                                 <div className="flex flex-col">
-                                    <span className="text-[9px] text-gray-500">Vol</span>
+                                    <span className="text-[9px] text-gray-300">Vol</span>
                                     <span className="text-[10px] font-mono text-gray-300">{alert.volume.toLocaleString()}</span>
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-[9px] text-gray-500">OI</span>
+                                    <span className="text-[9px] text-gray-300">OI</span>
                                     <span className="text-[10px] font-mono text-gray-300">{alert.oi.toLocaleString()}</span>
                                 </div>
                                 <div className="flex flex-col text-right">
-                                    <span className="text-[9px] text-gray-500">Prem</span>
+                                    <span className="text-[9px] text-gray-300">Prem</span>
                                     <span className="text-[10px] font-mono text-purple-300">${(alert.notional / 1000).toFixed(0)}k</span>
                                 </div>
                             </div>

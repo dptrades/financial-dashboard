@@ -12,7 +12,7 @@ export function Loading({ message = "Loading...", fullScreen = false }: LoadingP
                 <div className="absolute w-full h-full border-4 border-blue-500/30 rounded-full"></div>
                 <div className="absolute w-full h-full border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <p className="text-gray-400 font-medium animate-pulse">{message}</p>
+            <p className="text-gray-200 font-medium animate-pulse">{message}</p>
         </div>
     );
 

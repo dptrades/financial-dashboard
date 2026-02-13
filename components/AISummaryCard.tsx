@@ -23,7 +23,7 @@ export default function AISummaryCard({ symbol, summary, loading = false }: AISu
                             AI Technical Insight
                             <span className="ml-2 text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20">BETA</span>
                         </h3>
-                        <p className="text-[10px] text-gray-500">Automated analysis based on EMA, RSI, & MACD</p>
+                        <p className="text-[10px] text-gray-300">Automated analysis based on EMA, RSI, & MACD</p>
                     </div>
                 </div>
 

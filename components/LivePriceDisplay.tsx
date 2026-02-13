@@ -85,7 +85,7 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
     const isPositive = change >= 0;
 
     if (!displayPrice) {
-        return <span className="text-gray-500">--</span>;
+        return <span className="text-gray-300">--</span>;
     }
 
     return (
@@ -125,7 +125,7 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
                     <span className="text-[10px] text-green-400 uppercase font-bold tracking-wider">Live</span>
                 </div>
             ) : (
-                <span className="text-xs text-gray-500">Last Close</span>
+                <span className="text-xs text-gray-300">Last Close</span>
             )}
         </div>
     );

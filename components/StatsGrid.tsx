@@ -3,7 +3,7 @@ import { PriceStats } from '../lib/stats';
 const HighLowCard = ({ label, stats }: { label: string, stats: { high: number, low: number } }) => {
     return (
         <div className="p-4 rounded-lg bg-gray-800 border border-gray-700 hover:border-blue-500 transition-colors">
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{label}</h4>
+            <h4 className="text-xs font-semibold text-gray-200 uppercase tracking-wider mb-3">{label}</h4>
             <div className="flex justify-between items-center text-sm">
                 <div className="flex flex-col">
                     <span className="text-xs text-green-400 mb-1">High</span>

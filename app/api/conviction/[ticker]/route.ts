@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchMultiTimeframeAnalysis } from '@/lib/market-data';
 import { scanUnusualOptions } from '@/lib/options-flow';
 import { fetchPriceStats } from '@/lib/price-stats';
+import { getPutCallRatio } from '@/lib/options';
 import YahooFinance from 'yahoo-finance2';
 
 const yahooFinance = new YahooFinance();
@@ -21,17 +22,19 @@ export async function GET(request: Request, context: { params: Promise<{ ticker:
         console.log(`🔍 Fetching deep dive for ${symbol}...`);
 
         // Run concurrently with error handling
-        const [analysisResult, optionsFlowResult, fundamentalsResult, priceStatsResult] = await Promise.allSettled([
+        const [analysisResult, optionsFlowResult, fundamentalsResult, priceStatsResult, pcrResult] = await Promise.allSettled([
             fetchMultiTimeframeAnalysis(symbol),
             scanUnusualOptions(symbol),
             yahooFinance.quoteSummary(symbol, { modules: ['summaryDetail', 'financialData', 'defaultKeyStatistics'] }),
-            fetchPriceStats(symbol)
+            fetchPriceStats(symbol),
+            getPutCallRatio(symbol)
         ]);
 
         const analysis = analysisResult.status === 'fulfilled' ? analysisResult.value : null;
         const optionsFlow = optionsFlowResult.status === 'fulfilled' ? optionsFlowResult.value : [];
         const fundamentalsRaw = fundamentalsResult.status === 'fulfilled' ? (fundamentalsResult.value as any) : null;
         const priceStats = priceStatsResult.status === 'fulfilled' ? priceStatsResult.value : null;
+        const pcrData = pcrResult.status === 'fulfilled' ? pcrResult.value : null;
 
         if (analysisResult.status === 'rejected') {
             console.error(`Analysis failed`, analysisResult.reason);
@@ -61,7 +64,8 @@ export async function GET(request: Request, context: { params: Promise<{ ticker:
                 targetMeanPrice: fundamentalsRaw.financialData?.targetMeanPrice,
                 recommendationKey: fundamentalsRaw.financialData?.recommendationKey, // e.g., "buy", "hold"
                 obs: fundamentalsRaw.financialData?.numberOfAnalystOpinions
-            } : {}
+            } : {},
+            putCallRatio: pcrData
         });
 
     } catch (error) {

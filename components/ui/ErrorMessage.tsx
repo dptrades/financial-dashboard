@@ -23,7 +23,7 @@ export function ErrorMessage({
             </div>
             <div>
                 <h3 className="text-xl font-bold text-gray-100">{title}</h3>
-                <p className="text-gray-400 mt-2 text-sm leading-relaxed">{message}</p>
+                <p className="text-gray-200 mt-2 text-sm leading-relaxed">{message}</p>
             </div>
             {onRetry && (
                 <button

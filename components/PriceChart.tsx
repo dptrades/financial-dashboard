@@ -22,7 +22,7 @@ interface PriceChartProps {
 export default function PriceChart({ data }: PriceChartProps) {
     if (!data || data.length === 0) {
         return (
-            <div className="h-full flex items-center justify-center text-gray-500">
+            <div className="h-full flex items-center justify-center text-gray-300">
                 No data to display
             </div>
         );
@@ -65,10 +65,10 @@ export default function PriceChart({ data }: PriceChartProps) {
                     <p className="font-bold text-gray-100 border-b border-gray-700 pb-1 mb-2">{date}</p>
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                        <span className="text-gray-400">Open:</span> <span className="text-right text-white font-mono">{data.open.toFixed(2)}</span>
-                        <span className="text-gray-400">High:</span> <span className="text-right text-white font-mono">{data.high.toFixed(2)}</span>
-                        <span className="text-gray-400">Low:</span> <span className="text-right text-white font-mono">{data.low.toFixed(2)}</span>
-                        <span className="text-gray-400">Close:</span> <span className="text-right text-white font-mono">{data.close.toFixed(2)}</span>
+                        <span className="text-gray-200">Open:</span> <span className="text-right text-white font-mono">{data.open.toFixed(2)}</span>
+                        <span className="text-gray-200">High:</span> <span className="text-right text-white font-mono">{data.high.toFixed(2)}</span>
+                        <span className="text-gray-200">Low:</span> <span className="text-right text-white font-mono">{data.low.toFixed(2)}</span>
+                        <span className="text-gray-200">Close:</span> <span className="text-right text-white font-mono">{data.close.toFixed(2)}</span>
 
                         <div className="col-span-2 h-1 border-b border-gray-800 my-1"></div>
 
@@ -103,7 +103,7 @@ export default function PriceChart({ data }: PriceChartProps) {
                 {activeData && (
                     <>
                         {/* OHLC */}
-                        <div className="text-gray-400 font-bold">
+                        <div className="text-gray-200 font-bold">
                             O: <span className="text-white">{activeData.open.toFixed(2)}</span>{' '}
                             H: <span className="text-white">{activeData.high.toFixed(2)}</span>{' '}
                             L: <span className="text-white">{activeData.low.toFixed(2)}</span>{' '}
@@ -125,12 +125,12 @@ export default function PriceChart({ data }: PriceChartProps) {
                         )}
 
                         {/* RSI & MACD Values in Legend as well */}
-                        <div className="text-gray-500">|</div>
+                        <div className="text-gray-300">|</div>
                         <div className="text-[#60A5FA]">RSI: {activeData.rsi14?.toFixed(1)}</div>
                         {activeData.macd && (
-                            <div className="text-gray-400">
+                            <div className="text-gray-200">
                                 MACD: <span className="text-[#3B82F6]">{activeData.macd.MACD?.toFixed(2)}</span>
-                                <span className="text-gray-600">/</span>
+                                <span className="text-gray-200">/</span>
                                 <span className="text-[#F97316]">{activeData.macd.signal?.toFixed(2)}</span>
                             </div>
                         )}
@@ -275,7 +275,7 @@ export default function PriceChart({ data }: PriceChartProps) {
 
             {/* RSI Chart (Separate Pane) */}
             <div className="h-[15%] min-h-[80px] border-t border-gray-700 pt-1">
-                <h4 className="text-[10px] uppercase text-gray-500 ml-2">RSI (14)</h4>
+                <h4 className="text-[10px] uppercase text-gray-300 ml-2">RSI (14)</h4>
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                         data={data}
@@ -296,7 +296,7 @@ export default function PriceChart({ data }: PriceChartProps) {
 
             {/* MACD Chart (Separate Pane) */}
             <div className="h-[15%] min-h-[80px] border-t border-gray-700 pt-1">
-                <h4 className="text-[10px] uppercase text-gray-500 ml-2">MACD (12, 26, 9)</h4>
+                <h4 className="text-[10px] uppercase text-gray-300 ml-2">MACD (12, 26, 9)</h4>
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                         data={data}

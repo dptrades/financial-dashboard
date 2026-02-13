@@ -15,7 +15,7 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
 
     // Short Term: Price vs 20 EMA / 50 EMA
     let stTrend = "NEUTRAL";
-    let stColor = "text-gray-400";
+    let stColor = "text-gray-200";
     if (ema50) {
         if (close > ema50) {
             stTrend = "BULLISH";
@@ -28,7 +28,7 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
 
     // Long Term: Price vs 200 EMA
     let ltTrend = "NEUTRAL";
-    let ltColor = "text-gray-400";
+    let ltColor = "text-gray-200";
     if (ema200) {
         if (close > ema200) {
             ltTrend = "BULLISH";
@@ -44,7 +44,7 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
 
     // MACD Signal
     let macdStatus = "ALT";
-    let macdColor = "text-gray-500";
+    let macdColor = "text-gray-300";
     if (latestData.macd?.MACD !== undefined && latestData.macd?.signal !== undefined) {
         if (latestData.macd.MACD > latestData.macd.signal) {
             macdStatus = "BULL";
@@ -57,7 +57,7 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
 
     // BB Status
     let bbStatus = "MID";
-    let bbColor = "text-gray-500";
+    let bbColor = "text-gray-300";
     if (latestData.bollinger?.upper && latestData.bollinger?.lower) {
         if (close > latestData.bollinger.upper) {
             bbStatus = "OB";
@@ -70,7 +70,7 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
 
     // VWAP Status
     let vwapStatus = "NEU";
-    let vwapColor = "text-gray-500";
+    let vwapColor = "text-gray-300";
     if (latestData.vwap) {
         if (close > latestData.vwap) {
             vwapStatus = "ABV";
@@ -83,7 +83,7 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
 
     // ADX Trend Strength
     let adxStatus = "WEAK";
-    let adxColor = "text-gray-500";
+    let adxColor = "text-gray-300";
     if (latestData.adx14) {
         if (latestData.adx14 > 25) {
             adxStatus = "STR";
@@ -97,7 +97,7 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
 
     // Determine RSI
     let rsiStatus = "NEU";
-    let rsiColor = "text-gray-400";
+    let rsiColor = "text-gray-200";
     if (latestData?.rsi14) {
         if (latestData.rsi14 > 70) {
             rsiStatus = "OB";
@@ -123,11 +123,11 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
                 <TrendingUp className={`w-4 h-4 ${isGoldenCross ? 'text-yellow-400' : 'text-blue-400'}`} />
                 <div className="flex gap-4">
                     <div className="flex flex-col gap-1">
-                        <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest leading-none">ST Trend</span>
+                        <span className="text-[8px] text-gray-300 font-bold uppercase tracking-widest leading-none">ST Trend</span>
                         <span className={`text-[10px] font-bold ${stColor} leading-none`}>{stTrend}</span>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest leading-none">LT Trend</span>
+                        <span className="text-[8px] text-gray-300 font-bold uppercase tracking-widest leading-none">LT Trend</span>
                         <span className={`text-[10px] font-bold ${ltColor} leading-none`}>{ltTrend}</span>
                     </div>
                 </div>
@@ -136,23 +136,23 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
             {/* 2. Technical Matrix */}
             <div className="flex items-center gap-5 uppercase font-bold text-[10px]">
                 <div className="flex flex-col gap-1">
-                    <span className="text-[8px] text-gray-500 tracking-widest leading-none">RSI</span>
+                    <span className="text-[8px] text-gray-300 tracking-widest leading-none">RSI</span>
                     <span className={`${rsiColor} leading-none`}>{rsiStatus} <span className="text-[8px] opacity-40">({latestData.rsi14?.toFixed(0)})</span></span>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <span className="text-[8px] text-gray-500 tracking-widest leading-none">MACD</span>
+                    <span className="text-[8px] text-gray-300 tracking-widest leading-none">MACD</span>
                     <span className={`${macdColor} leading-none`}>{macdStatus}</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <span className="text-[8px] text-gray-500 tracking-widest leading-none">BB</span>
+                    <span className="text-[8px] text-gray-300 tracking-widest leading-none">BB</span>
                     <span className={`${bbColor} leading-none`}>{bbStatus}</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <span className="text-[8px] text-gray-500 tracking-widest leading-none">VWAP</span>
+                    <span className="text-[8px] text-gray-300 tracking-widest leading-none">VWAP</span>
                     <span className={`${vwapColor} leading-none`}>{vwapStatus}</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <span className="text-[8px] text-gray-500 tracking-widest leading-none">ADX</span>
+                    <span className="text-[8px] text-gray-300 tracking-widest leading-none">ADX</span>
                     <span className={`${adxColor} leading-none`}>{adxStatus}</span>
                 </div>
             </div>

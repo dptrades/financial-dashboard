@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
@@ -12,8 +14,6 @@ import WhaleWatch from './WhaleWatch';
 
 
 interface SidebarProps {
-    market: 'crypto' | 'stocks';
-    setMarket: (m: 'crypto' | 'stocks') => void;
     symbol: string;
     setSymbol: (s: string) => void;
     stockInput: string;
@@ -28,6 +28,7 @@ interface SidebarProps {
     currentPage: 'dashboard' | 'picks' | 'sectors' | 'conviction' | 'portfolio';
     stats: PriceStats | null;
     sentimentScore: number;
+    onSectorClick: (sector: any) => void;
 }
 
 const StatsCarousel = ({ stats }: { stats: PriceStats | null }) => {
@@ -55,16 +56,16 @@ const StatsCarousel = ({ stats }: { stats: PriceStats | null }) => {
             <div className="flex justify-between items-center mb-1">
                 <button
                     onClick={prev}
-                    className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white"
+                    className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-200 hover:text-white"
                 >
                     <ChevronLeft className="w-3 h-3" />
                 </button>
 
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold select-none">{current.label}</span>
+                <span className="text-[10px] text-gray-200 uppercase tracking-wider font-bold select-none">{current.label}</span>
 
                 <button
                     onClick={next}
-                    className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white"
+                    className="p-1 hover:bg-gray-700 rounded transition-colors text-gray-200 hover:text-white"
                 >
                     <ChevronRight className="w-3 h-3" />
                 </button>
@@ -72,11 +73,11 @@ const StatsCarousel = ({ stats }: { stats: PriceStats | null }) => {
 
             <div className="flex justify-between items-end mt-2 px-1">
                 <div>
-                    <span className="text-[10px] text-gray-500 block">High</span>
+                    <span className="text-[10px] text-gray-300 block">High</span>
                     <span className="text-sm font-mono text-green-400">${current.high.toFixed(2)}</span>
                 </div>
                 <div className="text-right">
-                    <span className="text-[10px] text-gray-500 block">Low</span>
+                    <span className="text-[10px] text-gray-300 block">Low</span>
                     <span className="text-sm font-mono text-red-400">${current.low.toFixed(2)}</span>
                 </div>
             </div>
@@ -96,8 +97,6 @@ const StatsCarousel = ({ stats }: { stats: PriceStats | null }) => {
 };
 
 export default function Sidebar({
-    market,
-    setMarket,
     symbol,
     setSymbol,
     stockInput,
@@ -111,28 +110,35 @@ export default function Sidebar({
     loading,
     currentPage,
     stats,
-    sentimentScore
+    sentimentScore,
+    onSectorClick
 }: SidebarProps) {
 
     // Calculate Options Signal
     const latest = data[data.length - 1];
-    let optionsSignal: OptionRecommendation | null = null;
+    const [optionsSignal, setOptionsSignal] = useState<OptionRecommendation | null>(null);
 
-    if (latest && stats && latest.atr14) {
-        // Determine Trend (Simplified for Options)
-        let trend: 'bullish' | 'bearish' | 'neutral' = 'neutral';
-        if (latest.close > (latest.ema50 || 0)) trend = 'bullish';
-        else if (latest.close < (latest.ema50 || 0)) trend = 'bearish';
+    useEffect(() => {
+        const fetchSignal = async () => {
+            if (latest && stats && latest.atr14) {
+                // Determine Trend (Simplified for Options)
+                let trend: 'bullish' | 'bearish' | 'neutral' = 'neutral';
+                if (latest.close > (latest.ema50 || 0)) trend = 'bullish';
+                else if (latest.close < (latest.ema50 || 0)) trend = 'bearish';
 
-        optionsSignal = generateOptionSignal(latest.close, latest.atr14, trend, latest.rsi14 || 50, latest.ema50);
-    }
+                const sig = await generateOptionSignal(latest.close, latest.atr14, trend, latest.rsi14 || 50, latest.ema50, undefined, debouncedStock);
+                setOptionsSignal(sig);
+            }
+        };
+        fetchSignal();
+    }, [latest, stats, debouncedStock]);
 
     return (
         <aside className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col h-full overflow-y-auto custom-scrollbar">
             <div className="p-4 flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-blue-400 tracking-tight">DP TradeDesk</h1>
-                    <p className="text-xs text-gray-500 mt-1">Scientific Price Analysis</p>
+                    <p className="text-xs text-gray-300 mt-1">Scientific Price Analysis</p>
                 </div>
                 <div className="flex items-center">
                     <SignedIn>
@@ -148,25 +154,58 @@ export default function Sidebar({
 
             {/* Navigation */}
             <nav className="space-y-1 px-2">
-                <Link href="/" className={`block px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'dashboard' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}>
+                <Link
+                    href="/"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'dashboard'
+                            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                            : 'text-blue-400/70 hover:text-blue-400 hover:bg-blue-500/10'
+                        }`}
+                >
                     Live Dashboard
                 </Link>
-                <Link href="/picks" className={`block px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'picks' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}>
+                <Link
+                    href="/picks"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'picks'
+                            ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                            : 'text-purple-400/70 hover:text-purple-400 hover:bg-purple-500/10'
+                        }`}
+                >
                     Top Picks (Weekly)
                 </Link>
-                <Link href="/sectors" className={`block px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'sectors' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}>
+                <Link
+                    href="/sectors"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'sectors'
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                            : 'text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/10'
+                        }`}
+                >
                     Sector Heatmap
                 </Link>
-                <Link href="/conviction" className={`block px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'conviction' ? 'bg-gray-800 text-white' : 'text-emerald-400 hover:text-white hover:bg-gray-800 bg-emerald-500/10 border border-emerald-500/20'}`}>
+                <Link
+                    href="/conviction"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'conviction'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : 'text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-500/10'
+                        }`}
+                >
                     ✨ Alpha Hunter
                 </Link>
-                <Link href="/portfolio" className={`block px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'portfolio' ? 'bg-gray-800 text-white' : 'text-yellow-400 hover:text-white hover:bg-gray-800 bg-yellow-500/10 border border-yellow-500/20'}`}>
+                {/* 
+                <Link 
+                    href="/portfolio" 
+                    className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                        currentPage === 'portfolio' 
+                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' 
+                        : 'text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/10'
+                    }`}
+                >
                     💰 Paper Trading
                 </Link>
+                */}
             </nav>
 
             {/* Market Internals (Market Pulse) - Below Navigation */}
-            <SidebarInternals />
+            <SidebarInternals onSectorClick={onSectorClick} />
 
             {/* Space Filler */}
             <div className="flex-1"></div>

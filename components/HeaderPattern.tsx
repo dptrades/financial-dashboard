@@ -11,10 +11,10 @@ export default function HeaderPattern({ latestData }: HeaderPatternProps) {
         return (
             <div className="flex items-center gap-4 bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-700 opacity-50">
                 <div className="flex items-center gap-2">
-                    <MousePointerClick className="w-4 h-4 text-gray-500" />
+                    <MousePointerClick className="w-4 h-4 text-gray-300" />
                     <div className="flex flex-col leading-none">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pattern</span>
-                        <span className="text-sm font-bold text-gray-500">None detected</span>
+                        <span className="text-[10px] text-gray-200 font-bold uppercase tracking-wider">Pattern</span>
+                        <span className="text-sm font-bold text-gray-300">None detected</span>
                     </div>
                 </div>
             </div>
@@ -23,8 +23,8 @@ export default function HeaderPattern({ latestData }: HeaderPatternProps) {
 
     const { name, signal } = latestData.pattern;
 
-    let icon = <MinusCircle className="w-4 h-4 text-gray-400" />;
-    let color = "text-gray-400";
+    let icon = <MinusCircle className="w-4 h-4 text-gray-200" />;
+    let color = "text-gray-200";
     let bgColor = "bg-gray-800/50";
     let borderColor = "border-gray-700";
 
@@ -45,7 +45,7 @@ export default function HeaderPattern({ latestData }: HeaderPatternProps) {
             <div className="flex items-center gap-2">
                 {icon}
                 <div className="flex flex-col leading-none">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pattern</span>
+                    <span className="text-[10px] text-gray-200 font-bold uppercase tracking-wider">Pattern</span>
                     <span className={`text-sm font-bold ${color}`}>{name}</span>
                 </div>
             </div>

@@ -32,7 +32,7 @@ export default function HeaderAnalyst({ symbol, analystNews }: HeaderAnalystProp
     // Determine Label
     let label = "NEUTRAL";
     let subtext = "No recent data";
-    let color = "text-gray-400";
+    let color = "text-gray-200";
     let bgColor = "bg-gray-800";
     let borderColor = "border-gray-700";
 
@@ -59,20 +59,20 @@ export default function HeaderAnalyst({ symbol, analystNews }: HeaderAnalystProp
     }
 
     return (
-        <div className={`flex items-center gap-4 ${bgColor} px-4 py-2 rounded-lg border ${borderColor}`}>
+        <div className={`flex items-center gap-4 ${bgColor} px-4 py-2 rounded-xl border shadow-xl transition-all ${borderColor}`}>
             <div className="flex items-center gap-2">
                 <Target className={`w-4 h-4 ${color}`} />
-                <div className="flex flex-col leading-none">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Analyst Flow</span>
-                    <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-sm font-bold ${color}`}>{label}</span>
+                <div className="flex flex-col gap-1">
+                    <span className="text-[8px] text-gray-200 font-bold uppercase tracking-widest leading-none">Analyst Flow</span>
+                    <div className="flex items-center gap-2 leading-none">
+                        <span className={`text-[10px] font-bold ${color} leading-none`}>{label}</span>
                         {/* Mini Visual Bar */}
                         <div className="flex gap-[2px]">
                             {Array.from({ length: stats.upgrades }).map((_, i) => (
-                                <div key={`up-${i}`} className="w-1 h-3 bg-green-500 rounded-sm" title="Upgrade" />
+                                <div key={`up-${i}`} className="w-1 h-[10px] bg-green-500 rounded-sm" title="Upgrade" />
                             ))}
                             {Array.from({ length: stats.downgrades }).map((_, i) => (
-                                <div key={`down-${i}`} className="w-1 h-3 bg-red-500 rounded-sm" title="Downgrade" />
+                                <div key={`down-${i}`} className="w-1 h-[10px] bg-red-500 rounded-sm" title="Downgrade" />
                             ))}
                         </div>
                     </div>
