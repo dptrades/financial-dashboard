@@ -18,6 +18,7 @@ export default function ConvictionPage() {
     const [symbol, setSymbol] = useState('AAPL');
     const [stockInput, setStockInput] = useState('NVDA');
     const [stats, setStats] = useState(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const [stocks, setStocks] = useState<ConvictionStock[]>([]);
     const [loading, setLoading] = useState(true);
@@ -92,6 +93,7 @@ export default function ConvictionPage() {
                 currentPage="conviction"
                 symbol={symbol} setSymbol={setSymbol}
                 stockInput={stockInput} setStockInput={setStockInput}
+                isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen}
                 // No-op props for sidebar internal logic
                 interval="1d" setInterval={() => { }}
                 data={[]} loading={false} stats={null} sentimentScore={50}

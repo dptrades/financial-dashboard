@@ -19,7 +19,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'No verification code found' }, { status: 400 });
         }
 
-        const codes = JSON.parse(fs.readFileSync(CODES_FILE, 'utf-8'));
+        const codes: Record<string, { code: string; expiry: number }> = JSON.parse(fs.readFileSync(CODES_FILE, 'utf-8'));
         const entry = codes[email];
 
         if (!entry) {
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
         fs.writeFileSync(CODES_FILE, JSON.stringify(codes, null, 2));
 
         // 3. Get user info
-        const users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
+        const users: any[] = JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
         const user = users.find((u: any) => u.email === email);
 
         // 4. Create Session (4 hours)

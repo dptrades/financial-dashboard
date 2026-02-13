@@ -36,7 +36,7 @@ export async function POST(req: Request) {
         const code = generateOTP();
         const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-        let codes = {};
+        let codes: Record<string, { code: string; expiry: number }> = {};
         if (fs.existsSync(CODES_FILE)) {
             const content = fs.readFileSync(CODES_FILE, 'utf-8');
             codes = content ? JSON.parse(content) : {};

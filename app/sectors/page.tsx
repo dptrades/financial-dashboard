@@ -13,6 +13,7 @@ type SectorGroup = {
 export default function SectorPage() {
     const [sectors, setSectors] = useState<SectorGroup[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         const runScan = async () => {
@@ -57,6 +58,8 @@ export default function SectorPage() {
                 setSymbol={() => { }}
                 stockInput=""
                 setStockInput={() => { }}
+                isOpen={isSidebarOpen}
+                setIsOpen={setIsSidebarOpen}
                 interval="1d"
                 setInterval={() => { }}
                 data={[]}

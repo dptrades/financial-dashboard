@@ -14,6 +14,7 @@ export default function TopPicksPage() {
     const [picks, setPicks] = useState<ConvictionStock[]>([]);
     const [loading, setLoading] = useState(true);
     const [showLogic, setShowLogic] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         const runScan = async () => {
@@ -47,6 +48,8 @@ export default function TopPicksPage() {
                 setSymbol={() => { }}
                 stockInput=""
                 setStockInput={() => { }}
+                isOpen={isSidebarOpen}
+                setIsOpen={setIsSidebarOpen}
                 interval="1d"
                 setInterval={() => { }}
                 data={[]}
