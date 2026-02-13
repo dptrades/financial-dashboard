@@ -93,7 +93,6 @@ export default function ConvictionPage() {
                 symbol={symbol} setSymbol={setSymbol}
                 stockInput={stockInput} setStockInput={setStockInput}
                 // No-op props for sidebar internal logic
-                debouncedStock={stockInput} setDebouncedStock={() => { }}
                 interval="1d" setInterval={() => { }}
                 data={[]} loading={false} stats={null} sentimentScore={50}
                 onSectorClick={() => { }}

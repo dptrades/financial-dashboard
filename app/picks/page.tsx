@@ -47,8 +47,6 @@ export default function TopPicksPage() {
                 setSymbol={() => { }}
                 stockInput=""
                 setStockInput={() => { }}
-                debouncedStock=""
-                setDebouncedStock={() => { }}
                 interval="1d"
                 setInterval={() => { }}
                 data={[]}

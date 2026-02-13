@@ -57,8 +57,6 @@ export default function SectorPage() {
                 setSymbol={() => { }}
                 stockInput=""
                 setStockInput={() => { }}
-                debouncedStock=""
-                setDebouncedStock={() => { }}
                 interval="1d"
                 setInterval={() => { }}
                 data={[]}

@@ -41,23 +41,19 @@ Shows the status of the automated trading engine.
 
 ### **A. Weekly Top Picks (`/picks`)**
 Designed for conservative, high-probability setups in Mega-Cap stocks.
-- **Universe**: Scans a fixed watchlist of ~50 "Mega Cap" stocks (S&P 500 & Nasdaq 100 giants like AAPL, MSFT, NVDA).
-- **Goal**: Find steady, reliable trend followers.
-- **API Endpoint**: `/api/conviction`
-- **Key Display Metrics**:
-  - **Win Prob**: The raw Conviction Score (0-100).
-  - **Trend Label**: BULLISH/BEARISH based on EMA50.
-  - **Suggested Play**: A conservative option swing trade (30-45 days out).
+- **Universe**: Hard-curated list of ~50 "Mega Cap" giants (Market Cap > $200B).
+- **Core Names**: AAPL, MSFT, NVDA, GOOGL, AMZN, LLY, JPM, V.
+- **Discovery**: Static (Discovery bonus manually disabled to maintain blue-chip focus).
+- **Strategy**: Steady, reliable trend following for long-term swing trades.
 
 ### **B. Alpha Hunter (`/conviction`)**
-Designed for aggressive growth and momentum discovery.
-- **Universe**: Scans a broader list of ~150 stocks + **Smart Discoveries**.
-- **Smart Discovery**: Automatically adds stocks to the list if they trigger "Unusual Volume" or "News Catalysts" via `lib/smart-scanner.ts`.
-- **API Endpoint**: `/api/alpha-hunter`
-- **Key Display Metrics**:
-  - **Alpha Score**: The Conviction Score, but highly sensitive to Volatility and Social Hype.
-  - **Breakdown**: Shows distinct technical, fundamental, analyst, and social sub-scores.
-  - **Badges**: Highlights specific reasons like "Unusual Volume", "Short Squeeze Potential", or "Analyst Upgrade".
+Designed for aggressive growth and momentum discovery across the broader market.
+- **Universe**: Broad watchlist of 150+ stocks + **Dynamic Smart Discovery**.
+- **Smart Discovery**: Real-time scanner injects names triggering:
+    - **Unusual Volume**: 1.5x+ relative to 1-year average.
+    - **News Catalysts**: Major earnings beats or analyst upgrades.
+    - **Breakouts**: Bollinger Band expansions.
+- **Strategy**: Identifying momentum breakouts and speculative alpha-generating opportunities.
 
 ---
 
