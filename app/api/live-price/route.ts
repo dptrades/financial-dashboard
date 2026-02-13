@@ -19,38 +19,36 @@ export async function GET(request: Request) {
     try {
         const ticker = symbol.toUpperCase();
 
-        // 1. Try Public.com First (Primary Source)
-        const publicQuote = await publicClient.getQuote(ticker);
+        const marketSession = publicClient.getMarketSession();
 
-        // 2. Fallback to Alpaca
-        const alpacaPrice = publicQuote ? null : await fetchAlpacaPrice(ticker);
+        // ROUTING:
+        // Regular Hours -> Alpaca (Live)
+        // Extended Hours -> Locked to Close (for Headers)
 
-        // Fetch quote data from Yahoo for change info (if Public.com didn't provide it)
-        let price = publicQuote?.price || alpacaPrice;
-        let change = publicQuote?.change || 0;
-        let changePercent = publicQuote?.changePercent || 0;
+        let price: number | null = null;
+        let change = 0;
+        let changePercent = 0;
         let previousClose = 0;
+        let source = 'alpaca';
 
-        let source = 'public.com';
-        if (!publicQuote) {
-            if (publicClient.lastError) {
-                source = `public.com (${publicClient.lastError.toLowerCase()})`;
-            } else if (alpacaPrice !== null) {
-                source = 'alpaca';
-            } else {
-                source = 'yahoo';
-            }
+        if (marketSession === 'REG') {
+            price = await fetchAlpacaPrice(ticker);
+            source = 'alpaca';
+        } else {
+            // During off-hours, we want the "Header" to stay at close.
+            // We'll fetch from Yahoo to get the official regular market close.
+            source = 'yahoo (market close)';
         }
 
-        // 3. Fallback/Complement with Yahoo for metrics
+        // Always fallback to Yahoo for metadata or if Alpaca failed
         try {
             const quote: any = await yahooFinance.quote(ticker);
             if (quote) {
-                if (price === null) price = quote.regularMarketPrice || null;
-                if (!publicQuote) {
-                    change = quote.regularMarketChange || 0;
-                    changePercent = quote.regularMarketChangePercent || 0;
+                if (price === null) {
+                    price = quote.regularMarketPrice || null;
                 }
+                change = quote.regularMarketChange || 0;
+                changePercent = quote.regularMarketChangePercent || 0;
                 previousClose = quote.regularMarketPreviousClose || 0;
             }
         } catch (yahooError) {
@@ -72,6 +70,7 @@ export async function GET(request: Request) {
             change,
             changePercent,
             previousClose,
+            marketSession,
             source,
             timestamp: new Date().toISOString()
         });

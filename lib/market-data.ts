@@ -1,4 +1,4 @@
-import { fetchAlpacaBars } from './alpaca';
+import { fetchAlpacaBars, fetchAlpacaPrice } from './alpaca';
 import YahooFinance from 'yahoo-finance2';
 import { calculateIndicators } from './indicators';
 import { ConvictionStock } from '../types/stock';
@@ -41,6 +41,7 @@ export interface TimeframeData {
 export interface MultiTimeframeAnalysis {
     symbol: string;
     currentPrice: number;
+    headerPrice: number; // The price to show in the global header (last close during off hours)
     timeframes: TimeframeData[];
     metrics: {
         atr: number;
@@ -82,29 +83,30 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
     // 1. Fetch Daily Data First (Primary)
     // Run concurrently with live price fetch and source checks
     let dataSource = 'Public.com';
-    let marketSession: 'PRE' | 'REG' | 'POST' | 'OFF' = 'REG';
+    const marketSession = publicClient.getMarketSession();
+    let livePrice = 0;
+    let dailyData: any[] = [];
 
-    const [dailyData, publicQuote] = await Promise.all([
-        fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars),
-        publicClient.getQuote(symbol)
-    ]);
-
-    // Track which source we are using
-    if (!publicClient.isConfigured()) {
-        dataSource = 'Public.com (Estimated)';
-    } else if (!publicQuote) {
-        if (publicClient.lastError) {
-            dataSource = `Public.com (${publicClient.lastError})`;
-        } else {
-            dataSource = 'Alpaca (Fallback)';
-        }
+    // ROUTING LOGIC:
+    // 1. Regular Hours: Use Alpaca (High frequency, specialized for price)
+    // 2. Extended Hours: Use Public (Brokerage data with Pre/Post support)
+    if (marketSession === 'REG') {
+        const result = await Promise.all([
+            fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars),
+            fetchAlpacaPrice(symbol)
+        ]);
+        dailyData = result[0];
+        livePrice = result[1] || 0;
+        dataSource = 'Alpaca (Real-time)';
     } else {
-        dataSource = 'Public.com';
-        marketSession = publicQuote.session || 'REG';
+        const result = await Promise.all([
+            fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars),
+            publicClient.getQuote(symbol)
+        ]);
+        dailyData = result[0];
+        livePrice = result[1]?.price || 0;
+        dataSource = publicClient.isConfigured() ? 'Public.com' : 'Public.com (Estimated)';
     }
-
-    // Use Public.com price if available, fallback to daily close
-    const livePrice = publicQuote?.price || 0;
 
     if (!dailyData || dailyData.length < 50) {
         console.error(`Insufficient daily data for ${symbol}`);
@@ -211,9 +213,13 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
     const order = { '10m': 1, '1h': 2, '4h': 3, '1d': 4, '1w': 5 };
     results.sort((a, b) => order[a.timeframe] - order[b.timeframe]);
 
+    // For Header Price: If REG, use current. If extended, use latest close (last daily bar).
+    const headerPrice = marketSession === 'REG' ? currentPrice : latestDaily.close;
+
     return {
         symbol,
         currentPrice,
+        headerPrice,
         timeframes: results,
         metrics: {
             atr: dailyAtr,

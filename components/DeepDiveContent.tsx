@@ -11,6 +11,8 @@ interface DeepDiveContentProps {
 
 interface DetailData {
     symbol: string;
+    displayPrice: number;
+    headerPrice: number;
     analysis: MultiTimeframeAnalysis;
     optionsFlow: UnusualOption[];
     fundamentals: Fundamentals;
@@ -91,7 +93,11 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
                     <div className="flex flex-col items-end gap-0.5 mt-0.5">
                         <div className="text-[10px] text-gray-400 uppercase tracking-tighter font-medium flex items-center gap-1">
                             <Activity className="w-2.5 h-2.5 text-blue-500" />
-                            Source: <span className="text-gray-200">{data.analysis.dataSource}</span>
+                            {data.analysis.dataSource === 'Alpaca (Real-time)' ? (
+                                <span>Pricing via <span className="text-blue-400">Alpaca (IEX Real-time)</span></span>
+                            ) : (
+                                <span>Pricing via <span className="text-blue-400">{data.analysis.dataSource}</span></span>
+                            )}
                         </div>
                         <div className={`text-[10px] px-1.5 py-0.5 rounded font-bold tracking-tighter uppercase ${data.analysis.marketSession === 'REG' ? 'text-green-400 bg-green-500/10' :
                             data.analysis.marketSession === 'OFF' ? 'text-gray-400 bg-gray-500/10' :

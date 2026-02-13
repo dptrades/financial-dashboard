@@ -292,7 +292,7 @@ export class PublicClient {
     /**
      * Helper to determine market session based on current time (EST)
      */
-    private getMarketSession(): 'PRE' | 'REG' | 'POST' | 'OFF' {
+    public getMarketSession(): 'PRE' | 'REG' | 'POST' | 'OFF' {
         const now = new Date();
         const estTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
         const hours = estTime.getHours();

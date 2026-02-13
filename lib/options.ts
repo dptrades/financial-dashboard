@@ -3,6 +3,13 @@ import type { IndicatorData } from '../types/financial';
 import { publicClient, PublicOptionChain } from './public-api';
 export type { OptionRecommendation } from '../types/options';
 
+// 5-Minute Cache for heavy P/C Ratio data
+const PCR_CACHE_TTL = 5 * 60 * 1000;
+declare global {
+    var _pcrCache: Map<string, { data: any, timestamp: number }>;
+}
+if (!global._pcrCache) global._pcrCache = new Map();
+
 export function getNextMonthlyExpiry(): string {
     const d = new Date();
     d.setDate(d.getDate() + 30);
@@ -190,7 +197,8 @@ export async function generateOptionSignal(
         ((socialConfirmations || 0) * 5)
     );
 
-    const pcrData = await getPutCallRatio(symbol || '');
+    // REMOVED: getPutCallRatio is heavy and shouldn't be in the broad scanner.
+    // It will be lazily loaded in the Deep Dive instead.
 
     return {
         type: direction,
@@ -216,7 +224,6 @@ export async function generateOptionSignal(
         fundamentalDetails,
         socialDetails,
         symbol: realOption?.symbol,
-        putCallRatio: pcrData?.volumeRatio,
         probabilityITM: realOption?.greeks?.delta ? Math.abs(realOption.greeks.delta) : undefined
     };
 }
@@ -226,6 +233,13 @@ export async function generateOptionSignal(
  */
 export async function getPutCallRatio(symbol: string): Promise<{ volumeRatio: number, oiRatio: number, totalCalls: number, totalPuts: number } | null> {
     if (!symbol) return null;
+
+    // 1. Check Cache
+    const cached = global._pcrCache.get(symbol);
+    if (cached && (Date.now() - cached.timestamp < PCR_CACHE_TTL)) {
+        return cached.data;
+    }
+
     try {
         const chain = await publicClient.getOptionChain(symbol);
         if (!chain) return null;
@@ -252,12 +266,17 @@ export async function getPutCallRatio(symbol: string): Promise<{ volumeRatio: nu
         const volumeRatio = totalCallVolume > 0 ? totalPutVolume / totalCallVolume : 0;
         const oiRatio = totalCallOI > 0 ? totalPutOI / totalCallOI : 0;
 
-        return {
+        const result = {
             volumeRatio: parseFloat(volumeRatio.toFixed(2)),
             oiRatio: parseFloat(oiRatio.toFixed(2)),
             totalCalls: totalCallVolume,
             totalPuts: totalPutVolume
         };
+
+        // Update Cache
+        global._pcrCache.set(symbol, { data: result, timestamp: Date.now() });
+
+        return result;
     } catch (e) {
         console.error('Error calculating Put/Call ratio:', e);
         return null;

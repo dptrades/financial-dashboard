@@ -14,6 +14,7 @@ interface PriceData {
     price: number;
     change: number;
     changePercent: number;
+    marketSession?: 'PRE' | 'REG' | 'POST' | 'OFF';
 }
 
 export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true, showChange = false }: LivePriceDisplayProps) {
@@ -40,9 +41,10 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
                     setPriceData({
                         price: data.price,
                         change: data.change || 0,
-                        changePercent: data.changePercent || 0
+                        changePercent: data.changePercent || 0,
+                        marketSession: data.marketSession
                     });
-                    setIsLive(true);
+                    setIsLive(data.marketSession === 'REG');
                     setLastUpdate(new Date());
 
                     // Clear flash after animation

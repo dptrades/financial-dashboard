@@ -52,6 +52,8 @@ export async function GET(request: Request, context: { params: Promise<{ ticker:
 
         return NextResponse.json({
             symbol,
+            displayPrice: analysis.currentPrice,
+            headerPrice: analysis.headerPrice,
             analysis,
             optionsFlow,
             priceStats,
