@@ -233,19 +233,24 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     symbolsToScan = symbolsToScan.slice(0, 120);
     console.log(`📊 Total symbols to scan: ${symbolsToScan.length}`);
 
-    // Batch Processing Helper
+    // 4. Batch Processing Helper
     const processBatch = async (batch: string[]) => {
+        // Fetch ALL Public.com quotes for this batch at once
+        const publicQuotes = await publicClient.getQuotes(batch);
+        const publicQuoteMap = new Map(publicQuotes.map(q => [q.symbol, q]));
+
         const promises = batch.map(async (symbol) => {
             try {
                 // 1. Fetch Data (Hybrid: Alpaca for Live Price/Chart, Yahoo for Fundamentals)
                 console.log(`[Conviction] Fetching data for ${symbol}...`);
-                const [quote, yahooChart, alpacaBars, socialNews, publicQuote] = await Promise.all([
+                const [quote, yahooChart, alpacaBars, socialNews] = await Promise.all([
                     (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price', 'assetProfile'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
                     (yahooFinance.chart(symbol, { period1: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
                     (fetchAlpacaBars(symbol, '1Day', 253).then(b => { return b; })),
-                    (getNewsData(symbol, 'social') as Promise<any>).catch(e => []),
-                    publicClient.getQuote(symbol)
+                    (getNewsData(symbol, 'social') as Promise<any>).catch(e => [])
                 ]);
+
+                const publicQuote = publicQuoteMap.get(symbol);
 
                 // DECISION: Use Public.com for live price, Alpaca for Chart, Yahoo as fallback
                 let cleanData: any[] = [];
@@ -479,7 +484,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     }
 
     // Process in chunks of 5
-    const CHUNK_SIZE = 5;
+    const CHUNK_SIZE = 20;
     for (let i = 0; i < symbolsToScan.length; i += CHUNK_SIZE) {
         const batch = symbolsToScan.slice(i, i + CHUNK_SIZE);
         console.log(`📦 Processing batch ${i / CHUNK_SIZE + 1}/${Math.ceil(symbolsToScan.length / CHUNK_SIZE)}: ${batch.join(', ')}`);
@@ -565,19 +570,24 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
     symbolsToScan = symbolsToScan.slice(0, 120);
     console.log(`📊 Total symbols to scan: ${symbolsToScan.length}`);
 
-    // Batch Processing Helper
+    // 4. Batch Processing Helper
     const processBatch = async (batch: string[]) => {
+        // Fetch ALL Public.com quotes for this batch at once
+        const publicQuotes = await publicClient.getQuotes(batch);
+        const publicQuoteMap = new Map(publicQuotes.map(q => [q.symbol, q]));
+
         const promises = batch.map(async (symbol) => {
             try {
                 // 1. Fetch Data (Hybrid: Alpaca for Live Price/Chart, Yahoo for Fundamentals)
                 console.log(`[Alpha Hunter] Fetching data for ${symbol}...`);
-                const [quote, yahooChart, alpacaBars, socialNews, publicQuote] = await Promise.all([
+                const [quote, yahooChart, alpacaBars, socialNews] = await Promise.all([
                     (yahooFinance.quoteSummary(symbol, { modules: ['financialData', 'defaultKeyStatistics', 'recommendationTrend', 'price', 'assetProfile'] }) as Promise<any>).catch(e => { console.error(`[Yahoo] Quote Error ${symbol}:`, e.message); return null; }),
                     (yahooFinance.chart(symbol, { period1: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), interval: '1d' }) as Promise<any>).catch(e => { console.error(`[Yahoo] Chart Error ${symbol}:`, e.message); return null; }),
                     (fetchAlpacaBars(symbol, '1Day', 253).then(b => { return b; })),
-                    (getNewsData(symbol, 'social') as Promise<any>).catch(e => []),
-                    publicClient.getQuote(symbol)
+                    (getNewsData(symbol, 'social') as Promise<any>).catch(e => [])
                 ]);
+
+                const publicQuote = publicQuoteMap.get(symbol);
 
                 // DECISION: Use Public.com for live price, Alpaca for Chart, Yahoo as fallback
                 let cleanData: any[] = [];
@@ -784,7 +794,7 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
     }
 
     // Process in chunks of 5
-    const CHUNK_SIZE = 5;
+    const CHUNK_SIZE = 20;
     for (let i = 0; i < symbolsToScan.length; i += CHUNK_SIZE) {
         const batch = symbolsToScan.slice(i, i + CHUNK_SIZE);
         console.log(`📦 Processing batch ${i / CHUNK_SIZE + 1}/${Math.ceil(symbolsToScan.length / CHUNK_SIZE)}: ${batch.join(', ')}`);

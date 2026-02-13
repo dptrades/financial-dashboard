@@ -55,6 +55,9 @@ export class PublicClient {
     private tokenExpiry: number = 0;
     private accountId: string | null = null;
     public lastError: string | null = null;
+    private throttledUntil: number = 0;
+    private quoteCache: Map<string, { data: PublicQuote; expiry: number }> = new Map();
+    private CACHE_TTL = 10 * 1000; // 10 seconds cache for quotes
 
     constructor() {
         this.apiKey = env.PUBLIC_API_KEY || '';
@@ -131,13 +134,19 @@ export class PublicClient {
     private async request(endpoint: string, method: 'GET' | 'POST' = 'GET', data?: any, params?: any) {
         if (!this.isConfigured()) return null;
 
+        // Check for 429 cooldown
+        if (Date.now() < this.throttledUntil) {
+            console.warn(`[PublicAPI] Rate limit cool-down active. Skipping request to ${endpoint}.`);
+            this.lastError = "429: Too many requests (Cool-down active)";
+            return null;
+        }
+
         const token = await this.getAuthToken();
         if (!token) return null;
 
         const accountId = await this.getAccountId();
         if (!accountId) return null;
 
-        // Determine if we need to use marketdata or option-details base path
         const isOptionDetails = endpoint.includes('options') || endpoint.includes('greeks');
         const baseUrlPath = isOptionDetails ? '/userapigateway/option-details' : '/userapigateway/marketdata';
 
@@ -157,14 +166,10 @@ export class PublicClient {
             };
 
             if (params) {
-                // Manually construct query string to ensure it's exactly what CloudFront/Public API expects
                 const queryParts: string[] = [];
                 for (const key in params) {
                     const value = params[key];
                     if (Array.isArray(value)) {
-                        // Some WAFs/APIs prefer CSV for arrays to keep URL short
-                        // Let's try CSV for osiSymbols specifically if standard fails, 
-                        // but here we'll just try it as the primary if it's an array
                         queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value.join(','))}`);
                     } else {
                         queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
@@ -177,10 +182,17 @@ export class PublicClient {
 
             console.log(`[PublicAPI] Request: ${method} ${config.url}`);
             const response = await axios(config);
+            this.lastError = null; // Clear error on success
             return response.data;
         } catch (error: any) {
             const status = error.response?.status;
             const message = error.response?.data?.message || error.message;
+
+            if (status === 429) {
+                console.error(`[PublicAPI] 🛑 Rate Limit Hit (429). Activating cool-down for 30 seconds.`);
+                this.throttledUntil = Date.now() + (30 * 1000);
+            }
+
             this.lastError = status ? `${status}: ${message}` : message;
             console.error(`[PublicAPI] Request error for ${finalPath}:`, status, JSON.stringify(error.response?.data) || error.message);
             return null;
@@ -191,15 +203,11 @@ export class PublicClient {
      * Get real-time stock quote
      */
     async getQuote(symbol: string): Promise<PublicQuote | null> {
-        // The provided code snippet seems to be intended for a consumer of PublicClient,
-        // not for insertion directly into the getQuote method itself.
-        // Inserting it here would cause syntax errors and reference undefined variables.
-        // The instruction "Adding lastError tracking to PublicClient" is already handled
-        // by the `public lastError: string | null = null;` property and its usage
-        // in `getAuthToken`.
-        // The instruction "update market-data to display detailed error states" implies
-        // that the consumer of this class should check `publicClient.lastError`.
-        // Therefore, I am not inserting the provided snippet directly into this method.
+        // Check cache first
+        const cached = this.quoteCache.get(symbol);
+        if (cached && Date.now() < cached.expiry) {
+            return cached.data;
+        }
 
         if (!this.isConfigured()) {
             return {
@@ -212,35 +220,73 @@ export class PublicClient {
             };
         }
 
+        const results = await this.getQuotes([symbol]);
+        return results[0] || null;
+    }
+
+    /**
+     * Get real-time quotes for multiple symbols in a single batch
+     */
+    async getQuotes(symbols: string[]): Promise<PublicQuote[]> {
+        if (symbols.length === 0) return [];
+
+        // Identify which symbols need refreshing
+        const now = Date.now();
+        const results: PublicQuote[] = [];
+        const toFetch: string[] = [];
+
+        symbols.forEach(s => {
+            const cached = this.quoteCache.get(s);
+            if (cached && now < cached.expiry) {
+                results.push(cached.data);
+            } else {
+                toFetch.push(s);
+            }
+        });
+
+        if (toFetch.length === 0) return results;
+
+        if (!this.isConfigured()) {
+            return [...results, ...toFetch.map(s => ({
+                symbol: s,
+                price: 150.00 + (Math.random() * 5),
+                change: 1.25,
+                changePercent: 0.85,
+                volume: 1200000,
+                timestamp: now
+            }))];
+        }
+
         try {
-            // According to https://public.com/api/docs/resources/market-data/get-quotes
+            console.log(`[PublicAPI] Batch fetching ${toFetch.length} quotes...`);
             const data = await this.request(`/quotes`, 'POST', {
-                instruments: [{ symbol, type: 'EQUITY' }]
+                instruments: toFetch.map(s => ({ symbol: s, type: 'EQUITY' }))
             });
 
             if (data && data.quotes && Array.isArray(data.quotes)) {
-                const q = data.quotes.find((item: any) => item.instrument.symbol === symbol);
-                if (q) {
-                    console.log(`[PublicAPI] Quote for ${symbol} found: $${q.last}`);
-                    return {
-                        symbol: q.instrument.symbol,
+                data.quotes.forEach((q: any) => {
+                    if (!q.instrument) return;
+                    const signum = q.instrument.symbol;
+                    const quote: PublicQuote = {
+                        symbol: signum,
                         price: parseFloat(q.last || '0'),
                         change: parseFloat(q.netChange || '0'),
                         changePercent: parseFloat(q.percentChange || '0'),
                         volume: parseInt(q.volume || '0'),
-                        timestamp: q.lastTimestamp ? new Date(q.lastTimestamp).getTime() : Date.now(),
+                        timestamp: q.lastTimestamp ? new Date(q.lastTimestamp).getTime() : now,
                         session: this.getMarketSession()
                     };
-                } else {
-                    console.warn(`[PublicAPI] Symbol ${symbol} not found in response quotes:`, JSON.stringify(data.quotes.map((item: any) => item.instrument.symbol)));
-                }
-            } else {
-                console.error(`[PublicAPI] Unexpected response format for ${symbol}:`, JSON.stringify(data));
+
+                    // Update cache
+                    this.quoteCache.set(signum, { data: quote, expiry: now + this.CACHE_TTL });
+                    results.push(quote);
+                });
             }
         } catch (e) {
-            console.error('[PublicAPI] getQuote error:', e);
+            console.error('[PublicAPI] getQuotes batch error:', e);
         }
-        return null;
+
+        return results;
     }
 
     /**
