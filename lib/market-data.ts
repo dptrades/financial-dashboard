@@ -79,34 +79,22 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
     const dailyConfig = mapTimeframe('1d');
 
     // 1. Fetch Daily Data First (Primary)
-    // Run concurrently with live price fetch
-    // 1. Fetch Daily Data First (Primary)
-    // Run concurrently with live price fetch and source checks
-    let dataSource = 'Public.com';
+    // ROUTING LOGIC:
+    // Technicals/Bars -> Alpaca (Adjusted for splits/dividends)
+    // Live Price -> Public.com (Brokerage-grade Pre/Post support)
+    let dataSource = 'Hybrid (Alpaca + Public)';
     const marketSession = publicClient.getMarketSession();
     let livePrice = 0;
     let dailyData: any[] = [];
 
-    // ROUTING LOGIC:
-    // 1. Regular Hours: Use Alpaca (High frequency, specialized for price)
-    // 2. Extended Hours: Use Public (Brokerage data with Pre/Post support)
-    if (marketSession === 'REG') {
-        const result = await Promise.all([
-            fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars),
-            fetchAlpacaPrice(symbol)
-        ]);
-        dailyData = result[0];
-        livePrice = result[1] || 0;
-        dataSource = 'Alpaca (Real-time)';
-    } else {
-        const result = await Promise.all([
-            fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars),
-            publicClient.getQuote(symbol)
-        ]);
-        dailyData = result[0];
-        livePrice = result[1]?.price || 0;
-        dataSource = publicClient.isConfigured() ? 'Public.com' : 'Public.com (Estimated)';
-    }
+    // Run concurrently for performance
+    const [dailyBars, publicQuote] = await Promise.all([
+        fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars),
+        publicClient.getQuote(symbol)
+    ]);
+
+    dailyData = dailyBars;
+    livePrice = publicQuote?.price || 0;
 
     if (!dailyData || dailyData.length < 50) {
         console.error(`Insufficient daily data for ${symbol}`);

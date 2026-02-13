@@ -143,9 +143,11 @@ export async function generateOptionSignal(
 
     let realOption = null;
     let actualAsk = 0;
+    let probabilityITM = 0.5; // Default
 
     if (symbol) {
         try {
+            // HYBRID POWER SETUP: Get live Greeks (Delta/IV) from Public.com
             const chain = await publicClient.getOptionChain(symbol, expiry);
             if (chain && chain.options[expiry]) {
                 const strikeKeys = Object.keys(chain.options[expiry]).map(Number).sort((a, b) => a - b);
@@ -158,15 +160,19 @@ export async function generateOptionSignal(
                     if (opt) {
                         realOption = opt;
                         actualAsk = opt.ask;
+
+                        // Prioritize Live Greeks from Public.com Brokerage Feed
                         const greeks = await publicClient.getGreeks(opt.symbol);
                         if (greeks) {
                             realOption.greeks = greeks;
+                            probabilityITM = Math.abs(greeks.delta);
                         } else {
+                            // High-fidelity fallback based on ATR/Price distance
                             const distFromPrice = Math.abs(currentPrice - closestStrike) / currentPrice;
-                            const estimatedDelta = Math.max(0.1, 0.5 - (distFromPrice * 2));
+                            probabilityITM = Math.max(0.1, 0.5 - (distFromPrice * 2));
                             const ivProxy = calculateVolatilityProxy(currentPrice, atr, symbol);
                             realOption.greeks = {
-                                delta: isCall ? estimatedDelta : -estimatedDelta,
+                                delta: isCall ? probabilityITM : -probabilityITM,
                                 gamma: 0, theta: 0, vega: 0, rho: 0, impliedVolatility: ivProxy
                             };
                         }
@@ -174,7 +180,7 @@ export async function generateOptionSignal(
                 }
             }
         } catch (e) {
-            console.error('Failed to fetch real option chain', e);
+            console.error('Failed to fetch real option chain from Public.com', e);
         }
     }
 
