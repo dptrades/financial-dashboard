@@ -44,8 +44,8 @@ export default function Dashboard() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [analystData, setAnalystData] = useState<NewsItem[]>([]);
   const [stats, setStats] = useState<PriceStats | null>(null);
-  const [symbol, setSymbol] = useState('AAPL'); // Unified source of truth for the active ticker
-  const [stockInput, setStockInput] = useState('AAPL');
+  const [symbol, setSymbol] = useState('SPY'); // Unified source of truth for the active ticker
+  const [stockInput, setStockInput] = useState('SPY');
 
   const [interval, setIntervalState] = useState('1d'); // 15m, 1h, 4h, 1d
   const [loading, setLoading] = useState(true);

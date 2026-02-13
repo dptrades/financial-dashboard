@@ -8,7 +8,7 @@ export interface OHLCVResponse {
 }
 
 // Default to Bitcoin and 1 day interval for now
-export const fetchOHLCV = async (coinId: string = 'AAPL', days: string = '30', market: 'stocks' = 'stocks', interval: string = '1d'): Promise<OHLCVResponse> => {
+export const fetchOHLCV = async (coinId: string = 'SPY', days: string = '30', market: 'stocks' = 'stocks', interval: string = '1d'): Promise<OHLCVResponse> => {
     try {
         const response = await axios.get('/api/ohlcv', {
             params: {
