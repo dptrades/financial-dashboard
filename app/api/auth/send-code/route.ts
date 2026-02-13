@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateOTP, createVerificationToken } from '@/lib/auth';
+import { sendOTPEmail } from '@/lib/email';
 
 export async function POST(req: Request) {
     try {
@@ -13,10 +14,17 @@ export async function POST(req: Request) {
         const code = generateOTP();
 
         // 2. Create Stateless Verification Token
-        // This token holds the code and user details securely (signed)
         const verificationToken = await createVerificationToken({ email, name, code });
 
-        // 3. "Send" Email (Mock)
+        // 3. Send Real Email via Resend
+        const emailResult = await sendOTPEmail(email, code, name);
+
+        if (!emailResult.success) {
+            // Log error but continue for now if we want to allow login via logs (or we can block)
+            console.error('Failed to send email:', emailResult.error);
+        }
+
+        // 4. Redundant "Send" Email (Mock/Log for server visibility)
         console.log(`\n--- [AUTH DEBUG] ---\nVERIFICATION CODE FOR ${email}: ${code}\n--------------------\n`);
 
         // Return the token to the client so it can pass it back during verification
