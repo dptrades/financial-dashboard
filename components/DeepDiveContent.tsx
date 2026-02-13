@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, TrendingUp, TrendingDown, Activity, BarChart2, AlertCircle } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Activity, BarChart2, AlertCircle, RefreshCw } from "lucide-react";
 import { MultiTimeframeAnalysis } from "@/lib/market-data";
 import { UnusualOption } from "@/lib/options-flow";
 import AIAnalysisWidget, { Fundamentals } from "./AIAnalysisWidget";
@@ -86,6 +86,14 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
                 <div>
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                         {symbol} <span className="text-blue-400">Deep Dive</span>
+                        <button
+                            onClick={() => fetchDetails(symbol)}
+                            disabled={loading}
+                            className="p-1 hover:bg-gray-800 rounded-md transition-colors text-gray-400 hover:text-white disabled:opacity-50"
+                            title="Refresh Analysis"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
                     </h2>
                     <p className="text-gray-200 text-sm">
                         Multi-timeframe Technicals & Institutional Flow

@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { OptionRecommendation } from '../lib/options';
-import { MousePointerClick, TrendingUp, TrendingDown, AlertCircle, Target, Shield, Crosshair, Zap, X } from 'lucide-react';
+import { MousePointerClick, TrendingUp, TrendingDown, AlertCircle, Target, Shield, Crosshair, Zap, X, RefreshCw } from 'lucide-react';
 
 interface OptionsSignalProps {
     data: OptionRecommendation | null;
     loading: boolean;
+    onRefresh?: () => void;
 }
 
-export default function OptionsSignal({ data, loading }: OptionsSignalProps) {
+export default function OptionsSignal({ data, loading, onRefresh }: OptionsSignalProps) {
     const [priceFlash, setPriceFlash] = useState<'up' | 'down' | null>(null);
     const [prevPrice, setPrevPrice] = useState<number | undefined>(undefined);
 
@@ -36,6 +37,15 @@ export default function OptionsSignal({ data, loading }: OptionsSignalProps) {
                 <div className="flex items-center gap-2 mb-2 text-gray-200">
                     <MousePointerClick className="w-4 h-4" />
                     <span className="text-xs font-bold uppercase tracking-wider">Options AI</span>
+                    {onRefresh && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onRefresh(); }}
+                            className="p-1 hover:bg-gray-700 rounded-md transition-colors text-gray-400 hover:text-white"
+                            title="Refresh Signal"
+                        >
+                            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
+                    )}
                 </div>
                 <div className="text-center py-2">
                     <span className="text-gray-300 font-medium text-sm">No High-Prob Setup</span>
@@ -107,6 +117,15 @@ export default function OptionsSignal({ data, loading }: OptionsSignalProps) {
                 <div className="flex items-center gap-2">
                     <MousePointerClick className={`w-4 h-4 ${color}`} />
                     <span className="text-xs font-bold uppercase tracking-wider text-gray-200">Options AI</span>
+                    {onRefresh && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onRefresh(); }}
+                            className="p-1 hover:bg-gray-700 rounded-md transition-colors text-gray-400 hover:text-white"
+                            title="Refresh Signal"
+                        >
+                            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
+                    )}
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full bg-gray-700 ${color} font-bold`}>
                     {data.confidence}% Confidence

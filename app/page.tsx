@@ -253,6 +253,11 @@ export default function Dashboard() {
   // Now async, so we use a state effect
   const [optionsSignal, setOptionsSignal] = useState<OptionRecommendation | null>(null);
   const [top3Options, setTop3Options] = useState<OptionRecommendation[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // For manual refresh
+
+  const handleManualRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -299,7 +304,7 @@ export default function Dashboard() {
     };
     fetchSignal();
     return () => { ignore = true; };
-  }, [latest, stats, currentTrend, symbol]);
+  }, [latest, stats, currentTrend, symbol, refreshTrigger]);
 
   return (
     <div className="flex h-screen bg-gray-900 text-white font-sans">
@@ -394,7 +399,7 @@ export default function Dashboard() {
                   <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Zap className="w-4 h-4 text-blue-400" /> Tactical Option Play
                   </h3>
-                  <OptionsSignal data={optionsSignal} loading={loading} />
+                  <OptionsSignal data={optionsSignal} loading={loading} onRefresh={handleManualRefresh} />
                 </div>
 
                 {/* Price Statistics - Below AI Option Play */}
