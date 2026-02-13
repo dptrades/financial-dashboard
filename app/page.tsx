@@ -12,6 +12,7 @@ import { OptionRecommendation } from '../lib/options';
 import { detectPatterns } from '../lib/patterns';
 // import PriceChart from '../components/PriceChart'; // Removed
 import Sidebar from '../components/Sidebar';
+import LoginOverlay from '../components/LoginOverlay';
 import HighlightStats from '../components/HighlightStats';
 
 import OptionsSignal from '../components/OptionsSignal';
@@ -26,7 +27,7 @@ import NewsFeed from '../components/NewsFeed';
 import LivePriceDisplay from '../components/LivePriceDisplay';
 import { Loading } from '@/components/ui/Loading';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import { Zap } from 'lucide-react';
+import { Zap, ChevronRight, Activity } from 'lucide-react';
 import SectorPerformanceWidget from '../components/SectorPerformanceWidget';
 import SectorDetailModal from '../components/SectorDetailModal';
 
@@ -67,6 +68,25 @@ export default function Dashboard() {
 
   // Viewport (number of bars)
   const [viewScope, setViewScope] = useState(365);
+
+  // Sidebar Layout State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Custom Auth Session
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check for session via server API (since cookie is httpOnly)
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/auth/session');
+        setIsAuthenticated(res.ok);
+      } catch (e) {
+        setIsAuthenticated(false);
+      }
+    };
+    checkSession();
+  }, []);
 
   // Derived Summary & Sentiment
   const [selectedSector, setSelectedSector] = useState<SectorGroup | null>(null);
@@ -306,141 +326,172 @@ export default function Dashboard() {
     return () => { ignore = true; };
   }, [latest, stats, currentTrend, symbol, refreshTrigger]);
 
+  if (isAuthenticated === null) return <Loading message="Authenticating session..." />;
+
+  if (!isAuthenticated) return <LoginOverlay onLoginSuccess={() => setIsAuthenticated(true)} />;
+
   return (
-    <div className="flex h-screen bg-gray-900 text-white font-sans">
-      <Sidebar
-        symbol={symbol}
-        setSymbol={setSymbol}
-        stockInput={stockInput}
-        setStockInput={setStockInput}
-        interval={interval}
-        setInterval={(i) => { setIntervalState(i); setViewScope(i === '1d' ? 365 : 100); }}
-        data={data}
-        loading={loading}
-        currentPage="dashboard"
-        stats={stats}
-        sentimentScore={sentimentScore}
-        onSectorClick={(s) => setSelectedSector(s)}
-      />
+    <main className="flex h-screen bg-gray-900 overflow-hidden font-sans text-gray-100 relative">
+      {/* Sidebar - Drawer on Mobile, Fixed Sidebar on Desktop */}
+      <div
+        className={`fixed inset-0 z-[100] transition-opacity duration-300 md:hidden ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setIsSidebarOpen(false)}
+      >
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 flex flex-col overflow-y-auto w-full pt-16 md:pt-6">
-        <header className="flex flex-col gap-4 mb-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            {/* LEFT: Ticker, Price */}
-            <div className="flex flex-wrap items-center gap-4 md:gap-8 w-full md:w-auto">
-              {/* 1. Ticker Selector */}
-              <div className="flex items-center gap-2">
-                <div className="relative group">
-                  <input
-                    type="text"
-                    value={stockInput}
-                    onChange={(e) => setStockInput(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const trimmedInput = stockInput.trim().toUpperCase();
-                        if (trimmedInput) {
-                          setSymbol(trimmedInput);
-                        }
-                      }
-                    }}
-                    className="text-3xl md:text-4xl font-black bg-transparent border-none focus:outline-none text-white tracking-tighter uppercase w-24 md:w-32 placeholder-gray-700"
-                    placeholder="TICKER"
-                    disabled={loading}
-                  />
-                  <div className="absolute bottom-0 left-0 w-0 h-1 bg-blue-500 transition-all group-hover:w-full"></div>
-                </div>
-              </div>
-              {companyName && (
-                <span className="text-sm text-gray-200 font-medium hidden md:inline truncate max-w-[180px]">{companyName}</span>
-              )}
+      <div className={`
+        fixed inset-y-0 left-0 z-[110] transition-transform duration-300 ease-in-out md:relative md:translate-x-0
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${isSidebarOpen ? 'w-[280px]' : 'w-0'} 
+        h-full overflow-hidden flex-shrink-0
+      `}>
+        <Sidebar
+          isOpen={isSidebarOpen}
+          setIsOpen={setIsSidebarOpen}
+          symbol={symbol}
+          setSymbol={setSymbol}
+          stockInput={stockInput}
+          setStockInput={setStockInput}
+          interval={interval}
+          setInterval={setIntervalState}
+          data={data}
+          loading={loading}
+          currentPage="dashboard"
+          stats={stats}
+          sentimentScore={sentimentScore}
+          onSectorClick={setSelectedSector}
+        />
+      </div>
 
-              {/* 2. Price & Change Info */}
-              <div className="flex flex-col">
-                <LivePriceDisplay
-                  symbol={symbol}
-                  fallbackPrice={stats?.currentPrice}
-                  enabled={!loading}
-                  showChange={true}
-                />
-              </div>
-
-              {/* 3. Mini Signals (Trend Only) & Analyst */}
-              <div className="flex flex-row items-center gap-2">
-                {data.length > 0 && <HeaderSignals latestData={data[data.length - 1]} showRSI={true} />}
-                <HeaderAnalyst symbol={symbol} analystNews={analystData} />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-            </div>
-          </div>
-        </header>
-
-        {loading ? (
-          <Loading message="Fetching dashboard data..." />
-        ) : (
-          <div className="space-y-6">
-
-            {/* ROW 1: Deep Dive (Left, 2/3) & AI Option Play + Price Stats (Right, 1/3) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {/* Deep Dive - Takes 2/3 - FIRST in DOM = LEFT */}
-              <div className="md:col-span-2">
-                <DeepDiveContent
-                  key={symbol}
-                  symbol={symbol}
-                  showOptionsFlow={false}
-                />
-              </div>
-
-              {/* Right Column - AI Option Play + Price Stats stacked vertically */}
-              <div className="md:col-span-1 space-y-6">
-                <div className="bg-gray-800/10 rounded-xl">
-                  <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-blue-400" /> Tactical Option Play
-                  </h3>
-                  <OptionsSignal data={optionsSignal} loading={loading} onRefresh={handleManualRefresh} />
-                </div>
-
-                {/* Price Statistics - Below AI Option Play */}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-2 px-1">Price Statistics</h3>
-                  <HighlightStats stats={stats} />
-                </div>
-              </div>
-            </div>
-
-            {/* TOP 3 OPTIONS DISCOVERY (Moved below Deep Dive) */}
-            <TopOptionsList
-              options={top3Options}
-              symbol={symbol || ''}
-              loading={loading || (top3Options.length === 0 && !error)}
-            />
-
-
-
-
-
-            {/* ROW 5: Live News - BELOW AI Insight */}
-            <div>
-              <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-4 px-1">Live Intelligence</h3>
-              <NewsFeed news={news} loading={loading} />
-            </div>
-          </div>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {/* Toggle Button for Sidebar when closed */}
+        {!isSidebarOpen && (
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-[70] bg-blue-600/90 hover:bg-blue-500 p-2 pr-3 rounded-r-xl border-y border-r border-blue-400/50 text-white transition-all hover:pl-4 group shadow-[0_0_20px_rgba(37,99,235,0.4)] flex items-center gap-1 overflow-hidden"
+            title="Open Sidebar"
+          >
+            <ChevronRight className="w-6 h-6 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Expand</span>
+          </button>
         )}
+        <div className="flex-1 p-4 md:p-6 flex flex-col overflow-y-auto w-full pt-16 md:pt-6">
+          <header className="flex flex-col gap-4 mb-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              {/* LEFT: Ticker, Price */}
+              <div className="flex flex-wrap items-center gap-4 md:gap-8 w-full md:w-auto">
+                {/* 1. Ticker Selector */}
+                <div className="flex items-center gap-2">
+                  <div className="relative group">
+                    <input
+                      type="text"
+                      value={stockInput}
+                      onChange={(e) => setStockInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const trimmedInput = stockInput.trim().toUpperCase();
+                          if (trimmedInput) {
+                            setSymbol(trimmedInput);
+                          }
+                        }
+                      }}
+                      className="text-3xl md:text-4xl font-black bg-transparent border-none focus:outline-none text-white tracking-tighter uppercase w-24 md:w-32 placeholder-gray-700"
+                      placeholder="TICKER"
+                      disabled={loading}
+                    />
+                    <div className="absolute bottom-0 left-0 w-0 h-1 bg-blue-500 transition-all group-hover:w-full"></div>
+                  </div>
+                </div>
+                {companyName && (
+                  <span className="text-sm text-gray-200 font-medium hidden md:inline truncate max-w-[180px]">{companyName}</span>
+                )}
 
-        <div className="h-6"></div> {/* Bottom Spacer */}
-      </main>
+                {/* 2. Price & Change Info */}
+                <div className="flex flex-col">
+                  <LivePriceDisplay
+                    symbol={symbol}
+                    fallbackPrice={stats?.currentPrice}
+                    enabled={!loading}
+                    showChange={true}
+                  />
+                </div>
 
-      {/* Sector Detail Modal */}
-      <SectorDetailModal
-        sector={selectedSector}
-        onClose={() => setSelectedSector(null)}
-        onSelectStock={(s) => {
-          setStockInput(s);
-          setSymbol(s);
-        }}
-      />
-    </div>
+                {/* 3. Mini Signals (Trend Only) & Analyst */}
+                <div className="flex flex-row items-center gap-2">
+                  {data.length > 0 && <HeaderSignals latestData={data[data.length - 1]} showRSI={true} />}
+                  <HeaderAnalyst symbol={symbol} analystNews={analystData} />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+              </div>
+            </div>
+          </header>
+
+          {loading ? (
+            <Loading message="Fetching dashboard data..." />
+          ) : (
+            <div className="space-y-6">
+
+              {/* ROW 1: Deep Dive (Left, 2/3) & AI Option Play + Price Stats (Right, 1/3) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Deep Dive - Takes 2/3 - FIRST in DOM = LEFT */}
+                <div className="lg:col-span-2 overflow-x-auto pb-2 scrollbar-hide">
+                  <div className="min-w-[600px] lg:min-w-0">
+                    <DeepDiveContent
+                      key={symbol}
+                      symbol={symbol}
+                      showOptionsFlow={false}
+                    />
+                  </div>
+                </div>
+
+                {/* Right Column - AI Option Play + Price Stats stacked vertically */}
+                <div className="lg:col-span-1 space-y-6">
+                  <div className="bg-gray-800/10 rounded-xl">
+                    <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-blue-400" /> Tactical Option Play
+                    </h3>
+                    <OptionsSignal data={optionsSignal} loading={loading} onRefresh={handleManualRefresh} />
+                  </div>
+
+                  {/* Price Statistics - Below AI Option Play */}
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-2 px-1 text-center lg:text-left">Price Statistics</h3>
+                    <HighlightStats stats={stats} />
+                  </div>
+                </div>
+              </div>
+
+              {/* TOP 3 OPTIONS DISCOVERY (Moved below Deep Dive) */}
+              <TopOptionsList
+                options={top3Options}
+                symbol={symbol || ''}
+                loading={loading || (top3Options.length === 0 && !error)}
+              />
+
+              {/* ROW 5: Live News - BELOW AI Insight */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-4 px-1 text-center lg:text-left">Live Intelligence</h3>
+                <NewsFeed news={news} loading={loading} />
+              </div>
+            </div>
+          )}
+
+          <div className="h-6"></div> {/* Bottom Spacer */}
+        </div>
+
+        {/* Sector Detail Modal */}
+        <SectorDetailModal
+          sector={selectedSector}
+          onClose={() => setSelectedSector(null)}
+          onSelectStock={(s) => {
+            setStockInput(s);
+            setSymbol(s);
+          }}
+        />
+      </div>
+    </main>
   );
 }

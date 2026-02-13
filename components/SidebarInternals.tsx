@@ -28,6 +28,7 @@ interface SectorGroup {
 
 interface Props {
     onSectorClick: (sector: SectorGroup) => void;
+    isOpen: boolean;
 }
 
 const GICS_SECTORS = [
@@ -60,7 +61,7 @@ const normalizeSector = (sector: string): string => {
     return sector;
 };
 
-export default function SidebarInternals({ onSectorClick }: Props) {
+export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
     const [internals, setInternals] = useState<InternalsData | null>(null);
     const [sectors, setSectors] = useState<SectorGroup[]>([]);
     const [convictionStats, setConvictionStats] = useState<{
@@ -71,6 +72,10 @@ export default function SidebarInternals({ onSectorClick }: Props) {
     const [activeLogic, setActiveLogic] = useState<'bullish' | 'breadth' | null>(null);
 
     useEffect(() => {
+        // HYBRID POWER SETUP: JIT Telemetry
+        // Only fetch if the sidebar is actually open to save API usage
+        if (!isOpen) return;
+
         const fetchInternals = async () => {
             try {
                 // Fetch market internals (VIX, indices)
@@ -136,16 +141,18 @@ export default function SidebarInternals({ onSectorClick }: Props) {
             }
         };
 
+        // Trigger immediate fetch on "Open"
         fetchInternals();
         fetchConvictionStats();
 
-        const interval = setInterval(() => {
+        // Standard background sync (10 mins) only while open
+        const syncInterval = setInterval(() => {
             fetchInternals();
             fetchConvictionStats();
-        }, 600000); // 10 minutes
+        }, 600000);
 
-        return () => clearInterval(interval);
-    }, []);
+        return () => clearInterval(syncInterval);
+    }, [isOpen]);
 
     if (!internals) return (
         <div className="px-4 py-4 text-xs text-gray-300 animate-pulse text-center">

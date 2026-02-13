@@ -1,22 +1,45 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { jwtVerify } from 'jose'
 
-const isProtectedRoute = createRouteMatcher([
-    '/',
-    '/picks(.*)',
-    '/sectors(.*)',
-    '/api/ohlcv(.*)', // Protect essential APIs
-    '/api/options-flow(.*)'
-]);
+const SECRET_KEY = process.env.JWT_SECRET || "antigravity-trade-desk-secret-key-2026";
+const key = new TextEncoder().encode(SECRET_KEY);
 
-export default clerkMiddleware(async (auth, req) => {
-    if (isProtectedRoute(req)) await auth.protect();
-});
+export async function middleware(request: NextRequest) {
+    const session = request.cookies.get('session')?.value
+
+    // Paths that don't require authentication
+    if (
+        request.nextUrl.pathname.startsWith('/api/auth') ||
+        request.nextUrl.pathname.startsWith('/_next') ||
+        request.nextUrl.pathname.includes('.') // Static files
+    ) {
+        return NextResponse.next()
+    }
+
+    if (!session) {
+        // If it's an API route, return 401
+        if (request.nextUrl.pathname.startsWith('/api')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        // If it's a page, we handle it client-side in layout/page for better UX (showing the overlay)
+        // but we still want to ensure cookies are cleared if invalid
+        return NextResponse.next()
+    }
+
+    try {
+        await jwtVerify(session, key);
+        return NextResponse.next()
+    } catch (error) {
+        // Invalid session, clear cookie
+        const response = NextResponse.next()
+        response.cookies.delete('session')
+        return response
+    }
+}
 
 export const config = {
     matcher: [
-        // Skip Next.js internals and all static files, unless found in search params
-        '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-        // Always run for API routes
-        '/(api|trpc)(.*)',
+        '/((?!_next/static|_next/image|favicon.ico).*)',
     ],
-};
+}

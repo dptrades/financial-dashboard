@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 import Link from 'next/link';
 import SidebarInternals from './SidebarInternals';
@@ -14,6 +13,8 @@ import WhaleWatch from './WhaleWatch';
 
 
 interface SidebarProps {
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
     symbol: string;
     setSymbol: (s: string) => void;
     stockInput: string;
@@ -94,6 +95,8 @@ const StatsCarousel = ({ stats }: { stats: PriceStats | null }) => {
 };
 
 export default function Sidebar({
+    isOpen,
+    setIsOpen,
     symbol,
     setSymbol,
     stockInput,
@@ -128,26 +131,28 @@ export default function Sidebar({
     }, [latest, stats, symbol]);
 
     return (
-        <aside className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col h-full overflow-y-auto custom-scrollbar">
-            <div className="p-4 flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-blue-400 tracking-tight">DP TradeDesk</h1>
-                    <p className="text-xs text-gray-300 mt-1">Scientific Price Analysis</p>
+        <aside className="w-full bg-gray-800 border-r border-gray-700 flex flex-col h-full overflow-y-auto custom-scrollbar shadow-2xl">
+            <div className="p-4 flex justify-between items-center bg-gray-900/60 border-b border-gray-700/50 backdrop-blur-md sticky top-0 z-20">
+                <div className="flex-1">
+                    <h1 className="text-xl font-bold text-blue-400 tracking-tight flex items-center gap-2">
+                        <Activity className="w-5 h-5" />
+                        DP TradeDesk
+                    </h1>
                 </div>
-                <div className="flex items-center">
-                    <SignedIn>
-                        <UserButton />
-                    </SignedIn>
-                    <SignedOut>
-                        <SignInButton mode="modal">
-                            <button className="text-xs bg-blue-600 px-2 py-1 rounded text-white">Sign In</button>
-                        </SignInButton>
-                    </SignedOut>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsOpen(false)}
+                        className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-blue-400 border border-gray-700 transition-all active:scale-95 shadow-lg flex items-center gap-1 group"
+                        title="Close Menu"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                        <span className="text-[10px] font-bold uppercase md:hidden">Close</span>
+                    </button>
                 </div>
             </div>
 
             {/* Navigation */}
-            <nav className="space-y-1 px-2">
+            <nav className="space-y-1 p-2">
                 <Link
                     href="/"
                     className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'dashboard'
@@ -161,48 +166,26 @@ export default function Sidebar({
                     href="/picks"
                     className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'picks'
                         ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                        : 'text-purple-400/70 hover:text-purple-400 hover:bg-purple-500/10'
+                        : 'text-purple-400/70 hover:text-purple-400 hover:bg-blue-500/10'
                         }`}
                 >
                     Top Picks
                 </Link>
                 <Link
-                    href="/sectors"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'sectors'
-                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                        : 'text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/10'
-                        }`}
-                >
-                    Sector Heatmap
-                </Link>
-                <Link
                     href="/conviction"
                     className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'conviction'
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : 'text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-500/10'
+                        : 'text-emerald-400/70 hover:text-emerald-400 hover:bg-blue-500/10'
                         }`}
                 >
                     ✨ Alpha Hunter
                 </Link>
-                {/* 
-                <Link 
-                    href="/portfolio" 
-                    className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                        currentPage === 'portfolio' 
-                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' 
-                        : 'text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/10'
-                    }`}
-                >
-                    💰 Paper Trading
-                </Link>
-                */}
             </nav>
 
-            {/* Market Internals (Market Pulse) - Below Navigation */}
-            <SidebarInternals onSectorClick={onSectorClick} />
-
-            {/* Space Filler */}
-            <div className="flex-1"></div>
+            <div className="flex-1 overflow-y-auto">
+                {/* Market Internals (Market Pulse) - Below Navigation */}
+                <SidebarInternals onSectorClick={onSectorClick} isOpen={isOpen} />
+            </div>
         </aside>
     );
 }

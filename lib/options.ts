@@ -3,12 +3,14 @@ import type { IndicatorData } from '../types/financial';
 import { publicClient, PublicOptionChain } from './public-api';
 export type { OptionRecommendation } from '../types/options';
 
-// 5-Minute Cache for heavy P/C Ratio data
-const PCR_CACHE_TTL = 5 * 60 * 1000;
+// In-memory cache for PCR and unusual volume
 declare global {
     var _pcrCache: Map<string, { data: any, timestamp: number }>;
 }
-if (!global._pcrCache) global._pcrCache = new Map();
+if (!(globalThis as any)._pcrCache) {
+    (globalThis as any)._pcrCache = new Map<string, { data: any; timestamp: number }>();
+}
+const PCR_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 export function getNextMonthlyExpiry(): string {
     const d = new Date();
@@ -129,7 +131,7 @@ export async function generateOptionSignal(
             strike: 0,
             expiry: '',
             confidence: 50,
-            reason: `Neutral trend. ${signals.slice(0, 2).join(', ')}`,
+            reason: `Neutral trend.${signals.slice(0, 2).join(', ')} `,
             technicalConfirmations: 0,
             fundamentalConfirmations: fundamentalConfirmations || 1,
             socialConfirmations: socialConfirmations || 1
