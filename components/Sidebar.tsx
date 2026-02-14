@@ -186,6 +186,40 @@ export default function Sidebar({
                 {/* Market Internals (Market Pulse) - Below Navigation */}
                 <SidebarInternals onSectorClick={onSectorClick} isOpen={isOpen} />
             </div>
+
+            {/* Admin Actions */}
+            <div className="p-4 mt-auto border-t border-gray-700/50 bg-gray-900/20">
+                <button
+                    onClick={async () => {
+                        const btn = document.getElementById('force-sync-btn');
+                        if (btn) btn.innerText = 'Syncing...';
+                        try {
+                            const res = await fetch('/api/admin/sync', { method: 'POST' });
+                            if (res.ok) {
+                                if (btn) {
+                                    btn.innerText = 'Sync Success ✅';
+                                    btn.classList.add('text-green-400');
+                                    setTimeout(() => {
+                                        if (btn) {
+                                            btn.innerText = 'Force Sync to GitHub';
+                                            btn.classList.remove('text-green-400');
+                                        }
+                                    }, 3000);
+                                }
+                            } else {
+                                if (btn) btn.innerText = 'Sync Failed ❌';
+                            }
+                        } catch (e) {
+                            if (btn) btn.innerText = 'Sync Error ❌';
+                        }
+                    }}
+                    id="force-sync-btn"
+                    className="w-full px-3 py-2 rounded-md text-[10px] font-bold uppercase tracking-widest text-blue-400/70 hover:text-blue-400 hover:bg-blue-500/10 border border-blue-500/20 transition-all flex items-center justify-center gap-2"
+                >
+                    <Clock className="w-3 h-3" />
+                    Force Sync to GitHub
+                </button>
+            </div>
         </aside>
     );
 }
