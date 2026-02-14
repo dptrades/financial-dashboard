@@ -209,10 +209,26 @@ export async function generateOptionSignal(
     // REMOVED: getPutCallRatio is heavy and shouldn't be in the broad scanner.
     // It will be lazily loaded in the Deep Dive instead.
 
+    // If no real option was found or volume is too low, downgrade to WAIT
+    if (!realOption || (realOption.volume || 0) < 2) {
+        return {
+            type: 'WAIT',
+            strike: 0,
+            expiry: '',
+            confidence: 50,
+            reason: `No high-volume liquidity found for the desired strike.`,
+            technicalConfirmations: techConfirmations,
+            fundamentalConfirmations: fundamentalConfirmations || 1,
+            socialConfirmations: socialConfirmations || 1
+        };
+    }
+
+    const midPrice = (realOption.bid && realOption.ask) ? (realOption.bid + realOption.ask) / 2 : (realOption.last || realOption.bid || realOption.ask || 0);
+
     return {
         type: direction,
-        strike: realOption?.strike || strike,
-        expiry: realOption?.expiration || expiry,
+        strike: realOption.strike,
+        expiry: realOption.expiration,
         confidence: calculatedConfidence,
         reason: `${techConfirmations} indicator confluence.`,
         entryPrice: currentPrice,
@@ -220,10 +236,10 @@ export async function generateOptionSignal(
         stopLoss: parseFloat(stopLoss.toFixed(2)),
         takeProfit1: parseFloat(takeProfit1.toFixed(2)),
         strategy: isCall ? "Alpha Bull" : "Alpha Bear",
-        volume: realOption?.volume,
-        openInterest: realOption?.openInterest,
-        iv: realOption?.greeks?.impliedVolatility,
-        contractPrice: realOption?.last || realOption?.ask,
+        volume: realOption.volume,
+        openInterest: realOption.openInterest,
+        iv: realOption.greeks?.impliedVolatility,
+        contractPrice: midPrice,
         rsi,
         isUnusual: false,
         technicalConfirmations: techConfirmations,
@@ -232,8 +248,8 @@ export async function generateOptionSignal(
         technicalDetails: signals,
         fundamentalDetails,
         socialDetails,
-        symbol: realOption?.symbol,
-        probabilityITM: realOption?.greeks?.delta ? Math.abs(realOption.greeks.delta) : undefined
+        symbol: realOption.symbol,
+        probabilityITM: realOption.greeks?.delta ? Math.abs(realOption.greeks.delta) : undefined
     };
 }
 
@@ -294,29 +310,6 @@ export async function getPutCallRatio(symbol: string, skipCache: boolean = false
     }
 }
 
-function getMockOptions(symbol: string, currentPrice: number, trend: 'bullish' | 'bearish' | 'neutral'): OptionRecommendation[] {
-    const isBearish = trend === 'bearish';
-    const expiry = "Mar 21";
-    const iv = calculateVolatilityProxy(currentPrice, 0, symbol);
-    return [{
-        type: isBearish ? 'PUT' : 'CALL',
-        strike: roundToStrike(currentPrice * (isBearish ? 0.98 : 1.02)),
-        expiry,
-        confidence: 82,
-        reason: `Liquidity found in ${symbol}.`,
-        entryPrice: currentPrice,
-        entryCondition: "Market",
-        stopLoss: currentPrice * 0.98,
-        takeProfit1: currentPrice * 1.05,
-        strategy: "Mock Option",
-        iv,
-        volume: 850,
-        openInterest: 1200,
-        probabilityITM: 0.55,
-        contractPrice: currentPrice * 0.05
-    }];
-}
-
 export async function findTopOptions(
     symbol: string,
     currentPrice: number,
@@ -326,7 +319,7 @@ export async function findTopOptions(
 ): Promise<OptionRecommendation[]> {
     try {
         const chain = await publicClient.getOptionChain(symbol);
-        if (!chain) return getMockOptions(symbol, currentPrice, trend);
+        if (!chain) return []; // Return empty if no chain found
 
         const candidates: Array<{ recommendation: OptionRecommendation, score: number }> = [];
         const now = new Date();
@@ -351,6 +344,9 @@ export async function findTopOptions(
                     const deltaProxy = 0.5 - (Math.abs(currentPrice - strike) / currentPrice);
                     const score = (opt.volume * 5) + (opt.openInterest * 2) + (deltaProxy * 100);
 
+                    // Calculate contract price (Midpoint of Bid/Ask, or Last)
+                    const contractPrice = (opt.bid && opt.ask) ? (opt.bid + opt.ask) / 2 : (opt.last || opt.bid || opt.ask || 0);
+
                     candidates.push({
                         recommendation: {
                             type,
@@ -366,7 +362,8 @@ export async function findTopOptions(
                             volume: opt.volume,
                             openInterest: opt.openInterest,
                             symbol: opt.symbol,
-                            iv: calculateVolatilityProxy(currentPrice, 0, symbol)
+                            iv: calculateVolatilityProxy(currentPrice, 0, symbol),
+                            contractPrice
                         },
                         score
                     });
@@ -410,6 +407,6 @@ export async function findTopOptions(
 
         return finalResults.slice(0, 3);
     } catch (e) {
-        return getMockOptions(symbol, currentPrice, trend);
+        return [];
     }
 }

@@ -63,7 +63,21 @@ export default function TopOptionsList({ options, symbol, loading }: TopOptionsL
         );
     }
 
-    if (!options || options.length === 0) return null;
+    if (!options || options.length === 0) {
+        return (
+            <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-8 mb-6 backdrop-blur-sm text-center">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="p-3 bg-gray-700/30 rounded-full">
+                        <Shield className="w-8 h-8 text-gray-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-400">No High-Conviction Option Play</h3>
+                    <p className="text-sm text-gray-500 max-w-sm">
+                        Current liquidity and flow metrics do not justify a defensive or aggressive setup for {symbol} at this time.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-5 mb-6 backdrop-blur-sm">
