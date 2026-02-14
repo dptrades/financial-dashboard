@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { kv } from "@vercel/kv";
-import { getSession } from "@/lib/auth";
+import { getSession, getUsersFromCSV } from "@/lib/auth";
 
 const TRADER_ACCESS_KEY = process.env.TRADER_ACCESS_KEY || 'TRADER2026';
 
@@ -19,21 +18,13 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 1. Get all email addresses from the 'users' set
-        const emails = await kv.smembers('users');
+        // 1. Get all users from CSV
+        const users = await getUsersFromCSV();
 
-        if (!emails || emails.length === 0) {
-            return NextResponse.json({ users: [] });
-        }
-
-        // 2. Fetch details for each user
-        const userPromises = emails.map(email => kv.hgetall(`user:${email}`));
-        const users = await Promise.all(userPromises);
-
-        // 3. Filter out any nulls and return
+        // 3. Return the list
         return NextResponse.json({
             count: users.length,
-            users: users.filter(u => u !== null)
+            users: users
         });
     } catch (error) {
         console.error('Admin API Error:', error);

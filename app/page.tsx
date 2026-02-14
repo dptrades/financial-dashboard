@@ -72,6 +72,19 @@ export default function Dashboard() {
   // Sidebar Layout State
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  // Persistence: Load sidebar state on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebarExpanded');
+    if (saved !== null) {
+      setIsSidebarOpen(saved === 'true');
+    }
+  }, []);
+
+  // Persistence: Save sidebar state on change
+  useEffect(() => {
+    localStorage.setItem('sidebarExpanded', isSidebarOpen.toString());
+  }, [isSidebarOpen]);
+
   // Custom Auth Session
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 

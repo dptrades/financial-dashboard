@@ -1,7 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -78,52 +77,135 @@ export async function verifySignupToken(token: string) {
 }
 
 /**
- * Persists user data to Vercel KV (Redis).
- * Stores name, email, and timestamp.
+ * Parses the users CSV file.
+ */
+export async function getUsersFromCSV() {
+    try {
+        const dataDir = path.join(process.cwd(), 'data');
+        const filePath = path.join(dataDir, 'users.csv');
+
+        try {
+            const content = await fs.readFile(filePath, 'utf-8');
+            const lines = content.trim().split('\n');
+            if (lines.length <= 1) return [];
+
+            const headers = lines[0].split(',');
+            return lines.slice(1).map(line => {
+                const values = line.split(',');
+                const user: any = {};
+                headers.forEach((header, i) => {
+                    user[header.toLowerCase()] = values[i];
+                });
+                return user;
+            });
+        } catch (e) {
+            return [];
+        }
+    } catch (error) {
+        console.error('Error reading CSV:', error);
+        return [];
+    }
+}
+
+/**
+ * Background task to sync the local CSV to GitHub.
+ * This ensures data persistence on Vercel.
+ */
+async function syncToGitHub(csvContent: string) {
+    try {
+        const token = process.env.GITHUB_TOKEN;
+        const owner = process.env.GITHUB_REPO_OWNER || process.env.VERCEL_GIT_REPO_OWNER;
+        const repo = process.env.GITHUB_REPO_NAME || process.env.VERCEL_GIT_REPO_SLUG;
+        const path = 'user/users.csv';
+
+        if (!token || !owner || !repo) {
+            console.warn('[Sync] GitHub sync skipped: Missing credentials (GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO_NAME)');
+            return;
+        }
+
+        // 1. Get the current file SHA (required for updating)
+        let sha: string | undefined;
+        try {
+            const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/vnd.github.v3+json'
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                sha = data.sha;
+            }
+        } catch (e) {
+            console.log('[Sync] File does not exist yet or error fetching SHA');
+        }
+
+        // 2. Push to GitHub
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: `Update user data: ${new Date().toISOString()}`,
+                content: Buffer.from(csvContent).toString('base64'),
+                sha: sha // Include if file exists
+            })
+        });
+
+        if (res.ok) {
+            console.log('[Sync] Successfully pushed users.csv to GitHub');
+        } else {
+            const error = await res.json();
+            console.error('[Sync] GitHub push failed:', error);
+        }
+    } catch (error) {
+        console.error('[Sync] General failure in syncToGitHub:', error);
+    }
+}
+
+/**
+ * Persists user data to a flat CSV file and syncs to GitHub in background.
  */
 export async function saveUser(user: { name: string; email: string }) {
     try {
         const timestamp = new Date().toISOString();
-        const userData = {
-            ...user,
-            lastLogin: timestamp
-        };
+        const dataDir = path.join(process.cwd(), 'data');
+        const filePath = path.join(dataDir, 'users.csv');
 
-        // 1. Store in Vercel KV (Primary)
+        // Ensure directory exists
         try {
-            await kv.hset(`user:${user.email}`, userData);
-            await kv.sadd('users', user.email);
-        } catch (kvError) {
-            console.error('KV Storage failed:', kvError);
+            await fs.mkdir(dataDir, { recursive: true });
+        } catch (e) { }
+
+        let users = await getUsersFromCSV();
+
+        // Update or add user
+        const index = users.findIndex((u: any) => u.email === user.email);
+        const userData = { ...user, lastLogin: timestamp };
+
+        if (index >= 0) {
+            users[index] = { ...users[index], ...userData };
+        } else {
+            users.push(userData);
         }
 
-        // 2. Store in Local File (Backup/Local Dev)
-        try {
-            const dataDir = path.join(process.cwd(), 'data');
-            const filePath = path.join(dataDir, 'users.json');
+        // Convert back to CSV
+        const headers = ['Name', 'Email', 'LastLogin'];
+        const csvContent = [
+            headers.join(','),
+            ...users.map(u => [u.name, u.email, u.lastlogin || u.lastLogin].join(','))
+        ].join('\n');
 
-            let users = [];
-            try {
-                const content = await fs.readFile(filePath, 'utf-8');
-                users = JSON.parse(content);
-            } catch (e) {
-                // If file doesnt exist, start with empty array
-                users = [];
-            }
+        await fs.writeFile(filePath, csvContent);
+        console.log(`[Auth] User ${user.email} saved to local CSV`);
 
-            // Update or add user
-            const index = users.findIndex((u: any) => u.email === user.email);
-            if (index >= 0) {
-                users[index] = { ...users[index], ...userData };
-            } else {
-                users.push(userData);
-            }
-
-            await fs.writeFile(filePath, JSON.stringify(users, null, 2));
-        } catch (fsError) {
-            // This will naturally fail on Vercel (read-only), which is fine
-            console.warn('Local file storage skipped or failed:', fsError instanceof Error ? fsError.message : 'Unknown error');
-        }
+        // Trigger GitHub sync in the background (fire-and-forget)
+        syncToGitHub(csvContent).catch(err => {
+            console.error('[Sync] Background sync failed:', err);
+        });
 
         return true;
     } catch (error) {
