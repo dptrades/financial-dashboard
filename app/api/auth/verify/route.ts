@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { login, verifySignupToken } from '@/lib/auth';
+import { login, verifySignupToken, saveUser } from '@/lib/auth';
 
 const TRADER_ACCESS_KEY = process.env.TRADER_ACCESS_KEY || 'TRADER2026';
 
@@ -28,7 +28,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid Trader Access Key' }, { status: 401 });
         }
 
-        // 4. Create Session (4 hours)
+        // 4. Persist User Data (Vercel KV)
+        await saveUser({ name: payload.name, email: payload.email });
+
+        // 5. Create Session (4 hours)
         await login({ name: payload.name, email: payload.email });
 
         return NextResponse.json({ success: true });

@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 
 const SECRET_KEY = process.env.JWT_SECRET || "antigravity-trade-desk-secret-key-2026";
 const key = new TextEncoder().encode(SECRET_KEY);
@@ -71,5 +72,31 @@ export async function verifySignupToken(token: string) {
         return payload as { email: string; name: string };
     } catch (error) {
         return null;
+    }
+}
+
+/**
+ * Persists user data to Vercel KV (Redis).
+ * Stores name, email, and timestamp.
+ */
+export async function saveUser(user: { name: string; email: string }) {
+    try {
+        const timestamp = new Date().toISOString();
+        const userData = {
+            ...user,
+            lastLogin: timestamp
+        };
+
+        // Store user in a hash map for efficient lookup
+        // Key: user:email@example.com
+        await kv.hset(`user:${user.email}`, userData);
+
+        // Also add to a set of all users for easy listing
+        await kv.sadd('users', user.email);
+
+        return true;
+    } catch (error) {
+        console.error('Failed to save user to KV:', error);
+        return false;
     }
 }
