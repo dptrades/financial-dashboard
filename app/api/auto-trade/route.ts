@@ -83,6 +83,12 @@ export async function GET() {
  * POST: Execute trades for top picks
  */
 export async function POST(request: Request) {
+    if (process.env.DISABLE_AUTO_TRADE === 'true') {
+        return NextResponse.json({
+            error: 'Auto-trade is currently disabled',
+            timestamp: new Date().toISOString()
+        }, { status: 403 });
+    }
     try {
         // Check if market is open
         const marketOpen = await isMarketOpen();

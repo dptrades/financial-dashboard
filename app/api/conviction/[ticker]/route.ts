@@ -25,7 +25,7 @@ export async function GET(request: Request, context: { params: Promise<{ ticker:
 
         // Run concurrently with error handling
         const [analysisResult, optionsFlowResult, fundamentalsResult, priceStatsResult, pcrResult] = await Promise.allSettled([
-            fetchMultiTimeframeAnalysis(symbol),
+            fetchMultiTimeframeAnalysis(symbol, skipCache),
             scanUnusualOptions(symbol),
             yahooFinance.quoteSummary(symbol, { modules: ['summaryDetail', 'financialData', 'defaultKeyStatistics'] }),
             fetchPriceStats(symbol),

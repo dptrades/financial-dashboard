@@ -236,7 +236,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     // 4. Batch Processing Helper
     const processBatch = async (batch: string[]) => {
         // Fetch ALL Public.com quotes for this batch at once
-        const publicQuotes = await publicClient.getQuotes(batch);
+        const publicQuotes = await publicClient.getQuotes(batch, forceRefresh);
         const publicQuoteMap = new Map(publicQuotes.map(q => [q.symbol, q]));
 
         const promises = batch.map(async (symbol) => {
@@ -573,7 +573,7 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
     // 4. Batch Processing Helper
     const processBatch = async (batch: string[]) => {
         // Fetch ALL Public.com quotes for this batch at once
-        const publicQuotes = await publicClient.getQuotes(batch);
+        const publicQuotes = await publicClient.getQuotes(batch, forceRefresh);
         const publicQuoteMap = new Map(publicQuotes.map(q => [q.symbol, q]));
 
         const promises = batch.map(async (symbol) => {

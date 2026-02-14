@@ -218,10 +218,10 @@ export class PublicClient {
     /**
      * Get real-time stock quote
      */
-    async getQuote(symbol: string): Promise<PublicQuote | null> {
+    async getQuote(symbol: string, force: boolean = false): Promise<PublicQuote | null> {
         // Check cache first
         const cached = this.quoteCache.get(symbol);
-        if (cached && Date.now() < cached.expiry) {
+        if (!force && cached && Date.now() < cached.expiry) {
             return cached.data;
         }
 
@@ -243,7 +243,7 @@ export class PublicClient {
     /**
      * Get real-time quotes for multiple symbols in a single batch
      */
-    async getQuotes(symbols: string[]): Promise<PublicQuote[]> {
+    async getQuotes(symbols: string[], force: boolean = false): Promise<PublicQuote[]> {
         if (symbols.length === 0) return [];
 
         // Identify which symbols need refreshing
@@ -253,7 +253,7 @@ export class PublicClient {
 
         symbols.forEach(s => {
             const cached = this.quoteCache.get(s);
-            if (cached && now < cached.expiry) {
+            if (!force && cached && now < cached.expiry) {
                 results.push(cached.data);
             } else {
                 toFetch.push(s);

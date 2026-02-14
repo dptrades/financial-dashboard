@@ -61,7 +61,8 @@ export async function generateOptionSignal(
     indicators?: IndicatorData,
     symbol?: string,
     fundamentalConfirmations?: number,
-    socialConfirmations?: number
+    socialConfirmations?: number,
+    skipCache: boolean = false
 ): Promise<OptionRecommendation> {
     const expiry = getNextMonthlyExpiry();
 
@@ -308,7 +309,11 @@ function getMockOptions(symbol: string, currentPrice: number, trend: 'bullish' |
         stopLoss: currentPrice * 0.98,
         takeProfit1: currentPrice * 1.05,
         strategy: "Mock Option",
-        iv
+        iv,
+        volume: 850,
+        openInterest: 1200,
+        probabilityITM: 0.55,
+        contractPrice: currentPrice * 0.05
     }];
 }
 
@@ -316,7 +321,8 @@ export async function findTopOptions(
     symbol: string,
     currentPrice: number,
     trend: 'bullish' | 'bearish' | 'neutral',
-    rsi: number = 50
+    rsi: number = 50,
+    skipCache: boolean = false
 ): Promise<OptionRecommendation[]> {
     try {
         const chain = await publicClient.getOptionChain(symbol);

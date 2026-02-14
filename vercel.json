@@ -5,10 +5,6 @@
       "schedule": "0 14 * * 1-5"
     },
     {
-      "path": "/api/cron/auto-trade",
-      "schedule": "45 14 * * 1-5"
-    },
-    {
       "path": "/api/cron/alpha-hunter-report",
       "schedule": "35 14 * * 1-5"
     }

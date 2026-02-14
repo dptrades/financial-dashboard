@@ -67,7 +67,7 @@ function mapTimeframe(tf: string): { alpaca: string, yahoo: string, bars: number
     }
 }
 
-export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<MultiTimeframeAnalysis | null> {
+export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: boolean = false): Promise<MultiTimeframeAnalysis | null> {
     const timeframes: ('10m' | '1h' | '4h' | '1d' | '1w')[] = ['10m', '1h', '1d', '1w']; // 4h skipped for now as complex on free
     const results: TimeframeData[] = [];
     let dailyAtr = 0;
@@ -90,7 +90,7 @@ export async function fetchMultiTimeframeAnalysis(symbol: string): Promise<Multi
     // Run concurrently for performance
     const [dailyBars, publicQuote] = await Promise.all([
         fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars),
-        publicClient.getQuote(symbol)
+        publicClient.getQuote(symbol, forceRefresh)
     ]);
 
     dailyData = dailyBars;

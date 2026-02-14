@@ -462,6 +462,7 @@ export default function Dashboard() {
                       key={symbol}
                       symbol={symbol}
                       showOptionsFlow={false}
+                      onRefresh={handleManualRefresh}
                     />
                   </div>
                 </div>

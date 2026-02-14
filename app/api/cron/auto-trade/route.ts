@@ -42,6 +42,15 @@ export async function GET(request: Request) {
     console.log('[Cron Auto-Trade] Starting scheduled trade execution...');
     console.log('[Cron Auto-Trade] Time:', new Date().toISOString());
 
+    if (process.env.DISABLE_AUTO_TRADE === 'true') {
+        console.log('[Cron Auto-Trade] Auto-trade is disabled via environment variable');
+        return NextResponse.json({
+            success: false,
+            message: 'Auto-trade is currently disabled',
+            timestamp: new Date().toISOString()
+        });
+    }
+
     try {
         // Check if market is open
         const marketOpen = await isMarketOpen();

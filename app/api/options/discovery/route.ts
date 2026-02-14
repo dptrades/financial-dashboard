@@ -7,6 +7,7 @@ export async function GET(request: Request) {
     const price = parseFloat(searchParams.get('price') || '0');
     const trend = searchParams.get('trend') as 'bullish' | 'bearish' | 'neutral';
     const rsi = parseFloat(searchParams.get('rsi') || '50');
+    const skipCache = searchParams.get('refresh') === 'true';
 
     if (!symbol) {
         return NextResponse.json({ error: 'Missing symbol parameter' }, { status: 400 });
@@ -16,10 +17,10 @@ export async function GET(request: Request) {
     const finalPrice = price || 0;
     const finalTrend = (trend || 'neutral') as 'bullish' | 'bearish' | 'neutral';
 
-    console.log(`[API Discovery] Symbol: ${symbol}, Price: ${finalPrice}, Trend: ${finalTrend}, RSI: ${rsi}`);
+    console.log(`[API Discovery] Symbol: ${symbol}, Price: ${finalPrice}, Trend: ${finalTrend}, RSI: ${rsi}, Refresh: ${skipCache}`);
 
     try {
-        const topOptions = await findTopOptions(symbol, finalPrice, finalTrend, rsi);
+        const topOptions = await findTopOptions(symbol, finalPrice, finalTrend, rsi, skipCache);
         console.log(`[API Discovery] Found ${topOptions.length} candidates`);
         return NextResponse.json(topOptions, {
             headers: {

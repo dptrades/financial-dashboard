@@ -6,12 +6,14 @@ export async function POST(request: Request) {
         const body = await request.json();
         const {
             currentPrice, atr, trend, rsi, ema50, indicators, symbol,
-            fundamentalConfirmations, socialConfirmations
+            fundamentalConfirmations, socialConfirmations, refresh
         } = body;
 
         if (currentPrice === undefined || atr === undefined || !trend) {
             return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
         }
+
+        const skipCache = refresh === true;
 
         const signal = await generateOptionSignal(
             currentPrice,
@@ -22,7 +24,8 @@ export async function POST(request: Request) {
             indicators,
             symbol,
             fundamentalConfirmations,
-            socialConfirmations
+            socialConfirmations,
+            skipCache
         );
 
         return NextResponse.json(signal, {

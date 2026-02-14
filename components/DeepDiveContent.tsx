@@ -7,6 +7,7 @@ import AIAnalysisWidget, { Fundamentals } from "./AIAnalysisWidget";
 interface DeepDiveContentProps {
     symbol: string | null;
     showOptionsFlow?: boolean;
+    onRefresh?: () => void;
 }
 
 interface DetailData {
@@ -19,7 +20,7 @@ interface DetailData {
     putCallRatio: { volumeRatio: number, oiRatio: number, totalCalls: number, totalPuts: number } | null;
 }
 
-export default function DeepDiveContent({ symbol, showOptionsFlow = true }: DeepDiveContentProps) {
+export default function DeepDiveContent({ symbol, showOptionsFlow = true, onRefresh }: DeepDiveContentProps) {
     const [data, setData] = useState<DetailData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -45,6 +46,9 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
     const fetchDetails = async (sym: string, isManual: boolean = false) => {
         setLoading(true);
         setError("");
+        if (isManual && onRefresh) {
+            onRefresh();
+        }
         try {
             const url = `/api/conviction/${sym.toLowerCase()}${isManual ? '?refresh=true' : ''}`;
             const res = await fetch(url);
