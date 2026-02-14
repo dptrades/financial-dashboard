@@ -42,11 +42,12 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
         }
     }, [symbol]);
 
-    const fetchDetails = async (sym: string) => {
+    const fetchDetails = async (sym: string, isManual: boolean = false) => {
         setLoading(true);
         setError("");
         try {
-            const res = await fetch(`/api/conviction/${sym.toLowerCase()}`);
+            const url = `/api/conviction/${sym.toLowerCase()}${isManual ? '?refresh=true' : ''}`;
+            const res = await fetch(url);
             if (!res.ok) throw new Error("Failed to fetch detailed analysis");
             const json = await res.json();
             setData(json);
@@ -87,7 +88,7 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                         {symbol} <span className="text-blue-400">Deep Dive</span>
                         <button
-                            onClick={() => fetchDetails(symbol)}
+                            onClick={() => fetchDetails(symbol, true)}
                             disabled={loading}
                             className="p-1 hover:bg-gray-800 rounded-md transition-colors text-gray-400 hover:text-white disabled:opacity-50"
                             title="Refresh Analysis"

@@ -21,7 +21,11 @@ export async function GET(request: Request) {
     try {
         const topOptions = await findTopOptions(symbol, finalPrice, finalTrend, rsi);
         console.log(`[API Discovery] Found ${topOptions.length} candidates`);
-        return NextResponse.json(topOptions);
+        return NextResponse.json(topOptions, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0'
+            }
+        });
     } catch (error) {
         console.error('Options Discovery Error:', error);
         return NextResponse.json({ error: 'Failed to fetch options discovery' }, { status: 500 });

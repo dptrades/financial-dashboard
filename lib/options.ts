@@ -239,13 +239,15 @@ export async function generateOptionSignal(
 /**
  * Calculates the Put/Call ratio based on volume and open interest for a given symbol
  */
-export async function getPutCallRatio(symbol: string): Promise<{ volumeRatio: number, oiRatio: number, totalCalls: number, totalPuts: number } | null> {
+export async function getPutCallRatio(symbol: string, skipCache: boolean = false): Promise<{ volumeRatio: number, oiRatio: number, totalCalls: number, totalPuts: number } | null> {
     if (!symbol) return null;
 
     // 1. Check Cache
-    const cached = global._pcrCache.get(symbol);
-    if (cached && (Date.now() - cached.timestamp < PCR_CACHE_TTL)) {
-        return cached.data;
+    if (!skipCache) {
+        const cached = global._pcrCache.get(symbol);
+        if (cached && (Date.now() - cached.timestamp < PCR_CACHE_TTL)) {
+            return cached.data;
+        }
     }
 
     try {

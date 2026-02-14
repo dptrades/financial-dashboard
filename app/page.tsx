@@ -250,7 +250,7 @@ export default function Dashboard() {
       ignore = true;
       clearInterval(intervalId);
     };
-  }, [symbol, interval]);
+  }, [symbol, interval, isAuthenticated]);
 
   const chartData = data.slice(-viewScope);
 

@@ -25,7 +25,11 @@ export async function POST(request: Request) {
             socialConfirmations
         );
 
-        return NextResponse.json(signal);
+        return NextResponse.json(signal, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0'
+            }
+        });
     } catch (error) {
         console.error('Options Signal Error:', error);
         return NextResponse.json({ error: 'Failed to generate option signal' }, { status: 500 });

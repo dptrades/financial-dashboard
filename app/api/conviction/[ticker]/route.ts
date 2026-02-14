@@ -13,6 +13,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request, context: { params: Promise<{ ticker: string }> }) {
     try {
         const { ticker } = await context.params;
+        const { searchParams } = new URL(request.url);
+        const skipCache = searchParams.get('refresh') === 'true';
 
         if (!ticker) {
             return NextResponse.json({ error: "Ticker is required" }, { status: 400 });
@@ -27,7 +29,7 @@ export async function GET(request: Request, context: { params: Promise<{ ticker:
             scanUnusualOptions(symbol),
             yahooFinance.quoteSummary(symbol, { modules: ['summaryDetail', 'financialData', 'defaultKeyStatistics'] }),
             fetchPriceStats(symbol),
-            getPutCallRatio(symbol)
+            getPutCallRatio(symbol, skipCache)
         ]);
 
         const analysis = analysisResult.status === 'fulfilled' ? analysisResult.value : null;
@@ -68,6 +70,10 @@ export async function GET(request: Request, context: { params: Promise<{ ticker:
                 obs: fundamentalsRaw.financialData?.numberOfAnalystOpinions
             } : {},
             putCallRatio: pcrData
+        }, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0'
+            }
         });
 
     } catch (error) {
