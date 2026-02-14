@@ -46,17 +46,13 @@ export async function getSession() {
     }
 }
 
-export const VERIFICATION_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
-
-export function generateOTP() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
+export const SIGNUP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
 /**
- * Creates a signed verification token containing the OTP and user info.
- * This allows us to verify the code without storing it on a server filesystem or DB.
+ * Creates a signed token containing user info.
+ * This carries user data from the "Info" step to the "Verify" step statelessly.
  */
-export async function createVerificationToken(data: { email: string; name: string; code: string }) {
+export async function createSignupToken(data: { email: string; name: string }) {
     return await new SignJWT(data)
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
@@ -65,14 +61,14 @@ export async function createVerificationToken(data: { email: string; name: strin
 }
 
 /**
- * Verifies a verification token and returns its payload if valid.
+ * Verifies a signup token and returns its payload if valid.
  */
-export async function verifyVerificationToken(token: string) {
+export async function verifySignupToken(token: string) {
     try {
         const { payload } = await jwtVerify(token, key, {
             algorithms: ["HS256"],
         });
-        return payload as { email: string; name: string; code: string };
+        return payload as { email: string; name: string };
     } catch (error) {
         return null;
     }

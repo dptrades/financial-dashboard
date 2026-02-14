@@ -153,24 +153,23 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                         <form onSubmit={handleVerify} className="space-y-6">
                             <div className="text-center">
                                 <p className="text-sm text-gray-400 mb-4">
-                                    We've sent a 6-digit code to <br />
-                                    <span className="text-blue-400 font-medium">{email}</span>
+                                    Enter your <span className="text-blue-400 font-medium">Trader Access Key</span> <br />
+                                    to securely access the dashboard.
                                 </p>
 
                                 <input
-                                    type="text"
-                                    placeholder="000 000"
+                                    type="password"
+                                    placeholder="••••••••"
                                     required
-                                    maxLength={6}
                                     value={code}
-                                    onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-xl py-4 text-center text-3xl font-black tracking-[0.5em] text-white focus:outline-none focus:border-blue-500/50 transition-all"
+                                    onChange={(e) => setCode(e.target.value)}
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-xl py-4 text-center text-2xl font-black tracking-widest text-white focus:outline-none focus:border-blue-500/50 transition-all"
                                 />
                             </div>
 
                             <button
                                 type="submit"
-                                disabled={loading || code.length < 6}
+                                disabled={loading || !code}
                                 className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20"
                             >
                                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Enter Dashboard'}

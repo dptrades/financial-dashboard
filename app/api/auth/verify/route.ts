@@ -1,38 +1,39 @@
 import { NextResponse } from 'next/server';
-import { login, verifyVerificationToken } from '@/lib/auth';
+import { login, verifySignupToken } from '@/lib/auth';
+
+const TRADER_ACCESS_KEY = process.env.TRADER_ACCESS_KEY || 'TRADER2026';
 
 export async function POST(req: Request) {
     try {
-        const { email, code, verificationToken } = await req.json();
+        const { email, code, signupToken } = await req.json();
 
-        if (!email || !code || !verificationToken) {
+        if (!email || !code || !signupToken) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // 1. Verify the Stateless Token
-        const payload = await verifyVerificationToken(verificationToken);
+        // 1. Verify the Stateless Signup Token
+        const payload = await verifySignupToken(signupToken);
 
         if (!payload) {
-            return NextResponse.json({ error: 'Verification session expired or invalid' }, { status: 400 });
+            return NextResponse.json({ error: 'Session expired. Please start over.' }, { status: 400 });
         }
 
         // 2. Security Check: Ensure email matches the token
         if (payload.email !== email) {
-            return NextResponse.json({ error: 'Email mismatch' }, { status: 400 });
+            return NextResponse.json({ error: 'Email mismatch. Please start over.' }, { status: 400 });
         }
 
-        // 3. Verify the 6-digit code
-        if (payload.code !== code) {
-            return NextResponse.json({ error: 'Invalid verification code' }, { status: 400 });
+        // 3. Verify the Access Key
+        if (code !== TRADER_ACCESS_KEY) {
+            return NextResponse.json({ error: 'Invalid Trader Access Key' }, { status: 401 });
         }
 
         // 4. Create Session (4 hours)
-        // Note: Using payload.name to ensure we use the name from the verified token
         await login({ name: payload.name, email: payload.email });
 
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Verification Error:', error);
-        return NextResponse.json({ error: 'Failed to verify code' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to verify access key' }, { status: 500 });
     }
 }
