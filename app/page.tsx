@@ -447,9 +447,6 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-6">
 
-              {/* Sector Performance - Above Deep Dive for context */}
-              <SectorPerformanceWidget onSectorClick={setSelectedSector} />
-
               {/* ROW 1: Deep Dive (Left, 2/3) & AI Option Play + Price Stats (Right, 1/3) */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 {/* Deep Dive - Takes 2/3 - FIRST in DOM = LEFT */}
