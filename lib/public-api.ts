@@ -57,13 +57,15 @@ export class PublicClient {
     public lastError: string | null = null;
     private throttledUntil: number = 0;
     private quoteCache: Map<string, { data: PublicQuote; expiry: number }> = new Map();
+    private chainCache: Map<string, { data: PublicOptionChain; expiry: number }> = new Map();
     private CACHE_TTL = 10 * 1000; // 10 seconds cache for quotes
+    private CHAIN_TTL = 60 * 1000; // 60 seconds cache for option chains
 
     constructor() {
         this.apiKey = env.PUBLIC_API_KEY || '';
         this.apiSecret = env.PUBLIC_API_SECRET || '';
         if (!this.isConfigured() && typeof window === 'undefined') {
-            console.log("🛠️ Public.com API Key missing. Using Mock Data mode for Options.");
+            console.log("⚠️ Public.com API Key missing. Live options data will be unavailable. Refresh to retry.");
         }
     }
 
@@ -351,25 +353,12 @@ export class PublicClient {
      * Get option chain for a symbol
      */
     async getOptionChain(symbol: string, targetExpiration?: string): Promise<PublicOptionChain | null> {
-        if (!this.isConfigured()) {
-            // Return mock chain for demo
-            const expiry = new Date();
-            expiry.setDate(expiry.getDate() + 30);
-            const expStr = expiry.toISOString().split('T')[0];
+        if (!this.isConfigured()) return null;
 
-            return {
-                symbol,
-                expirations: [expStr],
-                strikes: [140, 145, 150, 155, 160],
-                options: {
-                    [expStr]: {
-                        150: {
-                            call: { symbol: `${symbol}240315C00150000`, strike: 150, expiration: expStr, type: 'CALL', bid: 2.45, ask: 2.55, last: 2.50, volume: 450, openInterest: 2100, greeks: { delta: 0.52, gamma: 0.04, theta: -0.02, vega: 0.12, rho: 0.01, impliedVolatility: 0.25 } },
-                            put: { symbol: `${symbol}240315P00150000`, strike: 150, expiration: expStr, type: 'PUT', bid: 1.85, ask: 1.95, last: 1.90, volume: 320, openInterest: 1800, greeks: { delta: -0.48, gamma: 0.04, theta: -0.02, vega: 0.12, rho: -0.01, impliedVolatility: 0.25 } }
-                        }
-                    }
-                }
-            };
+        // Check Cache
+        const cached = this.chainCache.get(symbol);
+        if (cached && Date.now() < cached.expiry) {
+            return cached.data;
         }
 
         try {
@@ -394,14 +383,15 @@ export class PublicClient {
                 }
             }
 
-            for (const exp of targetExps) {
+            // 3. Parallelize Fetching using Promise.all
+            await Promise.all(targetExps.map(async (exp) => {
                 // According to https://public.com/api/docs/resources/market-data/get-option-chain
                 const data = await this.request(`/option-chain`, 'POST', {
                     instrument: { symbol, type: 'EQUITY' },
                     expirationDate: exp
                 });
 
-                if (!data) continue;
+                if (!data) return;
 
                 if (!chain.options[exp]) chain.options[exp] = {};
 
@@ -438,9 +428,13 @@ export class PublicClient {
 
                 processType(data.calls, 'CALL');
                 processType(data.puts, 'PUT');
-            }
+            }));
 
             chain.strikes = Array.from(strikesSet).sort((a, b) => a - b);
+
+            // Save to Cache
+            this.chainCache.set(symbol, { data: chain, expiry: Date.now() + this.CHAIN_TTL });
+
             return chain;
 
         } catch (e) {

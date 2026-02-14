@@ -10,7 +10,7 @@ declare global {
 if (!(globalThis as any)._pcrCache) {
     (globalThis as any)._pcrCache = new Map<string, { data: any; timestamp: number }>();
 }
-const PCR_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const PCR_CACHE_TTL = 7 * 60 * 1000; // 7 minutes
 
 export function getNextMonthlyExpiry(): string {
     const d = new Date();
@@ -372,9 +372,9 @@ export async function findTopOptions(
         }
 
         const topCandidates = candidates.sort((a, b) => b.score - a.score).slice(0, 5);
-        const finalResults: OptionRecommendation[] = [];
 
-        for (const candidate of topCandidates) {
+        // Parallelize Greek fetching for the top candidates
+        await Promise.all(topCandidates.map(async (candidate) => {
             const rec = candidate.recommendation;
             if (publicClient.isConfigured() && rec.symbol) {
                 try {
@@ -395,8 +395,9 @@ export async function findTopOptions(
                     rec.probabilityITM = Math.max(0.1, 0.5 - (distFromPrice * 2));
                 }
             }
-            finalResults.push(rec);
-        }
+        }));
+
+        const finalResults = topCandidates.map(c => c.recommendation);
 
         // Final sanity check: Ensure IV is not stuck at exactly 0.35 if we have price
         finalResults.forEach(rec => {

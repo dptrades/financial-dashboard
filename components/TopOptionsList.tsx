@@ -71,8 +71,11 @@ export default function TopOptionsList({ options, symbol, loading }: TopOptionsL
                         <Shield className="w-8 h-8 text-gray-500" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-400">No High-Conviction Option Play</h3>
-                    <p className="text-sm text-gray-500 max-w-sm">
+                    <p className="text-sm text-gray-500 max-w-sm mb-2">
                         Current liquidity and flow metrics do not justify a defensive or aggressive setup for {symbol} at this time.
+                    </p>
+                    <p className="text-xs text-blue-400 font-bold bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
+                        Refresh to get the latest data
                     </p>
                 </div>
             </div>

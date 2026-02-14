@@ -86,49 +86,6 @@ const CONVICTION_WATCHLIST = [
     'XLK', 'XLF', 'XLE', 'XLY', 'XLP', 'XLV', 'XLI', 'XLB', 'XLU', 'XLRE', 'XLC'
 ];
 
-// Mock Data for Fallback (when API fails) - Mega Cap Focus
-const MOCK_CONVICTION_DATA: ConvictionStock[] = [
-    {
-        symbol: 'NVDA', name: 'NVIDIA Corp', price: 145.50, score: 92, isMock: true,
-        technicalScore: 95, fundamentalScore: 90, analystScore: 95, sentimentScore: 88,
-        metrics: { pe: 65.5, marketCap: 2500000000000, revenueGrowth: 1.25, rsi: 68, trend: 'BULLISH', analystRating: 'Strong Buy', analystTarget: 160, socialSentiment: 'Very Bullish' },
-        reasons: ['AI Supercycle Leader', 'Record Revenue Growth', 'Analyst Top Pick'],
-        change24h: 2.5, volume: 45000000, sector: 'Technology',
-        suggestedOption: { type: 'CALL', strike: 150, expiry: 'Mar 15', confidence: 85, reason: 'Strong Bullish Trend' }
-    },
-    {
-        symbol: 'MSFT', name: 'Microsoft Corp', price: 415.50, score: 89, isMock: true,
-        technicalScore: 88, fundamentalScore: 95, analystScore: 92, sentimentScore: 82,
-        metrics: { pe: 35, marketCap: 3100000000000, revenueGrowth: 0.15, rsi: 55, trend: 'BULLISH', analystRating: 'Strong Buy', analystTarget: 480, socialSentiment: 'Bullish' },
-        reasons: ['AI Cloud Leader', 'Strong Enterprise Demand', 'Consistent Growth'],
-        change24h: 0.8, volume: 22000000, sector: 'Technology',
-        suggestedOption: { type: 'CALL', strike: 430, expiry: 'Mar 15', confidence: 82, reason: 'Steady Uptrend' }
-    },
-    {
-        symbol: 'AAPL', name: 'Apple Inc', price: 225.30, score: 87, isMock: true,
-        technicalScore: 85, fundamentalScore: 88, analystScore: 85, sentimentScore: 90,
-        metrics: { pe: 28, marketCap: 2800000000000, revenueGrowth: 0.05, rsi: 52, trend: 'BULLISH', analystRating: 'Buy', analystTarget: 250, socialSentiment: 'Bullish' },
-        reasons: ['Premium Hardware Moat', 'Services Growth', 'Strong Buybacks'],
-        change24h: 0.5, volume: 55000000, sector: 'Technology',
-        suggestedOption: { type: 'CALL', strike: 230, expiry: 'Mar 15', confidence: 78, reason: 'Support Bounce' }
-    },
-    {
-        symbol: 'LLY', name: 'Eli Lilly', price: 850.10, score: 85, isMock: true,
-        technicalScore: 80, fundamentalScore: 95, analystScore: 88, sentimentScore: 75,
-        metrics: { pe: 105, marketCap: 750000000000, revenueGrowth: 0.28, rsi: 58, trend: 'BULLISH', analystRating: 'Strong Buy', analystTarget: 950, socialSentiment: 'Bullish' },
-        reasons: ['Pharma Leader (Weight Loss)', 'Strong Moat', 'Defensive Growth'],
-        change24h: 1.1, volume: 4500000, sector: 'Healthcare',
-        suggestedOption: { type: 'CALL', strike: 880, expiry: 'Mar 15', confidence: 70, reason: 'Steady Uptrend' }
-    },
-    {
-        symbol: 'GOOGL', name: 'Alphabet Inc', price: 175.20, score: 84, isMock: true,
-        technicalScore: 82, fundamentalScore: 90, analystScore: 88, sentimentScore: 76,
-        metrics: { pe: 25, marketCap: 2000000000000, revenueGrowth: 0.12, rsi: 48, trend: 'BULLISH', analystRating: 'Buy', analystTarget: 200, socialSentiment: 'Bullish' },
-        reasons: ['Search Dominance', 'Cloud Growth', 'AI Integration'],
-        change24h: 0.3, volume: 28000000, sector: 'Technology',
-        suggestedOption: { type: 'CALL', strike: 180, expiry: 'Mar 15', confidence: 75, reason: 'Undervalued Tech' }
-    },
-];
 
 // Alpha Hunter Watchlist - Broader Market Coverage (including growth, momentum, and speculative plays)
 const ALPHA_HUNTER_WATCHLIST = Array.from(new Set([
@@ -140,37 +97,10 @@ const ALPHA_HUNTER_WATCHLIST = Array.from(new Set([
     'HOOD', 'SOFI', 'RIVN', 'LCID', 'GME'
 ]));
 
-// Mock Data for Alpha Hunter Fallback (when API fails) - Broader market
-const MOCK_ALPHA_HUNTER_DATA: ConvictionStock[] = [
-    {
-        symbol: 'NVDA', name: 'NVIDIA Corp', price: 145.50, score: 92, isMock: true,
-        technicalScore: 95, fundamentalScore: 90, analystScore: 95, sentimentScore: 88,
-        metrics: { pe: 65.5, marketCap: 2500000000000, revenueGrowth: 1.25, rsi: 68, trend: 'BULLISH', analystRating: 'Strong Buy', analystTarget: 160, socialSentiment: 'Very Bullish' },
-        reasons: ['AI Supercycle Leader', 'Record Revenue Growth', 'Analyst Top Pick'],
-        change24h: 2.5, volume: 45000000, sector: 'Information Technology',
-        suggestedOption: { type: 'CALL', strike: 150, expiry: 'Mar 15', confidence: 85, reason: 'Strong Bullish Trend' }
-    },
-    {
-        symbol: 'PLTR', name: 'Palantir Technologies', price: 62.40, score: 88, isMock: true,
-        technicalScore: 98, fundamentalScore: 75, analystScore: 80, sentimentScore: 95,
-        metrics: { pe: 110, marketCap: 140000000000, revenueGrowth: 0.35, rsi: 78, trend: 'BULLISH', analystRating: 'Buy', analystTarget: 70, socialSentiment: 'Very Bullish' },
-        reasons: ['S&P 500 Inclusion Momentum', 'Government Contract Wins', 'Retail Favorite'],
-        change24h: 4.2, volume: 85000000, sector: 'Information Technology',
-        suggestedOption: { type: 'CALL', strike: 65, expiry: 'Mar 15', confidence: 80, reason: 'Breakout Momentum' }
-    },
-    {
-        symbol: 'CRWD', name: 'CrowdStrike', price: 385.20, score: 80, isMock: true,
-        technicalScore: 78, fundamentalScore: 85, analystScore: 88, sentimentScore: 70,
-        metrics: { pe: 95, marketCap: 92000000000, revenueGrowth: 0.32, rsi: 55, trend: 'BULLISH', analystRating: 'Strong Buy', analystTarget: 420, socialSentiment: 'Bullish' },
-        reasons: ['Cybersecurity Leader', 'ARR Growth', 'Enterprise Demand'],
-        change24h: 1.5, volume: 3500000, sector: 'Information Technology',
-        suggestedOption: { type: 'CALL', strike: 400, expiry: 'Mar 15', confidence: 75, reason: 'Sector Tailwind' }
-    },
-];
 
 // Separate caches for each scan mode
 // Separate caches for each scan mode
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+const CACHE_TTL = 7 * 60 * 1000; // 7 minutes (Ensures site-wide < 10 min freshness)
 
 declare global {
     var _megaCapCache: { data: ConvictionStock[], timestamp: number } | null;
@@ -448,7 +378,6 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                     name: (quote?.price as any)?.longName || symbol,
                     price: finalPrice,
                     score: Math.round(finalScore),
-                    isMock: false,
                     technicalScore: Math.round(techScore),
                     fundamentalScore: Math.round(fundScore),
                     analystScore: Math.round(analystScore),
@@ -511,11 +440,6 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
         timestamp: Date.now()
     };
     isScanning = false;
-
-    if (sorted.length === 0) {
-        console.warn("⚠️ No live data found (Alpha Hunter). Returning Mock Data Fallback.");
-        return MOCK_CONVICTION_DATA; // Or a separate mock set
-    }
 
     return sorted;
 }
@@ -758,7 +682,6 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                     name: (quote?.price as any)?.longName || symbol,
                     price: finalPrice,
                     score: Math.round(finalScore),
-                    isMock: false,
                     technicalScore: Math.round(techScore),
                     fundamentalScore: Math.round(fundScore),
                     analystScore: Math.round(analystScore),
@@ -823,8 +746,7 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
     isScanning = false;
 
     if (sorted.length === 0) {
-        console.warn("⚠️ No live data found. Returning Alpha Hunter Mock Data Fallback.");
-        return MOCK_ALPHA_HUNTER_DATA;
+        return [];
     }
 
     return sorted;

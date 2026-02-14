@@ -25,7 +25,6 @@ export interface ConvictionStock {
     name: string;
     price: number;
     score: number; // 0-100
-    isMock?: boolean;
 
     // Category Scores
     technicalScore: number;

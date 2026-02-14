@@ -50,8 +50,13 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                 <div className="text-center py-2">
                     <span className="text-gray-300 font-medium text-sm">No High-Prob Setup</span>
                     {data && data.reason && (
-                        <span className="block text-[10px] text-gray-200 mt-1">{data.reason}</span>
+                        <span className="block text-[10px] text-gray-400 mt-1">{data.reason}</span>
                     )}
+                    <div className="mt-3">
+                        <span className="text-[10px] text-blue-400 font-bold bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
+                            Refresh to get the latest data
+                        </span>
+                    </div>
                 </div>
             </div>
         );

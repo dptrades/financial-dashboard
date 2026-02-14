@@ -81,7 +81,7 @@ export default function ConvictionPage() {
                     timestamp: Date.now()
                 }));
 
-                if (data.length === 0) setError('No results found. API might be rate-limited or returning empty data.');
+                if (data.length === 0) setError('No live setups found at this time. Refresh to try again.');
             } else {
                 setError('Invalid data format received from API.');
             }
@@ -193,11 +193,6 @@ export default function ConvictionPage() {
                         </div>
                     )}
 
-                    {stocks.length > 0 && stocks[0].isMock && (
-                        <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 p-3 rounded-lg mb-6 flex items-center gap-2 text-sm">
-                            ⚠️ <span className="font-bold">Demo Mode:</span> Live API limit reached. Showing historical example data.
-                        </div>
-                    )}
 
                     {loading && stocks.length === 0 ? (
                         <div className="h-96">
