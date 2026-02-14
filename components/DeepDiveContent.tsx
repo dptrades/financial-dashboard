@@ -123,8 +123,8 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
                 </div>
             </div>
 
-            {/* 1. KEY METRICS GRID */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* 1. KEY METRICS GRID - Responsive */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-3 rounded-lg border bg-gray-800/40 border-gray-700/50 flex flex-col justify-between">
                     <div className="flex items-center gap-2 text-gray-200 text-xs uppercase tracking-wider mb-2">
                         <TrendingUp className="w-4 h-4 text-orange-400" /> Today's Range
@@ -303,8 +303,8 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true }: Deep
                             No unusual activity detected (Vol {'>'} OI) for upcoming expiries.
                         </div>
                     ) : (
-                        <div className="overflow-x-auto rounded-lg border border-gray-800 bg-gray-900/50">
-                            <table className="w-full text-sm text-left">
+                        <div className="overflow-x-auto rounded-lg border border-gray-800 bg-gray-900/50 scrollbar-hide">
+                            <table className="w-full text-sm text-left whitespace-nowrap">
                                 <thead className="bg-gray-800/50 text-gray-200">
                                     <tr>
                                         <th className="p-3">Expiry</th>

@@ -92,7 +92,12 @@ export default function TopPicksPage() {
                     loading={false}
                     stats={null}
                     sentimentScore={50}
-                    onSectorClick={() => { }}
+                    onSectorClick={() => {
+                        // If selecting a sector from here, we might want to close sidebar on mobile
+                        if (window.innerWidth < 768) {
+                            setIsSidebarOpen(false);
+                        }
+                    }}
                 />
             </div>
 
@@ -108,7 +113,7 @@ export default function TopPicksPage() {
                     </button>
                 )}
 
-                <div className="flex-1 p-6 flex flex-col overflow-hidden">
+                <div className={`flex-1 p-6 flex flex-col overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:max-w-[calc(100vw-280px)]' : 'md:max-w-full'}`}>
                     <header className="mb-8">
                         <div className="flex items-center gap-4">
                             <h2 className="text-3xl font-bold tracking-tight text-blue-400">Top Picks</h2>

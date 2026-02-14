@@ -183,8 +183,8 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                 />
             </div>
 
-            {/* Metrics Row */}
-            <div className="flex justify-between items-center mb-4 px-1">
+            {/* Metrics Row - Responsive Wrap */}
+            <div className="flex justify-between items-center mb-4 px-1 flex-wrap gap-2 text-center">
                 <div className="text-center">
                     <div className="text-[9px] text-gray-200 uppercase font-bold mb-1">Vol / OI</div>
                     <div className="text-[11px] text-white font-mono font-bold">
@@ -215,7 +215,7 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                     <span className="text-[10px] uppercase font-bold text-gray-300 tracking-wider">Confluence Analysis</span>
                     <span className="text-[10px] font-mono text-blue-400 font-bold">{(data.technicalConfirmations || 0) + (data.fundamentalConfirmations || 0) + (data.socialConfirmations || 0)} Factors</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <button
                         onClick={() => setActiveDetail('tech')}
                         className="text-center bg-gray-800/30 rounded-md p-1.5 border border-gray-700/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all"
@@ -251,8 +251,8 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                 <div className="space-y-2 pt-3 border-t border-gray-700/50">
                     <div className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Trade Plan</div>
 
-                    {/* Trade Plan Grid (Entry, Stop, Target) */}
-                    <div className="grid grid-cols-3 gap-2">
+                    {/* Trade Plan Grid (Entry, Stop, Target) - Responsive */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         {/* Entry */}
                         <div className="flex flex-col bg-gray-900/50 rounded-lg p-2 border border-gray-700/30">
                             <div className="flex items-center gap-1 mb-1">

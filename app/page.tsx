@@ -357,7 +357,7 @@ export default function Dashboard() {
         fixed inset-y-0 left-0 z-[110] transition-transform duration-300 ease-in-out md:relative md:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         ${isSidebarOpen ? 'w-[280px]' : 'w-0'} 
-        h-full overflow-hidden flex-shrink-0
+        h-full overflow-hidden flex-shrink-0 border-r border-gray-800
       `}>
         <Sidebar
           isOpen={isSidebarOpen}
@@ -373,7 +373,13 @@ export default function Dashboard() {
           currentPage="dashboard"
           stats={stats}
           sentimentScore={sentimentScore}
-          onSectorClick={setSelectedSector}
+          onSectorClick={(sector) => {
+            setSelectedSector(sector);
+            // Auto-close sidebar on mobile after selection
+            if (window.innerWidth < 768) {
+              setIsSidebarOpen(false);
+            }
+          }}
         />
       </div>
 
@@ -389,7 +395,7 @@ export default function Dashboard() {
             <span className="text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Expand</span>
           </button>
         )}
-        <div className="flex-1 p-4 md:p-6 flex flex-col overflow-y-auto w-full pt-16 md:pt-6">
+        <div className={`flex-1 p-4 md:p-6 flex flex-col overflow-y-auto w-full pt-16 md:pt-6 transition-all duration-300 ${isSidebarOpen ? 'md:max-w-[calc(100vw-280px)]' : 'md:max-w-full'}`}>
           <header className="flex flex-col gap-4 mb-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               {/* LEFT: Ticker, Price */}
@@ -431,7 +437,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* 3. Mini Signals (Trend Only) & Analyst */}
-                <div className="flex flex-row items-center gap-2">
+                <div className="flex flex-row items-center gap-2 flex-wrap sm:flex-nowrap">
                   {data.length > 0 && <HeaderSignals latestData={data[data.length - 1]} showRSI={true} />}
                   <HeaderAnalyst symbol={symbol} analystNews={analystData} />
                 </div>
@@ -448,9 +454,9 @@ export default function Dashboard() {
             <div className="space-y-6">
 
               {/* ROW 1: Deep Dive (Left, 2/3) & AI Option Play + Price Stats (Right, 1/3) */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
                 {/* Deep Dive - Takes 2/3 - FIRST in DOM = LEFT */}
-                <div className="lg:col-span-2 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="xl:col-span-2 overflow-x-auto pb-2 scrollbar-hide">
                   <div className="min-w-[600px] lg:min-w-0">
                     <DeepDiveContent
                       key={symbol}
@@ -461,7 +467,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Right Column - AI Option Play + Price Stats stacked vertically */}
-                <div className="lg:col-span-1 space-y-6">
+                <div className="xl:col-span-1 space-y-6">
                   <div className="bg-gray-800/10 rounded-xl">
                     <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-2">
                       <Zap className="w-4 h-4 text-blue-400" /> Tactical Option Play

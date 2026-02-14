@@ -133,7 +133,11 @@ export default function ConvictionPage() {
                     // No-op props for sidebar internal logic
                     interval="1d" setInterval={() => { }}
                     data={[]} loading={false} stats={null} sentimentScore={50}
-                    onSectorClick={() => { }}
+                    onSectorClick={() => {
+                        if (window.innerWidth < 768) {
+                            setIsSidebarOpen(false);
+                        }
+                    }}
                 />
             </div>
 
@@ -149,7 +153,7 @@ export default function ConvictionPage() {
                     </button>
                 )}
 
-                <div className="flex-1 p-4 md:p-8 overflow-y-auto">
+                <div className={`flex-1 p-4 md:p-8 overflow-y-auto transition-all duration-300 ${isSidebarOpen ? 'md:max-w-[calc(100vw-280px)]' : 'md:max-w-full'}`}>
                     <header className="flex justify-between items-end mb-8">
                         <div>
                             <div className="flex items-center gap-4">
