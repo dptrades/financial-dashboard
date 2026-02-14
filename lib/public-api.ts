@@ -113,7 +113,13 @@ export class PublicClient {
         try {
             console.log(`[PublicAPI] Fetching account info...`);
             const response = await axios.get(`${BASE_URL}/userapigateway/trading/account`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Origin': 'https://public.com',
+                    'Referer': 'https://public.com/'
+                }
             });
 
             if (response.data && response.data.accounts && response.data.accounts.length > 0) {
@@ -160,7 +166,10 @@ export class PublicClient {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Origin': 'https://public.com',
+                    'Referer': 'https://public.com/'
                 },
                 data
             };

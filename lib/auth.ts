@@ -84,27 +84,66 @@ export async function getUsersFromCSV() {
         const dataDir = path.join(process.cwd(), 'data');
         const filePath = path.join(dataDir, 'users.csv');
 
+        // 1. Try local filesystem first (works on local dev)
         try {
             const content = await fs.readFile(filePath, 'utf-8');
-            const lines = content.trim().split('\n');
-            if (lines.length <= 1) return [];
-
-            const headers = lines[0].split(',');
-            return lines.slice(1).map(line => {
-                const values = line.split(',');
-                const user: any = {};
-                headers.forEach((header, i) => {
-                    user[header.toLowerCase()] = values[i];
-                });
-                return user;
-            });
-        } catch (e) {
+            return parseCSV(content);
+        } catch (e: any) {
+            // 2. Fallback to GitHub on Vercel or if local file is missing
+            if (process.env.VERCEL || e.code === 'ENOENT') {
+                console.log('[Auth] Local CSV missing or Vercel env, attempting GitHub fallback...');
+                const githubContent = await fetchFromGitHub();
+                if (githubContent) return parseCSV(githubContent);
+            }
             return [];
         }
     } catch (error) {
-        console.error('Error reading CSV:', error);
+        console.error('General failure in getUsersFromCSV:', error);
         return [];
     }
+}
+
+function parseCSV(content: string) {
+    const lines = content.trim().split('\n');
+    if (lines.length <= 1) return [];
+
+    const headers = lines[0].split(',');
+    return lines.slice(1).map(line => {
+        const values = line.split(',');
+        const user: any = {};
+        headers.forEach((header, i) => {
+            const key = header.trim().toLowerCase();
+            user[key] = values[i];
+        });
+        return user;
+    });
+}
+
+async function fetchFromGitHub() {
+    try {
+        const token = process.env.GITHUB_TOKEN;
+        const owner = process.env.GITHUB_REPO_OWNER || process.env.VERCEL_GIT_REPO_OWNER;
+        const repo = process.env.GITHUB_REPO_NAME || process.env.VERCEL_GIT_REPO_SLUG;
+        const path = 'user/users.csv';
+
+        if (!token || !owner || !repo) return null;
+
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/vnd.github.v3+json'
+            },
+            cache: 'no-store'
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return Buffer.from(data.content, 'base64').toString('utf-8');
+        }
+    } catch (e) {
+        console.error('[Auth] GitHub fetch failed:', e);
+    }
+    return null;
 }
 
 /**
@@ -172,15 +211,7 @@ async function syncToGitHub(csvContent: string) {
 export async function saveUser(user: { name: string; email: string }) {
     try {
         const timestamp = new Date().toISOString();
-        const dataDir = path.join(process.cwd(), 'data');
-        const filePath = path.join(dataDir, 'users.csv');
-
-        // Ensure directory exists
-        try {
-            await fs.mkdir(dataDir, { recursive: true });
-        } catch (e) { }
-
-        let users = await getUsersFromCSV();
+        const users = await getUsersFromCSV();
 
         // Update or add user
         const index = users.findIndex((u: any) => u.email === user.email);
@@ -199,13 +230,25 @@ export async function saveUser(user: { name: string; email: string }) {
             ...users.map(u => [u.name, u.email, u.lastlogin || u.lastLogin].join(','))
         ].join('\n');
 
-        await fs.writeFile(filePath, csvContent);
-        console.log(`[Auth] User ${user.email} saved to local CSV`);
-
-        // Trigger GitHub sync in the background (fire-and-forget)
+        // 1. Always attempt GitHub sync (primary storage on Vercel)
         syncToGitHub(csvContent).catch(err => {
             console.error('[Sync] Background sync failed:', err);
         });
+
+        // 2. Only write to local filesystem if NOT on Vercel
+        if (!process.env.VERCEL) {
+            try {
+                const dataDir = path.join(process.cwd(), 'data');
+                const filePath = path.join(dataDir, 'users.csv');
+                await fs.mkdir(dataDir, { recursive: true });
+                await fs.writeFile(filePath, csvContent);
+                console.log(`[Auth] User ${user.email} saved to local CSV`);
+            } catch (fsError) {
+                console.warn('[Auth] Local FS write skipped or failed:', fsError);
+            }
+        } else {
+            console.log(`[Auth] User ${user.email} skipping local FS write on Vercel`);
+        }
 
         return true;
     } catch (error) {
