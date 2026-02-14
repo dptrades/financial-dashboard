@@ -178,7 +178,7 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
             {/* VIX & Bullish % */}
             <div className="grid grid-cols-2 gap-2">
                 <div className="bg-gray-800 p-2 rounded border border-gray-700">
-                    <span className="text-[10px] text-gray-200 block">VIX</span>
+                    <span className="text-[10px] text-gray-100 block font-black uppercase tracking-wider mb-0.5">VIX</span>
                     <div className="flex items-center gap-1">
                         <span className={`text-sm font-bold ${vix && vix.change < 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {vix ? vix.price.toFixed(2) : 'N/A'}
@@ -195,7 +195,7 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
                     className="bg-gray-800 p-2 rounded border border-gray-700 hover:border-blue-500/50 hover:bg-gray-700/50 transition-all text-left group"
                 >
                     <div className="flex justify-between items-center mb-0.5">
-                        <span className="text-[10px] text-gray-200 block">Bullish %</span>
+                        <span className="text-[10px] text-gray-100 block font-black uppercase tracking-wider">Bullish %</span>
                         <Info className="w-2.5 h-2.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
                     </div>
                     <span className={`text-sm font-bold ${stats.bullishPercent > 50 ? 'text-green-400' : 'text-red-400'}`}>
@@ -214,7 +214,7 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
                     { label: 'Russell 2000', data: russell },
                 ].map((item) => item.data && (
                     <div key={item.label} className="flex justify-between items-center text-[11px] bg-gray-800/50 p-1.5 rounded">
-                        <span className="text-gray-200">{item.label}</span>
+                        <span className="text-gray-100 font-bold tracking-tight">{item.label}</span>
                         <div className="flex items-center gap-2">
                             <span className="text-white font-mono">{item.data.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             <span className={`${item.data.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -264,7 +264,7 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
                             onClick={() => onSectorClick(sector)}
                             className="w-full flex justify-between items-center text-[10px] bg-gray-900/40 hover:bg-gray-700/50 p-1.5 rounded border border-transparent hover:border-gray-700 transition-all text-left group"
                         >
-                            <span className="text-gray-200 group-hover:text-gray-200">{sector.name}</span>
+                            <span className="text-gray-100 font-bold group-hover:text-white transition-colors">{sector.name}</span>
                             <span className={`font-mono font-bold ${sector.avgChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                 {sector.avgChange > 0 ? '+' : ''}{sector.avgChange.toFixed(2)}%
                             </span>

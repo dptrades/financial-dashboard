@@ -82,10 +82,22 @@ export async function GET(request: Request) {
 
                     // 4H aggregation if needed
                     if (interval === '4h' && data.length > 0) {
-                        return NextResponse.json({ data: aggregate4H(data), companyName });
+                        return NextResponse.json({ data: aggregate4H(data), companyName }, {
+                            headers: {
+                                'Cache-Control': 'no-store, max-age=0, must-revalidate',
+                                'Pragma': 'no-cache',
+                                'Expires': '0'
+                            }
+                        });
                     }
 
-                    return NextResponse.json({ data, companyName });
+                    return NextResponse.json({ data, companyName }, {
+                        headers: {
+                            'Cache-Control': 'no-store, max-age=0, must-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0'
+                        }
+                    });
                 }
                 console.log(`[OHLCV] Alpaca returned no data for ${ticker}, falling back to Yahoo`);
             } catch (alpacaError: any) {
@@ -153,11 +165,13 @@ export async function GET(request: Request) {
         // Extract company name from Yahoo metadata
         const companyName = result.meta?.longName || result.meta?.shortName || ticker;
 
-        if (is4Hour && data.length > 0) {
-            return NextResponse.json({ data: aggregate4H(data), companyName });
-        }
-
-        return NextResponse.json({ data, companyName });
+        return NextResponse.json({ data, companyName }, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
 
     } catch (error: any) {
         console.error('[OHLCV] Error:', error.message || error);

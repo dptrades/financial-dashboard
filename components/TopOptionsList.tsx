@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Target, TrendingUp, TrendingDown, Clock, Shield, Zap, ChevronRight } from 'lucide-react';
+import DataSourceIndicator from './ui/DataSourceIndicator';
 import { OptionRecommendation } from '../lib/options';
 
 interface TopOptionsListProps {
@@ -182,11 +183,11 @@ export default function TopOptionsList({ options, symbol, loading }: TopOptionsL
                 ))}
             </div>
 
-            <div className="mt-4 flex items-center justify-center">
-                <p className="text-[10px] text-gray-300 text-center max-w-md">
-                    Targeting 1:2 Risk/Reward on premium. Stops are set at -50% premium value.
-                    Calculated using real-time liquidity and Greeks from Public.com.
+            <div className="mt-4 flex items-center justify-between border-t border-gray-700/50 pt-2 px-2">
+                <p className="text-[10px] text-gray-400 max-w-md">
+                    Targeting 1:2 Risk/Reward on premium. Calculated via Public.com Greeks.
                 </p>
+                <DataSourceIndicator source="Public.com / AI" />
             </div>
         </div >
     );

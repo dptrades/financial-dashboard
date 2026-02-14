@@ -9,6 +9,7 @@ import type { ConvictionStock } from '../../types/stock';
 import { Loader2, RefreshCw, X, ChevronRight } from 'lucide-react';
 import { Loading } from '../../components/ui/Loading';
 import { ErrorMessage } from '../../components/ui/ErrorMessage';
+import SectorDetailModal from '../../components/SectorDetailModal';
 
 const CACHE_KEY = 'alpha_hunter_results';
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
@@ -39,6 +40,7 @@ export default function ConvictionPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [showLogic, setShowLogic] = useState(false);
+    const [selectedSector, setSelectedSector] = useState<any>(null);
 
     const fetchConviction = async (forceRefresh = false) => {
         // 1. Check Cache first unless forceRefresh is true
@@ -133,7 +135,8 @@ export default function ConvictionPage() {
                     // No-op props for sidebar internal logic
                     interval="1d" setInterval={() => { }}
                     data={[]} loading={false} stats={null} sentimentScore={50}
-                    onSectorClick={() => {
+                    onSectorClick={(sector) => {
+                        setSelectedSector(sector);
                         if (window.innerWidth < 768) {
                             setIsSidebarOpen(false);
                         }
@@ -297,6 +300,14 @@ export default function ConvictionPage() {
                         </div>
                     )}
                 </div>
+
+                <SectorDetailModal
+                    sector={selectedSector}
+                    onClose={() => setSelectedSector(null)}
+                    onSelectStock={(s) => {
+                        router.push(`/?symbol=${s}`);
+                    }}
+                />
             </main>
         </div>
     );

@@ -22,7 +22,7 @@ interface SidebarProps {
     setInterval: (i: string) => void;
     data: IndicatorData[];
     loading: boolean;
-    currentPage: 'dashboard' | 'picks' | 'sectors' | 'conviction' | 'portfolio';
+    currentPage: 'dashboard' | 'picks' | 'sectors' | 'conviction' | 'portfolio' | 'social';
     stats: PriceStats | null;
     sentimentScore: number;
     onSectorClick: (sector: any) => void;
@@ -159,7 +159,7 @@ export default function Sidebar({
                         : 'text-blue-400/70 hover:text-blue-400 hover:bg-blue-500/10'
                         }`}
                 >
-                    Live Dashboard
+                    📡 Live Dashboard
                 </Link>
                 <Link
                     href="/picks"
@@ -168,7 +168,7 @@ export default function Sidebar({
                         : 'text-purple-400/70 hover:text-purple-400 hover:bg-blue-500/10'
                         }`}
                 >
-                    Top Picks
+                    💎 Top Picks
                 </Link>
                 <Link
                     href="/conviction"
@@ -178,6 +178,15 @@ export default function Sidebar({
                         }`}
                 >
                     ✨ Alpha Hunter
+                </Link>
+                <Link
+                    href="/social-pulse"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium transition-all ${currentPage === 'social'
+                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                        : 'text-orange-400/70 hover:text-orange-400 hover:bg-blue-500/10'
+                        }`}
+                >
+                    🔥 Social Pulse
                 </Link>
             </nav>
 

@@ -27,7 +27,7 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
         if (!enabled || !symbol) return;
 
         try {
-            const res = await fetch(`/api/live-price?symbol=${symbol}`);
+            const res = await fetch(`/api/live-price?symbol=${symbol}`, { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
                 if (data.price !== null && data.price !== undefined) {

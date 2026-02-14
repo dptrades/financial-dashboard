@@ -30,6 +30,7 @@ export const env = {
     // Alpaca Trading API
     ALPACA_API_KEY: getEnvOrDefault('ALPACA_API_KEY', null),
     ALPACA_API_SECRET: getEnvOrDefault('ALPACA_API_SECRET', null),
+    JWT_SECRET: getEnvOrDefault('JWT_SECRET', null),
     get hasAlpaca() {
         return Boolean(this.ALPACA_API_KEY && this.ALPACA_API_SECRET);
     },
@@ -85,8 +86,15 @@ export const env = {
     get hasPublic() {
         return Boolean(this.PUBLIC_API_SECRET);
     },
+    // Schwab API
+    SCHWAB_CLIENT_ID: getEnvOrDefault('SCHWAB_CLIENT_ID', null),
+    SCHWAB_CLIENT_SECRET: getEnvOrDefault('SCHWAB_CLIENT_SECRET', null),
+    SCHWAB_REFRESH_TOKEN: getEnvOrDefault('SCHWAB_REFRESH_TOKEN', null),
+    get hasSchwab() {
+        return Boolean(this.SCHWAB_CLIENT_ID && this.SCHWAB_CLIENT_SECRET);
+    },
     // Trader Access
-    TRADER_ACCESS_KEY: getEnvOrDefault('TRADER_ACCESS_KEY', 'TRADER2026'),
+    TRADER_ACCESS_KEY: getEnvOrDefault('TRADER_ACCESS_KEY', null),
 } as const;
 
 /**
@@ -98,7 +106,9 @@ export function validateEnv(): { valid: boolean; missing: string[] } {
         'ALPACA_API_KEY',
         'ALPACA_API_SECRET',
         'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
-        'CLERK_SECRET_KEY'
+        'CLERK_SECRET_KEY',
+        'JWT_SECRET',
+        'TRADER_ACCESS_KEY'
     ];
 
     const missing: string[] = [];

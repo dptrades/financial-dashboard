@@ -15,7 +15,8 @@ export const fetchOHLCV = async (coinId: string = 'SPY', days: string = '30', ma
                 symbol: coinId,
                 days: days, // legacy or for ranges
                 market: market,
-                interval: interval
+                interval: interval,
+                _t: Date.now() // Cache-buster
             }
         });
 

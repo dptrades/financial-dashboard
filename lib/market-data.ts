@@ -3,6 +3,7 @@ import YahooFinance from 'yahoo-finance2';
 import { calculateIndicators } from './indicators';
 import { ConvictionStock } from '../types/stock';
 import { publicClient } from './public-api';
+import { schwabClient } from './schwab';
 
 const yahooFinance = new YahooFinance();
 
@@ -55,41 +56,64 @@ export interface MultiTimeframeAnalysis {
     marketSession: 'PRE' | 'REG' | 'POST' | 'OFF';
 }
 
-// Helper to map timeframe to Alpaca/Yahoo format
-function mapTimeframe(tf: string): { alpaca: string, yahoo: string, bars: number } {
+// Helper to map timeframe to Alpaca/Yahoo/Schwab format
+function mapTimeframe(tf: string): {
+    alpaca: string,
+    yahoo: string,
+    schwab: { periodType: string, period: number, frequencyType: string, frequency: number },
+    bars: number
+} {
     switch (tf) {
-        case '10m': return { alpaca: '10Min', yahoo: '5m', bars: 1000 };
-        case '1h': return { alpaca: '1Hour', yahoo: '60m', bars: 1000 };
-        case '4h': return { alpaca: '4Hour', yahoo: '1d', bars: 1000 };
-        case '1d': return { alpaca: '1Day', yahoo: '1d', bars: 1000 };
-        case '1w': return { alpaca: '1Week', yahoo: '1wk', bars: 1000 };
-        default: return { alpaca: '1Day', yahoo: '1d', bars: 1000 };
+        case '10m': return {
+            alpaca: '10Min',
+            yahoo: '5m',
+            schwab: { periodType: 'day', period: 1, frequencyType: 'minute', frequency: 10 },
+            bars: 1000
+        };
+        case '1h': return {
+            alpaca: '1Hour',
+            yahoo: '60m',
+            schwab: { periodType: 'day', period: 2, frequencyType: 'minute', frequency: 30 },
+            bars: 1000
+        };
+        case '1d': return {
+            alpaca: '1Day',
+            yahoo: '1d',
+            schwab: { periodType: 'year', period: 1, frequencyType: 'daily', frequency: 1 },
+            bars: 1000
+        };
+        case '1w': return {
+            alpaca: '1Week',
+            yahoo: '1wk',
+            schwab: { periodType: 'year', period: 2, frequencyType: 'weekly', frequency: 1 },
+            bars: 1000
+        };
+        default: return {
+            alpaca: '1Day',
+            yahoo: '1d',
+            schwab: { periodType: 'year', period: 1, frequencyType: 'daily', frequency: 1 },
+            bars: 1000
+        };
     }
 }
 
 export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: boolean = false): Promise<MultiTimeframeAnalysis | null> {
-    const timeframes: ('10m' | '1h' | '4h' | '1d' | '1w')[] = ['10m', '1h', '1d', '1w']; // 4h skipped for now as complex on free
+    const timeframes: ('10m' | '1h' | '4h' | '1d' | '1w')[] = ['10m', '1h', '1d', '1w'];
     const results: TimeframeData[] = [];
     let dailyAtr = 0;
     let avgVolume = 0;
     let currentPrice = 0;
 
-    // We need 180d volume, which comes from Daily chart
-    // We process Daily first to get global metrics
     const dailyConfig = mapTimeframe('1d');
 
     // 1. Fetch Daily Data First (Primary)
-    // ROUTING LOGIC:
-    // Technicals/Bars -> Alpaca (Adjusted for splits/dividends)
-    // Live Price -> Public.com (Brokerage-grade Pre/Post support)
-    let dataSource = 'Hybrid (Alpaca + Public)';
     const marketSession = publicClient.getMarketSession();
     let livePrice = 0;
     let dailyData: any[] = [];
 
     // Run concurrently for performance
     const [dailyBars, publicQuote] = await Promise.all([
-        fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars),
+        fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars, dailyConfig.schwab),
         publicClient.getQuote(symbol, forceRefresh)
     ]);
 
@@ -120,18 +144,17 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
 
     // Analyze all timeframes
     await Promise.all(timeframes.map(async (tf) => {
-        let data = dailyData; // Default to daily if match
+        let data = dailyData;
 
         if (tf !== '1d') {
             const config = mapTimeframe(tf);
-            data = await fetchMarketData(symbol, config.alpaca, config.yahoo, config.bars);
+            data = await fetchMarketData(symbol, config.alpaca, config.yahoo, config.bars, config.schwab);
         }
 
         if (data && data.length > 0) {
             // INJECT LIVE PRICE FOR INTRADAY
             if (livePrice && (tf === '10m' || tf === '1h')) {
                 const lastBar = data[data.length - 1];
-                // Update the last bar with the live price for real-time calc
                 data = [...data];
                 data[data.length - 1] = {
                     ...lastBar,
@@ -153,19 +176,17 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
             // Check if "Near" (within 0.5%)
             const isNear = [Math.abs(ema9Diff), Math.abs(ema21Diff), Math.abs(ema50Diff), Math.abs(ema200Diff)].some(d => d < 0.5);
 
-            // Determine Trend (Simple EMA alignment)
+            // Determine Trend
             let trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = 'NEUTRAL';
             if (last.close > (last.ema50 || 0)) trend = 'BULLISH';
             else if (last.close < (last.ema50 || 0)) trend = 'BEARISH';
 
-            // Map MACD
             const macdData = last.macd ? {
                 macd: last.macd.MACD || 0,
                 signal: last.macd.signal || 0,
                 histogram: last.macd.histogram || 0
             } : null;
 
-            // Map Bollinger
             const bbData = last.bollinger ? {
                 upper: last.bollinger.upper || 0,
                 lower: last.bollinger.lower || 0,
@@ -198,11 +219,9 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
         }
     }));
 
-    // Sort results by timeframe duration for consistent display
     const order = { '10m': 1, '1h': 2, '4h': 3, '1d': 4, '1w': 5 };
     results.sort((a, b) => order[a.timeframe] - order[b.timeframe]);
 
-    // For Header Price: If REG, use current. If extended, use latest close (last daily bar).
     const headerPrice = marketSession === 'REG' ? currentPrice : latestDaily.close;
 
     return {
@@ -218,26 +237,40 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
             dayHigh: dailyData[dailyData.length - 1].high,
             dayLow: dailyData[dailyData.length - 1].low
         },
-        dataSource,
+        dataSource: schwabClient.isConfigured() ? 'Schwab Professional Feed' : 'Hybrid (Alpaca + Public)',
         marketSession
     };
 }
 
-async function fetchMarketData(symbol: string, alpacaTf: string, yahooTf: string, limit: number) {
-    // Try Alpaca First
+async function fetchMarketData(symbol: string, alpacaTf: string, yahooTf: string, limit: number, schwabConfig?: any) {
+    if (schwabClient.isConfigured() && schwabConfig) {
+        try {
+            const bars = await schwabClient.getPriceHistory(
+                symbol,
+                schwabConfig.periodType,
+                schwabConfig.period,
+                schwabConfig.frequencyType,
+                schwabConfig.frequency
+            );
+            if (bars && bars.length > 0) {
+                return bars.map(b => ({
+                    time: b.time,
+                    open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume
+                }));
+            }
+        } catch (e) {
+            console.error(`[V3] Schwab fetch failed for ${symbol}, falling back...`);
+        }
+    }
+
     try {
-        // Special case: Alpaca 10Min isn't a standard 'timeframe' enum usually, but custom string
-        // If fetchAlpacaBars supports raw strings, great. If not, fallback to Yahoo.
-        // Assuming fetchAlpacaBars handles it or we wrap it.
         const bars = await fetchAlpacaBars(symbol, alpacaTf as any, limit);
         if (bars && bars.length > 0) {
-            // Check for staleness on intraday data
             const lastBar = bars[bars.length - 1];
             const lastTime = new Date(lastBar.t).getTime();
             const now = Date.now();
             const isIntraday = alpacaTf.includes('Min') || alpacaTf.includes('Hour');
 
-            // If data is older than 24 hours for intraday, consider it stale/broken feed
             if (isIntraday && (now - lastTime > 24 * 60 * 60 * 1000)) {
                 console.warn(`[Alpaca] Stale data for ${symbol} ${alpacaTf} (Last: ${lastBar.t}). Falling back to Yahoo.`);
                 throw new Error("Stale data");
@@ -248,23 +281,17 @@ async function fetchMarketData(symbol: string, alpacaTf: string, yahooTf: string
                 open: b.o, high: b.h, low: b.l, close: b.c, volume: b.v
             }));
         }
-    } catch (e) {
-        // Alpaca failed or not configured or stale
-    }
+    } catch (e) { }
 
-    // Fallback Yahoo
     try {
-        // Calculate period1 based on timeframe
         const now = new Date();
-        let daysBack = 30; // Default
-
-        if (yahooTf === '1d') daysBack = 365 * 2; // 2 years
-        else if (yahooTf === '1wk') daysBack = 365 * 5; // 5 years
-        else if (yahooTf === '60m') daysBack = 60; // 2 months (max for intraday usually)
-        else if (yahooTf === '5m') daysBack = 5; // 5 days
+        let daysBack = 30;
+        if (yahooTf === '1d') daysBack = 365 * 2;
+        else if (yahooTf === '1wk') daysBack = 365 * 5;
+        else if (yahooTf === '60m') daysBack = 60;
+        else if (yahooTf === '5m') daysBack = 5;
 
         const period1 = new Date(now.setDate(now.getDate() - daysBack));
-
         const result = await yahooFinance.chart(symbol, {
             period1: period1,
             interval: yahooTf as any
@@ -273,7 +300,7 @@ async function fetchMarketData(symbol: string, alpacaTf: string, yahooTf: string
             return result.quotes.map((q: any) => ({
                 time: new Date(q.date).getTime(),
                 open: q.open, high: q.high, low: q.low, close: q.close, volume: q.volume
-            })).filter(q => q.close !== null); // Yahoo sometimes returns nulls
+            })).filter(q => q.close !== null);
         }
     } catch (e) {
         console.error(`Yahoo fetch failed for ${symbol} ${yahooTf}`, e);

@@ -18,12 +18,7 @@ export async function GET(request: Request) {
 
     try {
         const ticker = symbol.toUpperCase();
-
         const marketSession = publicClient.getMarketSession();
-
-        // ROUTING:
-        // Regular Hours -> Alpaca (Live)
-        // Extended Hours -> Locked to Close (for Headers)
 
         let price: number | null = null;
         let change = 0;
@@ -31,24 +26,38 @@ export async function GET(request: Request) {
         let previousClose = 0;
         let source = 'alpaca';
 
-        if (marketSession === 'REG') {
-            price = await fetchAlpacaPrice(ticker);
-            source = 'alpaca';
-        } else {
-            // During off-hours, we want the "Header" to stay at close.
-            // We'll fetch from Yahoo to get the official regular market close.
-            source = 'yahoo (market close)';
+        // 1. Try Public.com First for High-Fidelity & Extended Hours
+        const publicQuote = await publicClient.getQuote(ticker, true); // forceRefresh
+        if (publicQuote) {
+            price = publicQuote.price;
+            change = publicQuote.change;
+            changePercent = publicQuote.changePercent;
+            source = 'public.com (professional)';
         }
 
-        // Always fallback to Yahoo for metadata or if Alpaca failed
+        // 2. If Regular Session, try Alpaca for even lower latency
+        if (marketSession === 'REG') {
+            try {
+                const alpacaPrice = await fetchAlpacaPrice(ticker);
+                if (alpacaPrice) {
+                    price = alpacaPrice;
+                    source = 'alpaca (real-time)';
+                }
+            } catch (e) {
+                console.warn(`[Live Price] Alpaca fetch failed for ${ticker}`);
+            }
+        }
+
+        // 3. Fallback/Metadata from Yahoo Finance
         try {
             const quote: any = await yahooFinance.quote(ticker);
             if (quote) {
                 if (price === null) {
                     price = quote.regularMarketPrice || null;
+                    change = quote.regularMarketChange || 0;
+                    changePercent = quote.regularMarketChangePercent || 0;
+                    source = 'yahoo finance';
                 }
-                change = quote.regularMarketChange || 0;
-                changePercent = quote.regularMarketChangePercent || 0;
                 previousClose = quote.regularMarketPreviousClose || 0;
             }
         } catch (yahooError) {
@@ -61,7 +70,7 @@ export async function GET(request: Request) {
                 change: 0,
                 changePercent: 0,
                 source: 'unavailable',
-                message: 'Market may be closed or data unavailable'
+                message: 'Data unavailable'
             });
         }
 
@@ -73,6 +82,12 @@ export async function GET(request: Request) {
             marketSession,
             source,
             timestamp: new Date().toISOString()
+        }, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
         });
     } catch (error) {
         console.error('[Live Price API] Error:', error);

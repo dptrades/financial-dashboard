@@ -1,6 +1,7 @@
 import React from 'react';
 import { IndicatorData } from '../types/financial';
 import { TrendingUp, Activity } from 'lucide-react';
+import DataSourceIndicator from './ui/DataSourceIndicator';
 
 interface HeaderSignalsProps {
     latestData: IndicatorData | null;
@@ -154,6 +155,9 @@ export default function HeaderSignals({ latestData, showRSI = true }: HeaderSign
                 <div className="flex flex-col gap-1">
                     <span className="text-[8px] text-gray-300 tracking-widest leading-none">ADX</span>
                     <span className={`${adxColor} leading-none`}>{adxStatus}</span>
+                </div>
+                <div className="border-l border-gray-700/50 pl-3 ml-1 self-stretch flex items-center">
+                    <DataSourceIndicator source="Schwab Prof." />
                 </div>
             </div>
         </div>

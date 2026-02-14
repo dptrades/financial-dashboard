@@ -3,8 +3,9 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import fs from 'fs/promises';
 import path from 'path';
+import { env } from "./env";
 
-const SECRET_KEY = process.env.JWT_SECRET || "antigravity-trade-desk-secret-key-2026";
+const SECRET_KEY = env.JWT_SECRET || "";
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export const SESSION_EXPIRY_MS = 4 * 60 * 60 * 1000; // 4 hours

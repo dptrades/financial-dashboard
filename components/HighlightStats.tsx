@@ -1,5 +1,5 @@
-import React from 'react';
 import { PriceStats } from '../lib/stats';
+import DataSourceIndicator from './ui/DataSourceIndicator';
 
 export default function HighlightStats({ stats }: { stats: PriceStats | null }) {
     if (!stats) return <div className="h-20 bg-gray-800/50 rounded-lg animate-pulse my-4 w-full"></div>;
@@ -31,6 +31,9 @@ export default function HighlightStats({ stats }: { stats: PriceStats | null }) 
                         </div>
                     </div>
                 ))}
+            </div>
+            <div className="mt-4 pt-2 border-t border-gray-700/30 flex justify-end">
+                <DataSourceIndicator source="Yahoo Finance" />
             </div>
         </div>
     );

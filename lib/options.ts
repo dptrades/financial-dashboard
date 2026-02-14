@@ -1,6 +1,7 @@
 import type { OptionRecommendation } from '../types/options';
 import type { IndicatorData } from '../types/financial';
 import { publicClient, PublicOptionChain } from './public-api';
+import { schwabClient } from './schwab';
 export type { OptionRecommendation } from '../types/options';
 
 // In-memory cache for PCR and unusual volume
@@ -179,20 +180,31 @@ export async function generateOptionSignal(
                         realOption = opt;
                         actualAsk = opt.ask;
 
-                        // Prioritize Live Greeks from Public.com Brokerage Feed
-                        const greeks = await publicClient.getGreeks(opt.symbol);
-                        if (greeks) {
-                            realOption.greeks = greeks;
-                            probabilityITM = Math.abs(greeks.delta);
-                        } else {
-                            // High-fidelity fallback based on ATR/Price distance
-                            const distFromPrice = Math.abs(currentPrice - closestStrike) / currentPrice;
-                            probabilityITM = Math.max(0.1, 0.5 - (distFromPrice * 2));
-                            const ivProxy = calculateVolatilityProxy(currentPrice, atr, symbol);
-                            realOption.greeks = {
-                                delta: isCall ? probabilityITM : -probabilityITM,
-                                gamma: 0, theta: 0, vega: 0, rho: 0, impliedVolatility: ivProxy
-                            };
+                        // 1. Try Schwab for High-Fidelity Greeks (V3)
+                        if (schwabClient.isConfigured()) {
+                            const schwabGreeks = await schwabClient.getGreeks(opt.symbol);
+                            if (schwabGreeks) {
+                                realOption.greeks = schwabGreeks;
+                                probabilityITM = Math.abs(schwabGreeks.delta);
+                            }
+                        }
+
+                        // 2. Fallback to Public.com if no Schwab data
+                        if (!realOption.greeks) {
+                            const greeks = await publicClient.getGreeks(opt.symbol);
+                            if (greeks) {
+                                realOption.greeks = greeks;
+                                probabilityITM = Math.abs(greeks.delta);
+                            } else {
+                                // 3. Last resort high-fidelity fallback
+                                const distFromPrice = Math.abs(currentPrice - closestStrike) / currentPrice;
+                                probabilityITM = Math.max(0.1, 0.5 - (distFromPrice * 2));
+                                const ivProxy = calculateVolatilityProxy(currentPrice, atr, symbol);
+                                realOption.greeks = {
+                                    delta: isCall ? probabilityITM : -probabilityITM,
+                                    gamma: 0, theta: 0, vega: 0, rho: 0, impliedVolatility: ivProxy
+                                };
+                            }
                         }
                     }
                 }

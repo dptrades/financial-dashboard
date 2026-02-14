@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { OptionRecommendation } from '../lib/options';
 import { MousePointerClick, TrendingUp, TrendingDown, AlertCircle, Target, Shield, Crosshair, Zap, X, RefreshCw } from 'lucide-react';
+import DataSourceIndicator from './ui/DataSourceIndicator';
 
 interface OptionsSignalProps {
     data: OptionRecommendation | null;
@@ -57,6 +58,9 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                             Refresh to get the latest data
                         </span>
                     </div>
+                </div>
+                <div className="mt-4 pt-2 border-t border-gray-700/30 flex justify-end">
+                    <DataSourceIndicator source="Public.com / AI" />
                 </div>
             </div>
         );
@@ -312,6 +316,9 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                     )}
                 </div>
             )}
+            <div className="mt-4 pt-2 border-t border-gray-700/30 flex justify-end">
+                <DataSourceIndicator source="Public.com / AI" />
+            </div>
         </div>
     );
 }

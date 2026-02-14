@@ -1,6 +1,6 @@
-import React from 'react';
 import { Newspaper, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { NewsItem } from '../lib/news';
+import DataSourceIndicator from './ui/DataSourceIndicator';
 
 interface NewsFeedProps {
     news: NewsItem[];
@@ -15,6 +15,9 @@ export default function NewsFeed({ news, loading = false }: NewsFeedProps) {
                     <Newspaper className="w-5 h-5 text-purple-400" />
                 </div>
                 <h3 className="text-lg font-bold text-white">Live News & Analysis</h3>
+                <div className="ml-auto">
+                    <DataSourceIndicator source="StockNews AI" />
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

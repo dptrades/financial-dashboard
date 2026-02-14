@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
+import { env } from './lib/env'
 
-const SECRET_KEY = process.env.JWT_SECRET || "antigravity-trade-desk-secret-key-2026";
+const SECRET_KEY = env.JWT_SECRET || "";
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export async function middleware(request: NextRequest) {
