@@ -385,7 +385,6 @@ export class PublicClient {
 
             // 3. Parallelize Fetching using Promise.all
             await Promise.all(targetExps.map(async (exp) => {
-                // According to https://public.com/api/docs/resources/market-data/get-option-chain
                 const data = await this.request(`/option-chain`, 'POST', {
                     instrument: { symbol, type: 'EQUITY' },
                     expirationDate: exp

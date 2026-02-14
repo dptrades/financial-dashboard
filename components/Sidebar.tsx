@@ -9,7 +9,6 @@ import { IndicatorData } from '../types/financial';
 import { PriceStats } from '../lib/stats';
 import OptionsSignal from './OptionsSignal';
 import { generateOptionSignal, OptionRecommendation } from '../lib/options';
-import WhaleWatch from './WhaleWatch';
 
 
 interface SidebarProps {

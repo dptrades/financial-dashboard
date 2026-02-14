@@ -139,7 +139,8 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
                 };
             }
 
-            const indicators = calculateIndicators(data);
+            const vwapAnchor: any = (tf === '1w') ? 'yearly' : (tf === '1d') ? 'weekly' : 'daily';
+            const indicators = calculateIndicators(data, vwapAnchor);
             const last = indicators[indicators.length - 1];
 
             // Calculate % distance from EMAs

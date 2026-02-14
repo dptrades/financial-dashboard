@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { login, verifySignupToken, saveUser } from '@/lib/auth';
 
-const TRADER_ACCESS_KEY = process.env.TRADER_ACCESS_KEY || 'TRADER2026';
+const TRADER_ACCESS_KEY = 'TRADER2026';
 
 export async function POST(req: Request) {
     try {

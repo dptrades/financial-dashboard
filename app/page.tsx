@@ -485,11 +485,13 @@ export default function Dashboard() {
               </div>
 
               {/* TOP 3 OPTIONS DISCOVERY (Moved below Deep Dive) */}
-              <TopOptionsList
-                options={top3Options}
-                symbol={symbol || ''}
-                loading={loading || (top3Options.length === 0 && !error)}
-              />
+              <div className="space-y-6">
+                <TopOptionsList
+                  options={top3Options}
+                  symbol={symbol || ''}
+                  loading={loading || (top3Options.length === 0 && !error)}
+                />
+              </div>
 
               {/* ROW 5: Live News - BELOW AI Insight */}
               <div>

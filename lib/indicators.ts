@@ -1,7 +1,8 @@
 import { OHLCVData, IndicatorData } from '../types/financial';
-import { EMA, RSI, VWAP, MACD, BollingerBands, ADX } from 'technicalindicators';
+import { EMA, RSI, MACD, BollingerBands, ADX } from 'technicalindicators';
+import { calculateAnchoredVWAP, VWAPAnchor } from './vwap';
 
-export const calculateIndicators = (data: OHLCVData[]): IndicatorData[] => {
+export const calculateIndicators = (data: OHLCVData[], vwapAnchor: VWAPAnchor = 'none'): IndicatorData[] => {
     // Extract arrays for technicalindicators
     const closes = data.map(d => d.close);
     const highs = data.map(d => d.high);
@@ -19,14 +20,8 @@ export const calculateIndicators = (data: OHLCVData[]): IndicatorData[] => {
     // RSI (Filter)
     const rsi14 = RSI.calculate({ period: 14, values: closes });
 
-    // VWAP
-    const vwapInput = {
-        high: highs,
-        low: lows,
-        close: closes,
-        volume: volumes
-    };
-    const vwap = VWAP.calculate(vwapInput);
+    // VWAP - Using Anchored Version
+    const vwap = calculateAnchoredVWAP(data, vwapAnchor);
 
     // MACD (12, 26, 9)
     const macdInput = {
