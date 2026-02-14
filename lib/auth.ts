@@ -2,6 +2,8 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
+import fs from 'fs/promises';
+import path from 'path';
 
 const SECRET_KEY = process.env.JWT_SECRET || "antigravity-trade-desk-secret-key-2026";
 const key = new TextEncoder().encode(SECRET_KEY);
@@ -87,16 +89,45 @@ export async function saveUser(user: { name: string; email: string }) {
             lastLogin: timestamp
         };
 
-        // Store user in a hash map for efficient lookup
-        // Key: user:email@example.com
-        await kv.hset(`user:${user.email}`, userData);
+        // 1. Store in Vercel KV (Primary)
+        try {
+            await kv.hset(`user:${user.email}`, userData);
+            await kv.sadd('users', user.email);
+        } catch (kvError) {
+            console.error('KV Storage failed:', kvError);
+        }
 
-        // Also add to a set of all users for easy listing
-        await kv.sadd('users', user.email);
+        // 2. Store in Local File (Backup/Local Dev)
+        try {
+            const dataDir = path.join(process.cwd(), 'data');
+            const filePath = path.join(dataDir, 'users.json');
+
+            let users = [];
+            try {
+                const content = await fs.readFile(filePath, 'utf-8');
+                users = JSON.parse(content);
+            } catch (e) {
+                // If file doesnt exist, start with empty array
+                users = [];
+            }
+
+            // Update or add user
+            const index = users.findIndex((u: any) => u.email === user.email);
+            if (index >= 0) {
+                users[index] = { ...users[index], ...userData };
+            } else {
+                users.push(userData);
+            }
+
+            await fs.writeFile(filePath, JSON.stringify(users, null, 2));
+        } catch (fsError) {
+            // This will naturally fail on Vercel (read-only), which is fine
+            console.warn('Local file storage skipped or failed:', fsError instanceof Error ? fsError.message : 'Unknown error');
+        }
 
         return true;
     } catch (error) {
-        console.error('Failed to save user to KV:', error);
+        console.error('General failure in saveUser:', error);
         return false;
     }
 }
