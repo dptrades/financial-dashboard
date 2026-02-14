@@ -84,7 +84,9 @@ export const env = {
     PUBLIC_API_SECRET: getEnvOrDefault('PUBLIC_API_SECRET', null),
     get hasPublic() {
         return Boolean(this.PUBLIC_API_SECRET);
-    }
+    },
+    // Trader Access
+    TRADER_ACCESS_KEY: getEnvOrDefault('TRADER_ACCESS_KEY', 'TRADER2026'),
 } as const;
 
 /**

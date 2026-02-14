@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { login, verifySignupToken, saveUser } from '@/lib/auth';
-
-const TRADER_ACCESS_KEY = 'TRADER2026';
+import { env } from '@/lib/env';
 
 export async function POST(req: Request) {
     try {
@@ -24,7 +23,7 @@ export async function POST(req: Request) {
         }
 
         // 3. Verify the Access Key
-        if (code !== TRADER_ACCESS_KEY) {
+        if (code !== env.TRADER_ACCESS_KEY) {
             return NextResponse.json({ error: 'Invalid Trader Access Key' }, { status: 401 });
         }
 

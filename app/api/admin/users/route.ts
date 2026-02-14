@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession, getUsersFromCSV } from "@/lib/auth";
-
-const TRADER_ACCESS_KEY = process.env.TRADER_ACCESS_KEY || 'TRADER2026';
+import { env } from "@/lib/env";
 
 /**
  * Admin API to list all registered users.
@@ -14,7 +13,7 @@ export async function GET(req: Request) {
         const session = await getSession();
 
         // Security check
-        if (adminKey !== TRADER_ACCESS_KEY && !session) {
+        if (adminKey !== env.TRADER_ACCESS_KEY && !session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
