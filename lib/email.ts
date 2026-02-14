@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = process.env.AUTH_FROM_EMAIL || 'onboarding@resend.dev';
 
 /**
  * Sends a 6-digit verification code to the specified email address.
@@ -10,12 +11,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * @param name The recipient's name (optional)
  */
 export async function sendOTPEmail(email: string, code: string, name?: string) {
-    try {
-        const { data, error } = await resend.emails.send({
-            from: 'DP Trade Desk <onboarding@resend.dev>', // Note: This is Resend's default testing address
-            to: [email],
-            subject: 'Verify your identity - DP Trade Desk',
-            html: `
+  try {
+    const { data, error } = await resend.emails.send({
+      from: `DP Trade Desk <${FROM_EMAIL}>`,
+      to: [email],
+      subject: 'Verify your identity - DP Trade Desk',
+      html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #0f172a; border-radius: 16px; border: 1px solid #1e293b; color: #ffffff;">
           <h2 style="color: #3b82f6; text-align: center; font-size: 24px;">Verify Your Identity</h2>
           <p style="text-align: center; color: #94a3b8;">Hello ${name || 'Trader'},</p>
@@ -37,16 +38,16 @@ export async function sendOTPEmail(email: string, code: string, name?: string) {
           </p>
         </div>
       `,
-        });
+    });
 
-        if (error) {
-            console.error('Error sending email via Resend:', error);
-            return { success: false, error };
-        }
-
-        return { success: true, data };
-    } catch (err) {
-        console.error('Exception in sendOTPEmail:', err);
-        return { success: false, error: err };
+    if (error) {
+      console.error('Error sending email via Resend:', error);
+      return { success: false, error };
     }
+
+    return { success: true, data };
+  } catch (err) {
+    console.error('Exception in sendOTPEmail:', err);
+    return { success: false, error: err };
+  }
 }
