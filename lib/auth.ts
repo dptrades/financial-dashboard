@@ -111,7 +111,7 @@ export async function getUsersFromCSV() {
  * Background task to sync the local CSV to GitHub.
  * This ensures data persistence on Vercel.
  */
-export async function syncToGitHub(csvContent: string) {
+async function syncToGitHub(csvContent: string) {
     try {
         const token = process.env.GITHUB_TOKEN;
         const owner = process.env.GITHUB_REPO_OWNER || process.env.VERCEL_GIT_REPO_OWNER;
