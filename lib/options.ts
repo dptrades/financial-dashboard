@@ -68,47 +68,60 @@ export async function generateOptionSignal(
 
     let bullScore = 0;
     let bearScore = 0;
-    const signals: string[] = [];
+    const bullSignals: string[] = [];
+    const bearSignals: string[] = [];
 
     const ema9 = indicators?.ema9;
     const ema21 = indicators?.ema21;
     const ema200 = indicators?.ema200;
 
     if (ema50) {
-        if (currentPrice > ema50) { bullScore += 5; } else { bearScore += 5; }
+        if (currentPrice > ema50) {
+            bullScore += 5;
+            bullSignals.push('Price > EMA50');
+        } else {
+            bearScore += 5;
+            bearSignals.push('Price < EMA50');
+        }
     }
     if (ema200) {
-        if (currentPrice > ema200) { bullScore += 5; } else { bearScore += 5; }
+        if (currentPrice > ema200) {
+            bullScore += 5;
+            bullSignals.push('Price > EMA200');
+        } else {
+            bearScore += 5;
+            bearSignals.push('Price < EMA200');
+        }
     }
 
     if (ema9 && ema21 && ema50) {
         if (ema9 > ema21 && ema21 > ema50) {
-            bullScore += 10; signals.push('EMA Stack Bullish');
+            bullScore += 10; bullSignals.push('EMA Stack Bullish');
         } else if (ema9 < ema21 && ema21 < ema50) {
-            bearScore += 10; signals.push('EMA Stack Bearish');
+            bearScore += 10; bearSignals.push('EMA Stack Bearish');
         }
     }
 
     if (rsi >= 40 && rsi <= 60) {
-        if (trend === 'bullish') bullScore += 5;
-        else if (trend === 'bearish') bearScore += 5;
+        if (trend === 'bullish') { bullScore += 5; bullSignals.push('RSI Trend Neutral-Bullish'); }
+        else if (trend === 'bearish') { bearScore += 5; bearSignals.push('RSI Trend Neutral-Bearish'); }
     } else if (rsi > 60 && rsi <= 70) {
-        bullScore += 10; signals.push('RSI Strong Momentum');
+        bullScore += 10; bullSignals.push('RSI Strong Momentum');
     } else if (rsi >= 30 && rsi < 40) {
-        bearScore += 10; signals.push('RSI Weak Momentum');
+        bearScore += 10; bearSignals.push('RSI Weak Momentum');
     } else if (rsi > 70) {
-        bearScore += 10; signals.push('RSI Overbought ⚠️');
+        bearScore += 10; bearSignals.push('RSI Overbought ⚠️');
     } else if (rsi < 30) {
-        bullScore += 10; signals.push('RSI Oversold ⚠️');
+        bullScore += 10; bullSignals.push('RSI Oversold ⚠️');
     }
 
     const macd = indicators?.macd;
     if (macd) {
         if (macd.MACD !== undefined && macd.signal !== undefined) {
             if (macd.MACD > macd.signal) {
-                bullScore += 10; signals.push('MACD Bullish Cross');
+                bullScore += 10; bullSignals.push('MACD Bullish Cross');
             } else {
-                bearScore += 10; signals.push('MACD Bearish Cross');
+                bearScore += 10; bearSignals.push('MACD Bearish Cross');
             }
         }
     }
@@ -116,9 +129,9 @@ export async function generateOptionSignal(
     const bb = indicators?.bollinger;
     if (bb && bb.pb !== undefined) {
         if (bb.pb < 0.2) {
-            bullScore += 10; signals.push('Price at Lower BB (Bounce)');
+            bullScore += 10; bullSignals.push('Price at Lower BB (Bounce)');
         } else if (bb.pb > 0.8) {
-            bearScore += 10; signals.push('Price at Upper BB (Rejection)');
+            bearScore += 10; bearSignals.push('Price at Upper BB (Rejection)');
         }
     }
 
@@ -127,20 +140,22 @@ export async function generateOptionSignal(
     } else if (bearScore > bullScore && bearScore >= 20) {
         var direction: 'CALL' | 'PUT' | 'WAIT' = 'PUT';
     } else {
+        const fallbackSignals = bullScore >= bearScore ? bullSignals : bearSignals;
         return {
             type: 'WAIT',
             strike: 0,
             expiry: '',
             confidence: 50,
-            reason: `Neutral trend.${signals.slice(0, 2).join(', ')} `,
+            reason: `Neutral trend.${fallbackSignals.slice(0, 2).join(', ')} `,
             technicalConfirmations: 0,
             fundamentalConfirmations: fundamentalConfirmations || 1,
             socialConfirmations: socialConfirmations || 1
         };
     }
 
-    const techConfirmations = signals.length;
     const isCall = direction === 'CALL';
+    const signals = isCall ? bullSignals : bearSignals;
+    const techConfirmations = signals.length;
     const strikeOffset = atr * 0.5;
     const strike = roundToStrike(isCall ? currentPrice + strikeOffset : currentPrice - strikeOffset);
 

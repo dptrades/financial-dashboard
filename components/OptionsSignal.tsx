@@ -223,11 +223,11 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <button
                         onClick={() => setActiveDetail('tech')}
-                        className="text-center bg-gray-800/30 rounded-md p-1.5 border border-gray-700/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all"
+                        className={`text-center bg-gray-800/30 rounded-md p-1.5 border border-gray-700/20 hover:bg-gray-700/30 transition-all ${isCall ? 'hover:border-emerald-500/50' : 'hover:border-red-500/50'}`}
                     >
                         <div className="text-[9px] font-bold text-gray-400 uppercase mb-1">Technical</div>
-                        <div className={`text-[10px] font-bold leading-tight ${data.technicalConfirmations && data.technicalConfirmations >= 4 ? 'text-emerald-400' : 'text-gray-200'}`}>
-                            {(data.technicalConfirmations || 0) >= 5 ? 'Overlapping' : (data.technicalConfirmations || 0) >= 3 ? 'Bullish' : 'Neutral'}
+                        <div className={`text-[10px] font-bold leading-tight ${data.technicalConfirmations && data.technicalConfirmations >= 3 ? (isCall ? 'text-emerald-400' : 'text-red-400') : 'text-gray-200'}`}>
+                            {(data.technicalConfirmations || 0) >= 4 ? (isCall ? 'Overlapping' : 'Breakdown') : (data.technicalConfirmations || 0) >= 3 ? (isCall ? 'Bullish' : 'Bearish') : 'Neutral'}
                         </div>
                     </button>
                     <button
