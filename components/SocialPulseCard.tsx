@@ -43,7 +43,7 @@ export default function SocialPulseCard({ stock, onSelect }: SocialPulseCardProp
                 <div className="text-right">
                     <div className="text-lg font-mono font-bold text-white">${stock.price.toFixed(2)}</div>
                     <div className={`text-xs font-bold ${stock.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {stock.change >= 0 ? '+' : ''}{stock.change}%
+                        {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}%
                     </div>
                 </div>
             </div>

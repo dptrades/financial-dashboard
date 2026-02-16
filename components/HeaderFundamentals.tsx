@@ -8,6 +8,7 @@ interface FundamentalData {
         epsGrowth: number;
         roe: number;
         peg: number;
+        pe: number;
         de: number;
         fcf: number;
     };
@@ -15,6 +16,7 @@ interface FundamentalData {
         epsGrowth: boolean;
         roe: boolean;
         peg: boolean;
+        pe: boolean;
         de: boolean;
         fcf: boolean;
     };
@@ -77,12 +79,12 @@ export default function HeaderFundamentals({ symbol }: HeaderFundamentalsProps) 
     };
 
     const getScoreColor = (score: number) => {
-        if (score >= 4) return 'text-green-400';
-        if (score >= 2) return 'text-yellow-400';
+        if (score >= 5) return 'text-green-400';
+        if (score >= 3) return 'text-yellow-400';
         return 'text-red-400';
     };
 
-    const scoreTitle = data.qualityScore >= 4 ? "Elite" : data.qualityScore >= 3 ? "Strong" : "Weak";
+    const scoreTitle = data.qualityScore >= 5 ? "Elite" : data.qualityScore >= 3 ? "Strong" : "Weak";
 
     return (
         <div className="flex items-center gap-4 px-4 py-2 rounded-xl bg-gray-900/80 border border-gray-800 shadow-xl relative group">
@@ -98,7 +100,7 @@ export default function HeaderFundamentals({ symbol }: HeaderFundamentalsProps) 
             <div className="flex items-center gap-3">
                 <div className="relative">
                     <Zap className={`w-4 h-4 ${getScoreColor(data.qualityScore)}`} />
-                    {data.qualityScore >= 4 && (
+                    {data.qualityScore >= 5 && (
                         <Zap className="w-4 h-4 absolute inset-0 text-green-400 animate-ping opacity-20" />
                     )}
                 </div>
@@ -109,7 +111,7 @@ export default function HeaderFundamentals({ symbol }: HeaderFundamentalsProps) 
                             {scoreTitle}
                         </span>
                         <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map((s) => (
+                            {[1, 2, 3, 4, 5, 6].map((s) => (
                                 <div
                                     key={s}
                                     className={`w-1.5 h-1.5 rounded-full ${s <= data.qualityScore ? getScoreColor(data.qualityScore).replace('text', 'bg') : 'bg-gray-700'}`}
@@ -142,6 +144,7 @@ export default function HeaderFundamentals({ symbol }: HeaderFundamentalsProps) 
                     <div className="space-y-2.5">
                         <MetricRow label="EPS Growth" value={`${data.metrics.epsGrowth?.toFixed(1)}%`} target="> 10%" pass={data.checks.epsGrowth} />
                         <MetricRow label="ROE (Manag. Eff.)" value={`${data.metrics.roe?.toFixed(1)}%`} target="> 15%" pass={data.checks.roe} />
+                        <MetricRow label="PE Ratio (Value)" value={data.metrics.pe?.toFixed(2) || 'N/A'} target="< 25" pass={data.checks.pe} />
                         <MetricRow label="PEG Ratio (Value)" value={data.metrics.peg?.toFixed(2) || 'N/A'} target="< 1.2" pass={data.checks.peg} />
                         <MetricRow label="D/E Ratio (Risk)" value={data.metrics.de?.toFixed(2) || 'N/A'} target="< 1.0" pass={data.checks.de} />
                         <MetricRow label="Free Cash Flow" value={data.metrics.fcf ? '$' + (data.metrics.fcf / 1000).toFixed(1) + 'B' : 'N/A'} target="> 0" pass={data.checks.fcf} />
@@ -150,7 +153,7 @@ export default function HeaderFundamentals({ symbol }: HeaderFundamentalsProps) 
                     <div className="mt-4 pt-3 border-t border-gray-800">
                         <div className="flex items-center justify-between">
                             <span className="text-[9px] text-gray-400 font-bold uppercase">Vitality Score</span>
-                            <span className={`text-sm font-black ${getScoreColor(data.qualityScore)}`}>{data.qualityScore}/5</span>
+                            <span className={`text-sm font-black ${getScoreColor(data.qualityScore)}`}>{data.qualityScore}/6</span>
                         </div>
                     </div>
                 </div>

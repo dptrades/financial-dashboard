@@ -95,6 +95,12 @@ export const env = {
     },
     // Trader Access
     TRADER_ACCESS_KEY: getEnvOrDefault('TRADER_ACCESS_KEY', null),
+
+    // Finnhub API (Market Intelligence)
+    FINNHUB_API_KEY: getEnvOrDefault('FINNHUB_API_KEY', null),
+    get hasFinnhub() {
+        return Boolean(this.FINNHUB_API_KEY);
+    },
 } as const;
 
 /**
@@ -108,7 +114,8 @@ export function validateEnv(): { valid: boolean; missing: string[] } {
         'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
         'CLERK_SECRET_KEY',
         'JWT_SECRET',
-        'TRADER_ACCESS_KEY'
+        'TRADER_ACCESS_KEY',
+        'FINNHUB_API_KEY'
     ];
 
     const missing: string[] = [];
@@ -137,5 +144,6 @@ export function logEnvStatus(): void {
     console.log(`  - Clerk: ${env.hasClerk ? '✓' : '✗'}`);
     console.log(`  - Email Alerts: ${env.hasEmail ? '✓' : '✗'}`);
     console.log(`  - SMS Alerts: ${env.hasSMS ? '✓' : '✗'}`);
+    console.log(`  - Finnhub: ${env.hasFinnhub ? '✓' : '✗'}`);
     console.log(`  - Base URL: ${env.baseUrl}`);
 }

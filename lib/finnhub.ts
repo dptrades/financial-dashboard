@@ -1,6 +1,7 @@
+import { env } from './env';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
-const API_KEY = process.env.FINNHUB_API_KEY;
+const API_KEY = env.FINNHUB_API_KEY;
 
 export interface FinnhubNews {
     category: string;
@@ -58,6 +59,7 @@ export interface FinnhubBasicFinancials {
         pfcfShareTTM?: number;
         enterpriseValue?: number;
         'currentEv/freeCashFlowTTM'?: number;
+        peTTM?: number;
     };
     series: {
         annual: any;

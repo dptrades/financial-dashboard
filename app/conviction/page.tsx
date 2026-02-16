@@ -11,7 +11,6 @@ import { Loading } from '../../components/ui/Loading';
 import { ErrorMessage } from '../../components/ui/ErrorMessage';
 import SectorDetailModal from '../../components/SectorDetailModal';
 import { REFRESH_INTERVALS, getMarketSession, getNextMarketOpen, isMarketActive } from '../../lib/refresh-utils';
-import HeaderFundamentals from '../../components/HeaderFundamentals';
 import HeaderSignals from '../../components/HeaderSignals';
 import { OHLCVData } from '@/types/financial';
 
@@ -203,9 +202,6 @@ export default function ConvictionPage() {
                             <p className="text-sm text-gray-100 mt-2 max-w-2xl">
                                 Scans for high-probability setups with Smart Discovery.
                             </p>
-                            <div className="mt-4 flex flex-row items-center gap-2">
-                                <HeaderFundamentals symbol={symbol} />
-                            </div>
                         </div>
 
                         <div className="flex flex-col items-end gap-2">

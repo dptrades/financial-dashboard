@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Flame, MessageSquare, RefreshCw, Info, ChevronRight } from 'lucide-react';
+import { Flame, MessageSquare, RefreshCw, Info, ChevronRight, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import SocialPulseCard from '@/components/SocialPulseCard';
@@ -9,8 +9,6 @@ import DataSourceIndicator from '@/components/ui/DataSourceIndicator';
 import { Loading } from '@/components/ui/Loading';
 import SectorDetailModal from '@/components/SectorDetailModal';
 import { REFRESH_INTERVALS, isMarketActive, getNextMarketOpen } from '@/lib/refresh-utils';
-import { Activity } from 'lucide-react';
-import HeaderFundamentals from '@/components/HeaderFundamentals';
 
 export default function SocialPulsePage() {
     const router = useRouter();
@@ -138,9 +136,6 @@ export default function SocialPulsePage() {
                                     Tracking the top 25 stocks driving the strongest retail momentum across WallStreetBets, Twitter/X, and StockTwits.
                                     Detecting surges in mention velocity and sentiment shifts before they hit the tape.
                                 </p>
-                                <div className="mt-4">
-                                    <HeaderFundamentals symbol={symbol} />
-                                </div>
                             </div>
 
                             <div className="flex flex-col items-end gap-2">

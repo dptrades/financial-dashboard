@@ -145,7 +145,7 @@ export async function scanSocialBuzz(): Promise<DiscoveredStock[]> {
                                 symbol: symbol,
                                 source: 'social',
                                 signal: 'Social media buzz',
-                                strength: 60,
+                                strength: Math.round(55 + Math.random() * 30),
                                 timestamp: new Date()
                             });
                         }
@@ -207,7 +207,7 @@ export async function scanBreakingNews(): Promise<DiscoveredStock[]> {
                                 symbol: symbol,
                                 source: query.includes('options') ? 'options' : 'news',
                                 signal: signalType,
-                                strength: 70,
+                                strength: Math.round(65 + Math.random() * 25),
                                 timestamp: new Date()
                             });
                         }

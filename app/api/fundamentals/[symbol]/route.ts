@@ -23,6 +23,7 @@ export async function GET(
         // Calculate Quality Score (0-5)
         const peg = metrics.pegTTM || metrics.pegRatio;
         const de = metrics['totalDebt/totalEquityTTM'] || metrics['totalDebt/totalEquityQuarterly'] || metrics['totalDebt/totalEquityAnnual'] || metrics.debtToEquity;
+        const pe = metrics.peTTM;
 
         // Derive Free Cash Flow if direct field is missing
         let fcf = metrics.freeCashFlowTTM || metrics.freeCashFlowAnnual;
@@ -43,7 +44,8 @@ export async function GET(
             roe: (metrics.roeTTM || 0) > 15,
             peg: (peg !== undefined && peg < 1.2),
             de: (de !== undefined && de < 1.0),
-            fcf: (fcf !== undefined ? fcf > 0 : (pfcf !== undefined ? pfcf > 0 : false))
+            fcf: (fcf !== undefined ? fcf > 0 : (pfcf !== undefined ? pfcf > 0 : false)),
+            pe: (pe !== undefined && pe > 0 && pe < 25)
         };
 
         if (checks.epsGrowth) qualityScore++;
@@ -51,6 +53,7 @@ export async function GET(
         if (checks.peg) qualityScore++;
         if (checks.de) qualityScore++;
         if (checks.fcf) qualityScore++;
+        if (checks.pe) qualityScore++;
 
         return NextResponse.json({
             symbol: symbol.toUpperCase(),
@@ -60,6 +63,7 @@ export async function GET(
                 epsGrowth: metrics.epsGrowthTTMYoy,
                 roe: metrics.roeTTM,
                 peg: peg,
+                pe: pe,
                 de: de,
                 fcf: fcf
             },
