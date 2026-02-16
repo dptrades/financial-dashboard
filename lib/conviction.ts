@@ -18,7 +18,8 @@ export type { ConvictionStock } from '../types/stock';
 const ENABLE_SMART_DISCOVERY = true;
 
 // High Mega Cap & Large Cap Stocks - Top ~250 by Market Cap (S&P 500 & Nasdaq 100 Leaders)
-const CONVICTION_WATCHLIST = [
+// High Mega Cap & Large Cap Stocks - Top ~250 by Market Cap (S&P 500 & Nasdaq 100 Leaders)
+const CONVICTION_WATCHLIST = Array.from(new Set([
     // --- MAGNIFICENT 7 & MEGA TECH ---
     'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AVGO',
 
@@ -47,7 +48,7 @@ const CONVICTION_WATCHLIST = [
 
     // --- CONSUMER STAPLES ---
     'PG', 'KO', 'PEP', 'PM', 'MO', 'EL', 'CL', 'KMB', 'GIS', 'K', 'HSY', 'MDLZ', 'MNST', 'STZ', 'BF-B', 'ADM', 'SYY',
-    'KR', 'ACI', 'DG', 'DLTR', 'COST', 'BJ', 'WBA',
+    'KR', 'ACI', 'BJ', 'WBA',
 
     // --- COMMUNICATION & MEDIA ---
     'NFLX', 'DIS', 'CMCSA', 'TMUS', 'VZ', 'T', 'CHTR', 'WBD', 'PARA', 'LYV', 'SIRI', 'FOXA', 'OMC', 'IPG', 'TTWO', 'EA',
@@ -66,7 +67,7 @@ const CONVICTION_WATCHLIST = [
 
     // --- INDICES (Context) ---
     'SPY', 'QQQ', 'DIA', 'IWM'
-];
+]));
 
 
 // Alpha Hunter Watchlist - Broader Market Coverage (including growth, momentum, and speculative plays)
