@@ -131,7 +131,11 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     let symbolsToScan: string[] = [...CONVICTION_WATCHLIST];
     let discoveryMap = new Map<string, DiscoveredStock>();
 
-    if (ENABLE_SMART_DISCOVERY) {
+    // TOP PICKS: Strictly S&P 500 & Nasdaq top companies
+    // We disable smart discovery here to maintain institutional-grade focus
+    const enableDiscoveryForThisScan = false;
+
+    if (enableDiscoveryForThisScan && ENABLE_SMART_DISCOVERY) {
         console.log("🔍 Running Smart Discovery scan...");
         try {
             const discoveries = await runSmartScan();

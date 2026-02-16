@@ -36,10 +36,16 @@ export default function TopPicksPage() {
 
     useEffect(() => {
         const runScan = async () => {
-            setLoading(true);
+            // Check if we already have data (possibly from a quick navigation back)
+            // If we don't, or it's been a while, we show the loader
+            if (picks.length === 0) {
+                setLoading(true);
+            }
+
             try {
-                // Force refresh on load to ensure valid option expiry calculation
-                const res = await fetch('/api/conviction?refresh=true');
+                // Remove ?refresh=true to respect the 15-minute server-side cache
+                // This prevents redundant scanning on every click
+                const res = await fetch('/api/conviction');
                 if (res.ok) {
                     const results: ConvictionStock[] = await res.json();
                     setPicks(results);
