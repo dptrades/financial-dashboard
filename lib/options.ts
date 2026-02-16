@@ -538,25 +538,43 @@ export async function findTopOptions(
             const strikes = chain.options[exp];
             for (const strikeStr in strikes) {
                 const strike = parseFloat(strikeStr);
+                const distance = Math.abs(strike - currentPrice) / currentPrice;
+
+                // 1. Strict Strike Filter: Only ATM/NTM (within 15%)
+                // Deep OTM lotto plays are often noise despite high volume
+                if (distance > 0.15) continue;
+
                 const data = strikes[strike];
                 const types: Array<'CALL' | 'PUT'> = ['CALL', 'PUT'];
                 for (const type of types) {
                     const opt = type === 'CALL' ? data.call : data.put;
                     if (!opt) continue;
 
-                    // If market is open, we need volume. If closed, we can rely on Open Interest.
-                    const volumeThreshold = isMarketOpen ? 2 : 0;
+                    // 2. High-Liquidity Floor
+                    const volumeThreshold = isMarketOpen ? 5 : 0;
                     const oiThreshold = isMarketOpen ? 0 : 50;
-
                     if ((opt.volume || 0) < volumeThreshold && (opt.openInterest || 0) < oiThreshold) continue;
+
+                    // 3. Directional Alignment
                     if (trend === 'bullish' && type === 'PUT') continue;
                     if (trend === 'bearish' && type === 'CALL') continue;
 
-                    const deltaProxy = 0.5 - (Math.abs(currentPrice - strike) / currentPrice);
-                    const score = (opt.volume * 5) + (opt.openInterest * 2) + (deltaProxy * 100);
-
-                    // Calculate contract price (Midpoint of Bid/Ask, or Last)
+                    // 4. Speculative Filter
                     const contractPrice = (opt.bid && opt.ask) ? (opt.bid + opt.ask) / 2 : (opt.last || opt.bid || opt.ask || 0);
+                    if (contractPrice < 0.05) continue;
+
+                    /**
+                     * 5. Refined Scoring Logic
+                     * - deltaProxy: Measures moneyness (0.5 max for ATM)
+                     * - volume/oi: Capped to prevent single block trades from dominating
+                     * - moneyness: High weight to keep suggestions realistic
+                     */
+                    const deltaProxy = 0.5 - distance;
+                    const volumeScore = Math.min(opt.volume || 0, 500) * 2;
+                    const oiScore = Math.min(opt.openInterest || 0, 1000) * 0.5;
+                    const moneynessScore = deltaProxy * 200; // Up to 100 pts
+
+                    const score = volumeScore + oiScore + moneynessScore;
 
                     candidates.push({
                         recommendation: {
@@ -564,7 +582,7 @@ export async function findTopOptions(
                             strike,
                             expiry: exp,
                             confidence: 70,
-                            reason: `Flow detected at $${strike}.`,
+                            reason: `Institutional flow at $${strike}.`,
                             entryPrice: currentPrice,
                             entryCondition: "Market",
                             stopLoss: type === 'CALL' ? currentPrice * 0.98 : currentPrice * 1.02,
