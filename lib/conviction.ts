@@ -17,51 +17,53 @@ export type { ConvictionStock } from '../types/stock';
 // Enable dynamic discovery - expand search beyond mega caps
 const ENABLE_SMART_DISCOVERY = true;
 
-// High Mega Cap & Large Cap Stocks - Top ~250 by Market Cap (S&P 500 & Nasdaq 100 Leaders)
-// High Mega Cap & Large Cap Stocks - Top ~250 by Market Cap (S&P 500 & Nasdaq 100 Leaders)
+// High Mega Cap & Large Cap Stocks - Explicitly includes Top 50 + Sector Leaders
 const CONVICTION_WATCHLIST = Array.from(new Set([
-    // --- MAGNIFICENT 7 & MEGA TECH ---
-    'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AVGO',
+    // --- TOP 50 MEGACAPS (Global Leaders) ---
+    'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AVGO', 'LLY', 'UNH',
+    'V', 'JPM', 'MA', 'XOM', 'JNJ', 'PG', 'HD', 'ADBE', 'CRM', 'COST',
+    'PEP', 'CVX', 'MRK', 'NFLX', 'ABBV', 'AMD', 'KO', 'BAC', 'MCD', 'WMT',
+    'TMO', 'CSCO', 'NKE', 'PFE', 'DIS', 'ASML', 'ABT', 'LIN', 'DHR', 'ACN',
+    'INTU', 'VRTX', 'T', 'BX', 'QCOM', 'MS', 'GE', 'HON', 'UNP', 'CAT', 'PM',
 
-    // --- TOP SEMICONDUCTORS & HARDWARE ---
-    'AMD', 'QCOM', 'INTC', 'TXN', 'AMAT', 'MU', 'LRCX', 'ADI', 'KLAC', 'MCHP', 'MRVL', 'STM', 'NXPI', 'ON', 'MPWR',
-    'CSCO', 'IBM', 'APH', 'TEL', 'HPQ', 'DELL', 'ANET', 'GLW', 'STX', 'WDC', 'HPE', 'NTAP', 'PSTG', 'SMCI',
+    // --- ADDITIONAL SEMICONDUCTORS & HARDWARE ---
+    'TXN', 'AMAT', 'MU', 'LRCX', 'ADI', 'KLAC', 'MCHP', 'MRVL', 'STM', 'NXPI', 'ON', 'MPWR',
+    'IBM', 'APH', 'TEL', 'HPQ', 'DELL', 'ANET', 'GLW', 'STX', 'WDC', 'HPE', 'NTAP', 'PSTG', 'SMCI',
 
-    // --- SOFTWARE & CLOUD ---
-    'ORCL', 'CRM', 'ADBE', 'INTU', 'NOW', 'UBER', 'ABNB', 'PANW', 'SNOW', 'PLTR', 'CRWD', 'WDAY', 'ADSK', 'SNPS', 'CDNS',
+    // --- ADDITIONAL SOFTWARE & CLOUD ---
+    'ORCL', 'UBER', 'ABNB', 'PANW', 'SNOW', 'PLTR', 'CRWD', 'WDAY', 'ADSK', 'SNPS', 'CDNS',
     'FTNT', 'ZS', 'DDOG', 'NET', 'TEAM', 'HUBS', 'MDB', 'SQ', 'SHOP', 'TTD', 'RBLX', 'ZM', 'DOCU', 'OKTA', 'TWLO',
 
-    // --- FINANCE & PAYMENTS ---
-    'JPM', 'V', 'MA', 'BAC', 'WFC', 'C', 'MS', 'GS', 'BLK', 'AXP', 'SPGI', 'MCO', 'PGR', 'CB', 'MMC', 'AON', 'ICE', 'CME',
-    'SCHW', 'BX', 'KKR', 'APO', 'USB', 'PNC', 'TFC', 'BK', 'STT', 'COF', 'DFS', 'HIG', 'ALL', 'TRV', 'AIG', 'MET', 'PRU',
+    // --- ADDITIONAL FINANCE & PAYMENTS ---
+    'WFC', 'C', 'GS', 'BLK', 'AXP', 'SPGI', 'MCO', 'PGR', 'CB', 'MMC', 'AON', 'ICE', 'CME',
+    'SCHW', 'KKR', 'APO', 'USB', 'PNC', 'TFC', 'BK', 'STT', 'COF', 'DFS', 'HIG', 'ALL', 'TRV', 'AIG', 'MET', 'PRU',
     'PYPL', 'HOOD', 'SOFI', 'COIN', 'AFRM', 'UPST',
 
-    // --- HEALTHCARE & PHARMA ---
-    'LLY', 'UNH', 'JNJ', 'MRK', 'ABBV', 'TMO', 'PFE', 'AMGN', 'ISRG', 'SYK', 'ELV', 'CVS', 'CI', 'GILD', 'REGN', 'VRTX',
-    'BMY', 'ZTS', 'BSX', 'BDX', 'HUM', 'MCK', 'COR', 'HCA', 'DXCM', 'EW', 'ALGN', 'RMD', 'STE', 'BAX', 'ILMN', 'BIIB',
-    'MRNA', 'BNTX', 'PFE', 'NVS', 'AZN', 'SNY',
+    // --- ADDITIONAL HEALTHCARE & PHARMA ---
+    'ISRG', 'SYK', 'ELV', 'CVS', 'CI', 'GILD', 'REGN', 'BMY', 'ZTS', 'BSX', 'BDX', 'HUM', 'MCK', 'COR', 'HCA', 'DXCM',
+    'EW', 'ALGN', 'RMD', 'STE', 'BAX', 'ILMN', 'BIIB', 'MRNA', 'BNTX', 'NVS', 'AZN', 'SNY',
 
-    // --- CONSUMER DISCRETIONARY & RETAIL ---
-    'WMT', 'COST', 'HD', 'MCD', 'NKE', 'SBUX', 'TGT', 'LOW', 'TJX', 'BKNG', 'MAR', 'HLT', 'CMG', 'YUM', 'DRI', 'DPZ',
+    // --- ADDITIONAL CONSUMER DISCRETIONARY & RETAIL ---
+    'TGT', 'LOW', 'TJX', 'BKNG', 'MAR', 'HLT', 'CMG', 'YUM', 'DRI', 'DPZ',
     'LULU', 'ORLY', 'AZO', 'ROST', 'FAST', 'TSCO', 'ULTA', 'BBY', 'DG', 'DLTR', 'KSS', 'M', 'JWN', 'GPS', 'AEO', 'ANF',
     'CROX', 'DECK', 'ONON', 'SKX', 'WSM', 'RH', 'W', 'ETSY', 'EBAY', 'CHWY',
 
-    // --- CONSUMER STAPLES ---
-    'PG', 'KO', 'PEP', 'PM', 'MO', 'EL', 'CL', 'KMB', 'GIS', 'K', 'HSY', 'MDLZ', 'MNST', 'STZ', 'BF-B', 'ADM', 'SYY',
+    // --- ADDITIONAL CONSUMER STAPLES ---
+    'EL', 'CL', 'KMB', 'GIS', 'K', 'HSY', 'MDLZ', 'MNST', 'STZ', 'BF-B', 'ADM', 'SYY',
     'KR', 'ACI', 'BJ', 'WBA',
 
-    // --- COMMUNICATION & MEDIA ---
-    'NFLX', 'DIS', 'CMCSA', 'TMUS', 'VZ', 'T', 'CHTR', 'WBD', 'PARA', 'LYV', 'SIRI', 'FOXA', 'OMC', 'IPG', 'TTWO', 'EA',
+    // --- ADDITIONAL COMMUNICATION & MEDIA ---
+    'CMCSA', 'TMUS', 'VZ', 'CHTR', 'WBD', 'PARA', 'LYV', 'SIRI', 'FOXA', 'OMC', 'IPG', 'TTWO', 'EA',
 
-    // --- ENERGY & UTILITIES ---
-    'XOM', 'CVX', 'COP', 'SLB', 'EOG', 'PXD', 'MPC', 'PSX', 'VLO', 'OXY', 'HES', 'DVN', 'FANG', 'HAL', 'BKR', 'KMI', 'WMB',
+    // --- ADDITIONAL ENERGY & UTILITIES ---
+    'COP', 'SLB', 'EOG', 'PXD', 'MPC', 'PSX', 'VLO', 'OXY', 'HES', 'DVN', 'FANG', 'HAL', 'BKR', 'KMI', 'WMB',
     'NEE', 'DUK', 'SO', 'D', 'AEP', 'SRE', 'EXC', 'XEL', 'ED', 'PEG', 'WEC', 'ES', 'ETR', 'FE', 'PPL',
 
-    // --- INDUSTRIAL & AEROSPACE ---
-    'CAT', 'DE', 'GE', 'HON', 'UNP', 'UPS', 'FDX', 'LMT', 'RTX', 'BA', 'GD', 'NOC', 'LHX', 'TXT', 'HWM', 'TDG', 'GE',
+    // --- ADDITIONAL INDUSTRIAL & AEROSPACE ---
+    'DE', 'LMT', 'RTX', 'BA', 'GD', 'NOC', 'LHX', 'TXT', 'HWM', 'TDG',
     'MMM', 'ETN', 'ITW', 'PH', 'EMR', 'CMI', 'PCAR', 'ROK', 'AME', 'DOV', 'SWK', 'GWW', 'FAST', 'URI', 'XYL',
 
-    // --- MATERIALS & REAL ESTATE ---
+    // --- ADDITIONAL MATERIALS & REAL ESTATE ---
     'LIN', 'SHW', 'APD', 'ECL', 'FCX', 'NEM', 'SCCO', 'NUE', 'STLD', 'CLF', 'X', 'AA', 'MOS', 'CF', 'CTVA', 'FMC', 'ALB',
     'PLD', 'AMT', 'CCI', 'EQIX', 'DLR', 'PSA', 'O', 'SPG', 'VICI', 'WELL', 'AVB', 'EQR', 'INVH', 'MAA', 'ESS', 'CPT',
 
