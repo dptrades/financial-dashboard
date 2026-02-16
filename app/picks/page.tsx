@@ -205,15 +205,20 @@ export default function TopPicksPage() {
                                             <div className="p-5">
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div>
-                                                        <h3 className="text-2xl font-bold text-white tracking-tight group-hover:text-blue-400 transition-colors">{pick.symbol}</h3>
-                                                        <p className="text-xs text-gray-100 mb-1 truncate max-w-[140px]">{pick.name}</p>
-                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${pick.metrics.trend === 'BULLISH' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h3 className="text-2xl font-bold text-white tracking-tight group-hover:text-blue-400 transition-colors">{pick.symbol}</h3>
+                                                            <span className="text-[10px] text-gray-100 bg-gray-700/50 px-2 py-0.5 rounded border border-gray-600 uppercase tracking-widest leading-normal">
+                                                                {pick.sector || 'Stock'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-100 mb-2 truncate max-w-[170px]">{pick.name}</p>
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${pick.metrics.trend === 'BULLISH' ? 'bg-green-900/40 text-green-400' : 'bg-red-900/40 text-red-400'}`}>
                                                             {pick.metrics.trend}
                                                         </span>
                                                     </div>
-                                                    <div className="text-right">
+                                                    <div className="text-right bg-gray-900/50 p-2 rounded-lg border border-gray-700/50 min-w-16">
                                                         <div className="text-2xl font-mono font-bold text-blue-400">{pick.score}</div>
-                                                        <div className="text-[10px] text-gray-200 uppercase tracking-wider">Win Prob</div>
+                                                        <div className="text-[10px] text-gray-200 uppercase font-bold tracking-wider">Win Prob</div>
                                                     </div>
                                                 </div>
 
