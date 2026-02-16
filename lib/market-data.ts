@@ -403,7 +403,12 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
     const order = { '10m': 1, '1h': 2, '4h': 3, '1d': 4, '1w': 5 };
     results.sort((a, b) => order[a.timeframe] - order[b.timeframe]);
 
-    const headerPrice = marketSession === 'REG' ? currentPrice : latestDaily.close;
+    const headerPrice = latestDaily.close;
+    // For OFF sessions, currentPrice should be the post-market price from Yahoo if possible, 
+    // but the hybrid stitch logic already uses livePrice (which is post-market in OFF sessions)
+
+    // Ensure currentPrice reflects the most recent data (Post-Market)
+    // while headerPrice stays as the Regular Close
 
     const sourceString = liveData.source === 'Public.com' ? `Public.com Live + ${dataOrigin}` : `${liveData.source} + ${dataOrigin}`;
 

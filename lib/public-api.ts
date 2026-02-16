@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { env } from './env';
+import { getMarketSession } from './refresh-utils';
 
 const BASE_URL = 'https://api.public.com';
 
@@ -308,30 +309,10 @@ export class PublicClient {
     }
 
     /**
-     * Helper to determine market session based on current time (EST)
+     * Helper to determine market session based on current time (EST) and holidays
      */
     public getMarketSession(): 'PRE' | 'REG' | 'POST' | 'OFF' {
-        const now = new Date();
-        const estTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-        const hours = estTime.getHours();
-        const minutes = estTime.getMinutes();
-        const timeVal = hours + minutes / 60;
-        const day = estTime.getDay();
-
-        // Weekends
-        if (day === 0 || day === 6) return 'OFF';
-
-        // Regular: 9:30 AM - 4:00 PM
-        if (timeVal >= 9.5 && timeVal < 16) return 'REG';
-
-        // Pre-market: 4:00 AM - 9:30 AM
-        if (timeVal >= 4 && timeVal < 9.5) return 'PRE';
-
-        // After-hours: 4:00 PM - 8:00 PM
-        if (timeVal >= 16 && timeVal < 20) return 'POST';
-
-        // Otherwise Closed (e.g. 8:00 PM - 4:00 AM)
-        return 'OFF';
+        return getMarketSession();
     }
 
     /**

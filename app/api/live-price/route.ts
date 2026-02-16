@@ -51,6 +51,9 @@ export async function GET(request: Request) {
         let regularMarketPrice = 0;
         let regularMarketChange = 0;
         let regularMarketChangePercent = 0;
+        let postMarketPrice = 0;
+        let postMarketChange = 0;
+        let postMarketChangePercent = 0;
 
         // 3. Fallback/Metadata from Yahoo Finance
         try {
@@ -60,10 +63,15 @@ export async function GET(request: Request) {
                 regularMarketChange = quote.regularMarketChange || 0;
                 regularMarketChangePercent = quote.regularMarketChangePercent || 0;
 
+                postMarketPrice = quote.postMarketPrice || quote.regularMarketPrice || 0;
+                postMarketChange = quote.postMarketChange || 0;
+                postMarketChangePercent = quote.postMarketChangePercent || 0;
+
                 if (price === null) {
-                    price = quote.regularMarketPrice || null;
-                    change = quote.regularMarketChange || 0;
-                    changePercent = quote.regularMarketChangePercent || 0;
+                    // During OFF sessions, we prefer the most recent price (Post > Regular)
+                    price = (marketSession !== 'REG' && quote.postMarketPrice) ? quote.postMarketPrice : quote.regularMarketPrice;
+                    change = (marketSession !== 'REG' && quote.postMarketChange) ? quote.postMarketChange : quote.regularMarketChange;
+                    changePercent = (marketSession !== 'REG' && quote.postMarketChangePercent) ? quote.postMarketChangePercent : quote.regularMarketChangePercent;
                     source = 'yahoo finance';
                 }
                 previousClose = quote.regularMarketPreviousClose || 0;
@@ -90,10 +98,13 @@ export async function GET(request: Request) {
         return NextResponse.json({
             price,
             regularMarketPrice,
+            postMarketPrice,
             change,
             changePercent,
             regularMarketChange,
             regularMarketChangePercent,
+            postMarketChange,
+            postMarketChangePercent,
             previousClose,
             marketSession,
             source,

@@ -128,6 +128,12 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true, onRefr
                                     After Hours
                                 </span>
                             )}
+                            {data.analysis.marketSession === 'OFF' && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-800/80 text-gray-400 text-[10px] font-black uppercase italic border border-gray-700/50">
+                                    <Activity className="w-2.5 h-2.5" />
+                                    After Market Close
+                                </span>
+                            )}
                             <div className="text-2xl font-bold text-white">
                                 ${data.analysis.currentPrice.toFixed(2)}
                             </div>
@@ -135,6 +141,11 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true, onRefr
 
                         <div className="flex flex-col items-end gap-1 mt-1">
                             {/* Meta Info Line */}
+                            {data.analysis.marketSession === 'OFF' && (
+                                <div className="text-[10px] text-gray-400 font-mono">
+                                    Regular Close: <span className="text-gray-200">${data.analysis.headerPrice.toFixed(2)}</span>
+                                </div>
+                            )}
                             {data.analysis.marketSession !== 'REG' && data.analysis.marketSession !== 'OFF' && (
                                 <div className="text-[10px] text-gray-400 font-mono">
                                     Session Close: <span className="text-gray-200">${data.analysis.headerPrice.toFixed(2)}</span>

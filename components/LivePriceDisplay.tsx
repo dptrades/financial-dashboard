@@ -88,14 +88,17 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
         setPriceFlash(null);
     }, [symbol]);
 
-    const displayPrice = priceData?.price ?? fallbackPrice;
-    const change = priceData?.change ?? 0;
-    const changePercent = priceData?.changePercent ?? 0;
+    const displayPrice = isLive ? (priceData?.price ?? fallbackPrice) : (priceData?.regularMarketPrice ?? fallbackPrice);
+    const change = isLive ? (priceData?.change ?? 0) : (priceData?.regularMarketChange ?? 0);
+    const changePercent = isLive ? (priceData?.changePercent ?? 0) : (priceData?.regularMarketChangePercent ?? 0);
     const isPositive = change >= 0;
 
     if (!displayPrice) {
         return <span className="text-gray-200">--</span>;
     }
+
+    const isOff = priceData?.marketSession === 'OFF';
+    const isPost = priceData?.marketSession === 'POST' || priceData?.marketSession === 'PRE';
 
     return (
         <div className="flex items-center gap-3">
@@ -127,14 +130,20 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
                 </div>
             )}
 
-            {/* Live indicator */}
+            {/* Session Indicator */}
             {isLive ? (
                 <div className="flex items-center gap-1">
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                     <span className="text-[10px] text-green-400 uppercase font-bold tracking-wider">Live</span>
                 </div>
+            ) : isPost ? (
+                <span className="text-[10px] text-purple-400 uppercase font-bold tracking-wider px-2 py-1 rounded bg-purple-500/10 border border-purple-500/20">
+                    {priceData?.marketSession === 'POST' ? 'After Hours' : 'Pre-Market'}
+                </span>
             ) : (
-                <span className="text-xs text-gray-200 font-medium px-2 py-0.5 rounded bg-gray-800/50 border border-gray-700/50">Last Close</span>
+                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider px-2 py-1 rounded bg-gray-800/80 border border-gray-700/50">
+                    Market Closed
+                </span>
             )}
 
             {/* Source */}
