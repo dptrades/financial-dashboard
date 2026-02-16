@@ -130,14 +130,23 @@ export async function scanSocialBuzz(): Promise<DiscoveredStock[]> {
 
             const xml = await response.text();
 
-            // Extract stock symbols from titles (basic regex for $TICKER or TICKER pattern)
-            const tickerMatches = xml.matchAll(/\$([A-Z]{2,5})\b|(?:^|\s)([A-Z]{2,5})(?:\s+stock|\s+shares)/gi);
+            // Extract stock symbols
+            // 1. Prioritize $STICKER (Cashtags)
+            // 2. Look for (TICKER) in parentheses
+            // 3. Standalone uppercase 2-5 chars only if followed by "stock" or "shares" to reduce noise
+            const tickerMatches = xml.matchAll(/\$([A-Z]{2,5})\b|\(([A-Z]{2,5})\)|(?:^|\s)([A-Z]{2,5})(?:\s+stock|\s+shares)/gi);
 
             for (const match of tickerMatches) {
                 const symbol = (match[1] || match[2])?.toUpperCase();
                 if (symbol && symbol.length >= 2 && symbol.length <= 5) {
                     // Avoid common words
-                    const excludeWords = ['THE', 'AND', 'FOR', 'ARE', 'BUT', 'NOT', 'YOU', 'ALL', 'CAN', 'HER', 'WAS', 'ONE', 'OUR', 'OUT', 'CEO', 'IPO', 'ETF', 'NYSE', 'SEC'];
+                    // Avoid common words and financial noise
+                    const excludeWords = [
+                        'THE', 'AND', 'FOR', 'ARE', 'BUT', 'NOT', 'YOU', 'ALL', 'CAN', 'HER', 'WAS', 'ONE', 'OUR', 'OUT',
+                        'CEO', 'IPO', 'ETF', 'NYSE', 'SEC', 'NASDAQ', 'GDP', 'CPI', 'FED', 'FOMC',
+                        'GET', 'TRADE', 'BEST', 'ADDS', 'AFTER', 'NEXT', 'ONLY', 'TIME', 'BUY', 'SELL', 'ITS', 'FREE', 'LIVE',
+                        'NOW', 'NEW', 'GOOD', 'BIG', 'TOP', 'SEE', 'DAY', 'WEEK', 'YEAR', 'EST', 'EDT', 'AM', 'PM'
+                    ];
                     if (!excludeWords.includes(symbol)) {
                         const existing = results.find(r => r.symbol === symbol);
                         if (!existing) {
@@ -194,7 +203,11 @@ export async function scanBreakingNews(): Promise<DiscoveredStock[]> {
             for (const match of tickerMatches) {
                 const symbol = (match[1] || match[2])?.toUpperCase();
                 if (symbol && symbol.length >= 2 && symbol.length <= 5) {
-                    const excludeWords = ['NYSE', 'NASDAQ', 'SEC', 'CEO', 'IPO', 'ETF', 'GDP', 'CPI'];
+                    const excludeWords = [
+                        'NYSE', 'NASDAQ', 'SEC', 'CEO', 'IPO', 'ETF', 'GDP', 'CPI', 'FED', 'FOMC',
+                        'GET', 'TRADE', 'BEST', 'ADDS', 'AFTER', 'NEXT', 'ONLY', 'TIME', 'BUY', 'SELL', 'ITS',
+                        'EST', 'EDT', 'USA', 'USD', 'UK', 'EU', 'AI'
+                    ];
                     if (!excludeWords.includes(symbol)) {
                         const existing = results.find(r => r.symbol === symbol);
                         if (!existing) {

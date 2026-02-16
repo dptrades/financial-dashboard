@@ -5,6 +5,7 @@ interface SocialPulseCardProps {
     stock: {
         symbol: string;
         name: string;
+        sector?: string;
         price: number;
         change: number;
         heat: number;
@@ -33,14 +34,21 @@ export default function SocialPulseCard({ stock, onSelect }: SocialPulseCardProp
 
             {/* Header */}
             <div className="flex justify-between items-start mb-4 relative z-10">
-                <div>
-                    <h3 className="text-2xl font-black text-white leading-none tracking-tighter flex items-center gap-2">
-                        {stock.symbol}
-                        {stock.heat > 85 && <Flame className="w-5 h-5 text-orange-500 animate-pulse" />}
-                    </h3>
-                    <p className="text-[10px] text-gray-200 font-bold uppercase tracking-widest mt-1">{stock.name}</p>
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-2xl font-black text-white leading-none tracking-tighter flex items-center gap-2">
+                            {stock.symbol}
+                            {stock.heat > 85 && <Flame className="w-5 h-5 text-orange-500 animate-pulse" />}
+                        </h3>
+                        {stock.sector && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-gray-700 text-gray-300 border border-gray-600 uppercase tracking-widest truncate">
+                                {stock.sector}
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest truncate max-w-[150px]">{stock.name}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-right ml-2 flex-shrink-0">
                     <div className="text-lg font-mono font-bold text-white">${stock.price.toFixed(2)}</div>
                     <div className={`text-xs font-bold ${stock.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}%
