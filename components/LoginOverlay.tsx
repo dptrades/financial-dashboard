@@ -86,7 +86,7 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                     <h2 className="text-2xl font-bold text-center text-white mb-2">
                         DP Trade Desk
                     </h2>
-                    <p className="text-gray-400 text-center text-sm mb-8">
+                    <p className="text-gray-200 text-center text-sm mb-8">
                         Scientific Price Analysis & Intelligence
                     </p>
 
@@ -100,7 +100,7 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                     {step === 'info' ? (
                         <form onSubmit={handleSendCode} className="space-y-4">
                             <div className="relative">
-                                <User className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
+                                <User className="absolute left-3 top-3 w-4 h-4 text-gray-300" />
                                 <input
                                     type="text"
                                     placeholder="Full Name"
@@ -111,7 +111,7 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                                 />
                             </div>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
+                                <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-300" />
                                 <input
                                     type="email"
                                     placeholder="Email Address"
@@ -131,7 +131,7 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                                         onChange={(e) => setDisclaimer(e.target.checked)}
                                         className="mt-1 block h-4 w-4 bg-gray-800 border-gray-700 rounded text-blue-600 focus:ring-blue-500/50"
                                     />
-                                    <label htmlFor="disclaimer" className="text-[11px] text-gray-300 leading-relaxed cursor-pointer select-none">
+                                    <label htmlFor="disclaimer" className="text-[11px] text-gray-200 leading-relaxed cursor-pointer select-none">
                                         <strong>Informational Purposes Only:</strong> This is not Financial Advice. Please understand your risk and do your own research. By continuing, you agree to the research disclaimer.
                                     </label>
                                 </div>
@@ -152,7 +152,7 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                     ) : (
                         <form onSubmit={handleVerify} className="space-y-6">
                             <div className="text-center">
-                                <p className="text-sm text-gray-400 mb-4">
+                                <p className="text-sm text-gray-200 mb-4">
                                     Enter your <span className="text-blue-400 font-medium">Trader Access Key</span> <br />
                                     to securely access the dashboard.
                                 </p>
@@ -178,7 +178,7 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                             <button
                                 type="button"
                                 onClick={() => setStep('info')}
-                                className="w-full text-xs text-gray-500 hover:text-gray-400 transition-colors"
+                                className="w-full text-xs text-gray-300 hover:text-gray-200 transition-colors"
                             >
                                 Return to details
                             </button>
@@ -187,7 +187,7 @@ export default function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                 </div>
 
                 <div className="px-8 py-4 bg-gray-800/50 border-t border-gray-800/50 text-center">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+                    <p className="text-[10px] text-gray-300 uppercase tracking-widest font-bold">
                         Access expires every 4 hours
                     </p>
                 </div>

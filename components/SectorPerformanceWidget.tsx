@@ -77,7 +77,7 @@ export default function SectorPerformanceWidget({ onSectorClick }: Props) {
     return (
         <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-5 mb-6 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-sm font-bold text-gray-100 uppercase tracking-wider flex items-center gap-2">
                     <LayoutGrid className="w-4 h-4 text-purple-400" /> Sector Performance
                 </h3>
             </div>
@@ -89,7 +89,7 @@ export default function SectorPerformanceWidget({ onSectorClick }: Props) {
                         onClick={() => onSectorClick(sector)}
                         className="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-900/50 border border-gray-700/50 hover:border-gray-500 hover:bg-gray-800 transition-all text-center group"
                     >
-                        <span className="text-[10px] text-gray-300 font-bold uppercase tracking-tight mb-1 group-hover:text-gray-300">
+                        <span className="text-[10px] text-gray-200 font-bold uppercase tracking-tight mb-1 group-hover:text-gray-200">
                             {sector.name}
                         </span>
                         <div className={`text-sm font-mono font-bold ${sector.avgChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>

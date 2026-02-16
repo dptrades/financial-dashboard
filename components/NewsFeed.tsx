@@ -35,12 +35,12 @@ export default function NewsFeed({ news, loading = false }: NewsFeedProps) {
                             className="group p-4 bg-gray-800/40 hover:bg-gray-800 rounded-lg border border-gray-800 hover:border-gray-700 transition-all cursor-pointer block"
                         >
                             <div className="flex justify-between items-start">
-                                <span className="text-[10px] font-bold tracking-wider text-gray-300 uppercase">{item.source} • {item.time}</span>
+                                <span className="text-[10px] font-bold tracking-wider text-gray-200 uppercase">{item.source} • {item.time}</span>
                                 {item.sentiment === 'positive' && <ArrowUpRight className="w-4 h-4 text-green-500" />}
                                 {item.sentiment === 'negative' && <ArrowDownRight className="w-4 h-4 text-red-500" />}
-                                {item.sentiment === 'neutral' && <Minus className="w-4 h-4 text-gray-300" />}
+                                {item.sentiment === 'neutral' && <Minus className="w-4 h-4 text-gray-200" />}
                             </div>
-                            <h4 className="text-sm font-medium text-gray-200 mt-2 group-hover:text-blue-400 transition-colors line-clamp-2">
+                            <h4 className="text-sm font-medium text-gray-100 mt-2 group-hover:text-blue-400 transition-colors line-clamp-2">
                                 {item.title}
                             </h4>
                         </a>

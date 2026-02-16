@@ -14,7 +14,7 @@ export default function IndicatorPanel({
 
     // Determine Trend
     let trend = "NEUTRAL";
-    let trendColor = "text-gray-200";
+    let trendColor = "text-gray-100";
     let trendReason = "Price consolidating";
 
     if (latestData) {
@@ -43,7 +43,7 @@ export default function IndicatorPanel({
 
     // Determine RSI
     let rsiStatus = "NEUTRAL";
-    let rsiColor = "text-gray-200";
+    let rsiColor = "text-gray-100";
     if (latestData?.rsi14) {
         if (latestData.rsi14 > 70) {
             rsiStatus = "OVERBOUGHT";
@@ -56,29 +56,29 @@ export default function IndicatorPanel({
 
     return (
         <div className="mt-8 text-sm">
-            <h3 className="font-semibold text-gray-200 mb-3 uppercase tracking-wider">Signals</h3>
+            <h3 className="font-semibold text-gray-100 mb-3 uppercase tracking-wider">Signals</h3>
 
             <div className="space-y-4">
                 {/* Trend Card */}
                 <div className="p-4 bg-gray-900 rounded border border-gray-700">
-                    <h4 className="font-medium text-xs text-gray-300 mb-2 uppercase">Trend Analysis</h4>
+                    <h4 className="font-medium text-xs text-gray-200 mb-2 uppercase">Trend Analysis</h4>
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-gray-300">Structure</span>
+                        <span className="text-gray-200">Structure</span>
                         <span className={`${trendColor} font-bold`}>{trend}</span>
                     </div>
-                    <div className="text-xs text-gray-300">
+                    <div className="text-xs text-gray-200">
                         {latestData ? trendReason : "Loading..."}
                     </div>
                 </div>
 
                 {/* RSI Card */}
                 <div className="p-4 bg-gray-900 rounded border border-gray-700">
-                    <h4 className="font-medium text-xs text-gray-300 mb-2 uppercase">RSI Momentum</h4>
+                    <h4 className="font-medium text-xs text-gray-200 mb-2 uppercase">RSI Momentum</h4>
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-gray-300">Signal</span>
+                        <span className="text-gray-200">Signal</span>
                         <span className={`${rsiColor} font-bold`}>{rsiStatus}</span>
                     </div>
-                    <div className="text-xs text-gray-300">
+                    <div className="text-xs text-gray-200">
                         Value: {latestData?.rsi14?.toFixed(2) ?? 'N/A'}
                     </div>
                 </div>

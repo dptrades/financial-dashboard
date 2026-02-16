@@ -59,7 +59,7 @@ export class PublicClient {
     private quoteCache: Map<string, { data: PublicQuote; expiry: number }> = new Map();
     private chainCache: Map<string, { data: PublicOptionChain; expiry: number }> = new Map();
     private CACHE_TTL = 10 * 1000; // 10 seconds cache for quotes
-    private CHAIN_TTL = 60 * 1000; // 60 seconds cache for option chains
+    private CHAIN_TTL = 5 * 60 * 1000; // 5 minutes cache for option chains (increased for reliability)
 
     constructor() {
         this.apiKey = env.PUBLIC_API_KEY || '';
@@ -358,13 +358,16 @@ export class PublicClient {
         // Check Cache
         const cached = this.chainCache.get(symbol);
         if (cached && Date.now() < cached.expiry) {
-            return cached.data;
+            // Only return cache if it contains the target expiration data we need
+            if (!targetExpiration || (cached.data.options && cached.data.options[targetExpiration])) {
+                return cached.data;
+            }
         }
 
         try {
             // 1. Get expirations first
             const expirations = await this.getOptionExpirations(symbol);
-            if (!expirations || expirations.length === 0) return null;
+            if (!expirations || expirations.length === 0) throw new Error("No expirations found");
 
             const chain: PublicOptionChain = {
                 symbol,
@@ -438,6 +441,11 @@ export class PublicClient {
 
         } catch (e) {
             console.error('[PublicAPI] getOptionChain error:', e);
+            // GRACEFUL FALLBACK: Serve stale cache if available
+            if (cached) {
+                console.warn(`[PublicAPI] Serving stale cache for ${symbol} option chain.`);
+                return cached.data;
+            }
             return null;
         }
     }

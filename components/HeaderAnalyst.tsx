@@ -32,7 +32,7 @@ export default function HeaderAnalyst({ symbol, analystNews }: HeaderAnalystProp
     // Determine Label
     let label = "NEUTRAL";
     let subtext = "No recent data";
-    let color = "text-gray-200";
+    let color = "text-gray-100";
     let bgColor = "bg-gray-800";
     let borderColor = "border-gray-700";
 
@@ -63,7 +63,7 @@ export default function HeaderAnalyst({ symbol, analystNews }: HeaderAnalystProp
             <div className="flex items-center gap-2">
                 <Target className={`w-4 h-4 ${color}`} />
                 <div className="flex flex-col gap-1">
-                    <span className="text-[8px] text-gray-200 font-bold uppercase tracking-widest leading-none">Analyst Flow</span>
+                    <span className="text-[8px] text-gray-100 font-bold uppercase tracking-widest leading-none">Analyst Flow</span>
                     <div className="flex items-center gap-2 leading-none">
                         <span className={`text-[10px] font-bold ${color} leading-none`}>{label}</span>
                         {/* Mini Visual Bar */}

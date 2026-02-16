@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { fetchOHLCV } from '../lib/api';
+import { REFRESH_INTERVALS, isMarketActive, getMarketSession, getNextMarketOpen } from '../lib/refresh-utils';
 import { fetchStockNews, fetchSocialSentiment, fetchAnalystRatings, NewsItem } from '../lib/news';
 import { OHLCVData, IndicatorData } from '../types/financial';
 import { calculateIndicators } from '../lib/indicators';
@@ -22,12 +23,13 @@ import HeaderSentiment from '../components/HeaderSentiment';
 import HeaderSignals from '../components/HeaderSignals';
 import HeaderPattern from '../components/HeaderPattern';
 import HeaderAnalyst from '../components/HeaderAnalyst';
+import HeaderFundamentals from '../components/HeaderFundamentals';
 
 import NewsFeed from '../components/NewsFeed';
 import LivePriceDisplay from '../components/LivePriceDisplay';
 import { Loading } from '@/components/ui/Loading';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import { Zap, ChevronRight, Activity } from 'lucide-react';
+import { Zap, ChevronRight, Activity, RefreshCw, Database } from 'lucide-react';
 import SectorPerformanceWidget from '../components/SectorPerformanceWidget';
 import SectorDetailModal from '../components/SectorDetailModal';
 
@@ -48,19 +50,19 @@ export default function Dashboard() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [analystData, setAnalystData] = useState<NewsItem[]>([]);
   const [stats, setStats] = useState<PriceStats | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Initialize from localStorage if available, otherwise default to SPY
   const [symbol, setSymbol] = useState('SPY');
   const [stockInput, setStockInput] = useState('SPY');
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // For manual refresh
+
+  const handleManualRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   // Load initial symbol from localStorage on mount (client-side only)
-  useEffect(() => {
-    const savedSymbol = localStorage.getItem('lastTicker');
-    if (!urlSymbol && savedSymbol) {
-      setSymbol(savedSymbol);
-      setStockInput(savedSymbol);
-    }
-  }, [urlSymbol]);
+  // Initial symbol loading logic moved to combined effect below to prevent race conditions
 
   const [interval, setIntervalState] = useState('1d'); // 15m, 1h, 4h, 1d
   const [loading, setLoading] = useState(true);
@@ -141,18 +143,46 @@ export default function Dashboard() {
     };
   }, [stockInput, symbol]);
 
+  const handleSymbolSelect = (sym: string) => {
+    setSymbol(sym);
+    setStockInput(sym);
+    // Mobile sidebar handling logic moved here if needed, or kept inline
+  };
+
+  // Sync symbol to URL and localStorage
+  // Initialize symbol state safely to avoid overwriting localStorage on mount
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load initial symbol from URL or localStorage on mount (client-side only)
+  useEffect(() => {
+    if (urlSymbol) {
+      setSymbol(urlSymbol);
+      setStockInput(urlSymbol);
+      setIsInitialized(true);
+    } else {
+      const savedSymbol = localStorage.getItem('lastTicker');
+      if (savedSymbol) {
+        setSymbol(savedSymbol);
+        setStockInput(savedSymbol);
+      }
+      setIsInitialized(true);
+    }
+  }, [urlSymbol]);
+
   // Sync symbol to URL and localStorage
   useEffect(() => {
-    if (symbol) {
+    if (isInitialized && symbol) {
       // 1. Save to localStorage
       localStorage.setItem('lastTicker', symbol);
 
       // 2. Update URL silently without a full reload
       const params = new URLSearchParams(searchParams.toString());
-      params.set('symbol', symbol);
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      if (params.get('symbol') !== symbol) {
+        params.set('symbol', symbol);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      }
     }
-  }, [symbol, router, pathname, searchParams]);
+  }, [symbol, router, pathname, searchParams, isInitialized]);
 
   // Load Data
   useEffect(() => {
@@ -197,6 +227,7 @@ export default function Dashboard() {
 
           setData(withPatterns); // Set data with patterns
           setStats(computedStats);
+          setLastUpdated(new Date());
 
           // Determine simplistic trend for news generation
           const latest = withPatterns[withPatterns.length - 1]; // Use withPatterns
@@ -235,22 +266,42 @@ export default function Dashboard() {
       }
     };
 
+    // Initial Load
     loadData();
 
-    // Auto-refresh chart and news every 10 minutes
-    const intervalId = setInterval(() => {
-      // Only refresh if tab is visible
-      if (!document.hidden && !ignore) {
-        console.log('Auto-refreshing dashboard data...');
-        loadData();
+    // 1. Price Refresh (1 Minute) - FAST
+    const priceInterval = setInterval(() => {
+      if (document.hidden || ignore || !isMarketActive()) return;
+      // We could have a lighter endpoint for just price, 
+      // but for now we'll rely on the LivePriceDisplay component's own polling 
+      // or re-fetch data if needed. 
+      // Actually, let's keep the main data fetch at 10m and let price update via the dedicated component.
+    }, REFRESH_INTERVALS.PRICE);
+
+    // 2. Chart & Deep Dive Data (15 Minutes) - MEDIUM - Universal Auto-Refresh
+    const dataInterval = setInterval(() => {
+      if (!document.hidden && !ignore && isMarketActive()) {
+        console.log('[Auto-Refresh] Fetching Chart & Deep Dive Data (15m)...');
+        // Manual refresh triggers everything else
+        handleManualRefresh();
       }
-    }, 600000); // 10 minutes
+    }, REFRESH_INTERVALS.AUTO_REFRESH);
+
+    // 3. News (2 Hours) - SLOW
+    const newsInterval = setInterval(() => {
+      if (!document.hidden && !ignore && isMarketActive()) {
+        console.log('[Auto-Refresh] Fetching News (2h)...');
+        fetchStockNews(symbol, 'neutral').then(setNews);
+      }
+    }, REFRESH_INTERVALS.NEWS);
 
     return () => {
       ignore = true;
-      clearInterval(intervalId);
+      clearInterval(priceInterval);
+      clearInterval(dataInterval);
+      clearInterval(newsInterval);
     };
-  }, [symbol, interval, isAuthenticated]);
+  }, [symbol, interval, isAuthenticated, refreshTrigger]);
 
   const chartData = data.slice(-viewScope);
 
@@ -259,14 +310,14 @@ export default function Dashboard() {
     if (interval === '1d') {
       return (
         <div className="flex space-x-2">
-          <button onClick={() => setViewScope(90)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 90 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-200 border-gray-700 hover:border-gray-500'}`}>3M</button>
-          <button onClick={() => setViewScope(365)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 365 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-200 border-gray-700 hover:border-gray-500'}`}>1Y</button>
-          <button onClick={() => setViewScope(1825)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 1825 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-200 border-gray-700 hover:border-gray-500'}`}>5Y</button>
+          <button onClick={() => setViewScope(90)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 90 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-100 border-gray-700 hover:border-gray-500'}`}>3M</button>
+          <button onClick={() => setViewScope(365)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 365 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-100 border-gray-700 hover:border-gray-500'}`}>1Y</button>
+          <button onClick={() => setViewScope(1825)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === 1825 ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-100 border-gray-700 hover:border-gray-500'}`}>5Y</button>
         </div>
       );
     }
     const setBars = (label: string, bars: number) => (
-      <button key={label} onClick={() => setViewScope(bars)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === bars ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-200 border-gray-700 hover:border-gray-500'}`}>{label}</button>
+      <button key={label} onClick={() => setViewScope(bars)} className={`px-3 py-1 text-xs rounded-full border ${viewScope === bars ? 'bg-gray-700 text-white border-gray-500' : 'text-gray-100 border-gray-700 hover:border-gray-500'}`}>{label}</button>
     );
 
     if (interval === '15m') return <div className="flex space-x-2">{[setBars('1D', 96), setBars('3D', 288), setBars('1W', 672)]}</div>;
@@ -286,11 +337,6 @@ export default function Dashboard() {
   // Now async, so we use a state effect
   const [optionsSignal, setOptionsSignal] = useState<OptionRecommendation | null>(null);
   const [top3Options, setTop3Options] = useState<OptionRecommendation[]>([]);
-  const [refreshTrigger, setRefreshTrigger] = useState(0); // For manual refresh
-
-  const handleManualRefresh = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
 
   useEffect(() => {
     let ignore = false;
@@ -337,7 +383,7 @@ export default function Dashboard() {
     };
     fetchSignal();
     return () => { ignore = true; };
-  }, [latest, stats, currentTrend, symbol, refreshTrigger]);
+  }, [latest, stats, currentTrend, analystData.length, sentimentScore, symbol, refreshTrigger]);
 
   if (isAuthenticated === null) return <Loading message="Authenticating session..." />;
 
@@ -356,7 +402,7 @@ export default function Dashboard() {
       <div className={`
         fixed inset-y-0 left-0 z-[110] transition-transform duration-300 ease-in-out md:relative md:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        ${isSidebarOpen ? 'w-[280px]' : 'w-0'} 
+        ${isSidebarOpen ? 'w-[18vw] min-w-[200px]' : 'w-0'} 
         h-full overflow-hidden flex-shrink-0 border-r border-gray-800
       `}>
         <Sidebar
@@ -395,7 +441,7 @@ export default function Dashboard() {
             <span className="text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Expand</span>
           </button>
         )}
-        <div className={`flex-1 p-4 md:p-6 flex flex-col overflow-y-auto w-full pt-16 md:pt-6 transition-all duration-300 ${isSidebarOpen ? 'md:max-w-[calc(100vw-280px)]' : 'md:max-w-full'}`}>
+        <div className="flex-1 p-4 md:p-6 flex flex-col overflow-y-auto w-full pt-16 md:pt-6 transition-all duration-300">
           <header className="flex flex-col gap-4 mb-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               {/* LEFT: Ticker, Price */}
@@ -423,7 +469,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 {companyName && (
-                  <span className="text-sm text-gray-200 font-medium hidden md:inline truncate max-w-[180px]">{companyName}</span>
+                  <span className="text-sm text-gray-100 font-medium hidden md:inline truncate max-w-[180px]">{companyName}</span>
                 )}
 
                 {/* 2. Price & Change Info */}
@@ -434,16 +480,37 @@ export default function Dashboard() {
                     enabled={!loading}
                     showChange={true}
                   />
+                  {lastUpdated && (
+                    <span className="text-[10px] text-gray-400 font-mono mt-1">
+                      Last Updated: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                  )}
                 </div>
 
                 {/* 3. Mini Signals (Trend Only) & Analyst */}
                 <div className="flex flex-row items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <HeaderFundamentals symbol={symbol} />
                   {data.length > 0 && <HeaderSignals latestData={data[data.length - 1]} showRSI={true} />}
                   <HeaderAnalyst symbol={symbol} analystNews={analystData} />
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end gap-2">
+                {isMarketActive() ? (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[10px] text-blue-400 font-bold uppercase tracking-wider animate-pulse">
+                    <Activity className="w-3 h-3" />
+                    Live Feed Active
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-end gap-0.5">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/80 border border-gray-700/50 rounded-lg text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                      Market Closed
+                    </div>
+                    <div className="text-[9px] text-gray-400 font-mono">
+                      Next update: {getNextMarketOpen().toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </header>
@@ -453,16 +520,18 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-6">
 
-              {/* ROW 1: Deep Dive (Left, 2/3) & AI Option Play + Price Stats (Right, 1/3) */}
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-                {/* Deep Dive - Takes 2/3 - FIRST in DOM = LEFT */}
-                <div className="xl:col-span-2 overflow-x-auto pb-2 scrollbar-hide">
+
+              {/* ROW 1: Deep Dive (Left, 3/4) & AI Option Play + Price Stats (Right, 1/4) */}
+              <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6">
+                {/* Deep Dive - Takes 3/4 - FIRST in DOM = LEFT */}
+                <div className="xl:col-span-3 overflow-x-auto pb-2 scrollbar-hide">
                   <div className="min-w-[600px] lg:min-w-0">
                     <DeepDiveContent
                       key={symbol}
                       symbol={symbol}
                       showOptionsFlow={false}
                       onRefresh={handleManualRefresh}
+                      refreshKey={refreshTrigger}
                     />
                   </div>
                 </div>
@@ -470,7 +539,7 @@ export default function Dashboard() {
                 {/* Right Column - AI Option Play + Price Stats stacked vertically */}
                 <div className="xl:col-span-1 space-y-6">
                   <div className="bg-gray-800/10 rounded-xl">
-                    <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-100 uppercase tracking-wider mb-2 flex items-center gap-2">
                       <Zap className="w-4 h-4 text-blue-400" /> Tactical Option Play
                     </h3>
                     <OptionsSignal data={optionsSignal} loading={loading} onRefresh={handleManualRefresh} />
@@ -478,7 +547,7 @@ export default function Dashboard() {
 
                   {/* Price Statistics - Below AI Option Play */}
                   <div>
-                    <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-2 px-1 text-center lg:text-left">Price Statistics</h3>
+                    <h3 className="text-sm font-bold text-gray-100 uppercase tracking-wider mb-2 px-1 text-center lg:text-left">Price Statistics</h3>
                     <HighlightStats stats={stats} />
                   </div>
                 </div>
@@ -495,7 +564,7 @@ export default function Dashboard() {
 
               {/* ROW 5: Live News - BELOW AI Insight */}
               <div>
-                <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider mb-4 px-1 text-center lg:text-left">Live Intelligence</h3>
+                <h3 className="text-sm font-bold text-gray-100 uppercase tracking-wider mb-4 px-1 text-center lg:text-left">Live Intelligence</h3>
                 <NewsFeed news={news} loading={loading} />
               </div>
             </div>

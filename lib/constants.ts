@@ -60,4 +60,16 @@ export const SECTOR_MAP: Record<string, string> = {
     QCOM: 'Information Technology', TXN: 'Information Technology', AMAT: 'Information Technology', INTU: 'Information Technology',
 };
 
+// Dynamic Sector Map Helper
+import { getDynamicSectorMap } from './sector-service';
+
 export const SCANNER_WATCHLIST = Object.keys(SECTOR_MAP);
+
+export async function getSectorMap(): Promise<Record<string, string>> {
+    try {
+        return await getDynamicSectorMap();
+    } catch (e) {
+        console.warn("⚠️ Dynamic Sector Map failed, falling back to static map.");
+        return SECTOR_MAP;
+    }
+}

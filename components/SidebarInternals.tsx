@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Activity, TrendingUp, TrendingDown, Info, X } from 'lucide-react';
+import { REFRESH_INTERVALS, isMarketActive } from '../lib/refresh-utils';
 
 interface MarketData {
     symbol: string;
@@ -145,17 +146,19 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
         fetchInternals();
         fetchConvictionStats();
 
-        // Standard background sync (10 mins) only while open
+        // Standard background sync (15 mins) only while open
         const syncInterval = setInterval(() => {
-            fetchInternals();
-            fetchConvictionStats();
-        }, 600000);
+            if (isOpen && isMarketActive()) {
+                fetchInternals();
+                fetchConvictionStats();
+            }
+        }, REFRESH_INTERVALS.WIDGETS);
 
         return () => clearInterval(syncInterval);
     }, [isOpen]);
 
     if (!internals) return (
-        <div className="px-4 py-4 text-xs text-gray-300 animate-pulse text-center">
+        <div className="px-4 py-4 text-xs text-gray-200 animate-pulse text-center">
             Loading Pulse...
         </div>
     );
@@ -165,7 +168,7 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
 
     return (
         <div className="mt-auto border-t border-gray-800 p-4 space-y-4">
-            <h4 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center mb-2 justify-between">
+            <h4 className="text-xs font-bold text-gray-200 uppercase tracking-widest flex items-center mb-2 justify-between">
                 <span className="flex items-center">
                     <Activity className="w-3 h-3 mr-1" /> Market Pulse
                 </span>
@@ -196,7 +199,7 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
                 >
                     <div className="flex justify-between items-center mb-0.5">
                         <span className="text-[10px] text-gray-100 block font-black uppercase tracking-wider">Bullish %</span>
-                        <Info className="w-2.5 h-2.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                        <Info className="w-2.5 h-2.5 text-gray-300 group-hover:text-blue-400 transition-colors" />
                     </div>
                     <span className={`text-sm font-bold ${stats.bullishPercent > 50 ? 'text-green-400' : 'text-red-400'}`}>
                         {stats.bullishPercent.toFixed(0)}%
@@ -214,11 +217,11 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
                     { label: 'Russell 2000', data: russell },
                 ].map((item) => item.data && (
                     <div key={item.label} className="flex justify-between items-center text-[11px] bg-gray-800/50 p-1.5 rounded">
-                        <span className="text-gray-100 font-bold tracking-tight">{item.label}</span>
-                        <div className="flex items-center gap-2">
+                        <span className="text-gray-100 font-bold tracking-tight truncate mr-2">{item.label}</span>
+                        <div className="flex items-center gap-1 flex-shrink-0">
                             <span className="text-white font-mono">{item.data.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            <span className={`${item.data.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {item.data.change >= 0 ? '+' : ''}{item.data.changePercent.toFixed(2)}%
+                            <span className={`text-[10px] ${item.data.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {item.data.change >= 0 ? '+' : ''}{item.data.changePercent.toFixed(1)}%
                             </span>
                         </div>
                     </div>
@@ -230,13 +233,13 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
                 onClick={() => setActiveLogic('breadth')}
                 className="w-full bg-gray-800 p-2 rounded border border-gray-700 hover:border-blue-500/50 hover:bg-gray-700/50 transition-all text-left group"
             >
-                <div className="flex justify-between text-[10px] text-gray-200 mb-1">
+                <div className="flex justify-between text-[10px] text-gray-100 mb-1">
                     <span className="text-green-400 font-bold flex items-center gap-1">
                         ▲ {stats.advancers}
                     </span>
-                    <span className="text-gray-300 font-medium flex items-center gap-1">
+                    <span className="text-gray-200 font-medium flex items-center gap-1 truncate">
                         Breadth
-                        <Info className="w-2.5 h-2.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                        <Info className="w-2.5 h-2.5 text-gray-300 group-hover:text-blue-400 transition-colors flex-shrink-0" />
                     </span>
                     <span className="text-red-400 font-bold flex items-center gap-1">
                         ▼ {stats.decliners}
@@ -256,7 +259,7 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
 
             {/* Sector Performance (Stacked like Indexes) */}
             <div className="pt-2 border-t border-gray-800 space-y-1">
-                <h4 className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-2">Sector Performance</h4>
+                <h4 className="text-[10px] font-bold text-gray-200 uppercase tracking-widest mb-2 truncate">Sector Performance</h4>
                 {sectors.length > 0 ? (
                     sectors.map((sector) => (
                         <button
@@ -264,14 +267,14 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
                             onClick={() => onSectorClick(sector)}
                             className="w-full flex justify-between items-center text-[10px] bg-gray-900/40 hover:bg-gray-700/50 p-1.5 rounded border border-transparent hover:border-gray-700 transition-all text-left group"
                         >
-                            <span className="text-gray-100 font-bold group-hover:text-white transition-colors">{sector.name}</span>
-                            <span className={`font-mono font-bold ${sector.avgChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            <span className="text-gray-100 font-bold group-hover:text-white transition-colors truncate mr-2">{sector.name}</span>
+                            <span className={`font-mono font-bold flex-shrink-0 ${sector.avgChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                 {sector.avgChange > 0 ? '+' : ''}{sector.avgChange.toFixed(2)}%
                             </span>
                         </button>
                     ))
                 ) : (
-                    <div className="text-[10px] text-gray-200 animate-pulse text-center py-2">Loading Sectors...</div>
+                    <div className="text-[10px] text-gray-100 animate-pulse text-center py-2">Loading Sectors...</div>
                 )}
             </div>
 
@@ -287,11 +290,11 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
                                     <h2 className="text-xl font-bold text-white mb-1">
                                         {activeLogic === 'bullish' ? 'Bullish % Indicator' : 'Market Breadth'}
                                     </h2>
-                                    <p className="text-gray-400 text-xs">Internal Market Health Metric</p>
+                                    <p className="text-gray-200 text-xs">Internal Market Health Metric</p>
                                 </div>
                                 <button
                                     onClick={() => setActiveLogic(null)}
-                                    className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 transition-colors"
+                                    className="p-2 hover:bg-gray-800 rounded-lg text-gray-200 transition-colors"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -308,15 +311,15 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
                                         <div className="space-y-4 pt-2">
                                             <div className="flex items-start gap-3">
                                                 <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(96,165,250,0.6)]" />
-                                                <p className="text-sm text-gray-200 leading-snug">Calculates the percentage of these leading stocks currently trading above both their **50-day and 200-day EMAs**.</p>
+                                                <p className="text-sm text-gray-100 leading-snug">Calculates the percentage of these leading stocks currently trading above both their **50-day and 200-day EMAs**.</p>
                                             </div>
                                             <div className="flex items-start gap-3">
                                                 <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(96,165,250,0.6)]" />
-                                                <p className="text-sm text-gray-200 leading-snug">A reading **above 50%** means the majority of the market's "General" stocks are in a technical uptrend.</p>
+                                                <p className="text-sm text-gray-100 leading-snug">A reading **above 50%** means the majority of the market's "General" stocks are in a technical uptrend.</p>
                                             </div>
                                             <div className="flex items-start gap-3">
                                                 <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
-                                                <p className="text-sm text-gray-200 leading-snug">**Warning Signal**: If the index is rising but Bullish % is falling, it indicates "Narrow Breadth" — a potential trap where only 2-3 stocks are holding up the entire market.</p>
+                                                <p className="text-sm text-gray-100 leading-snug">**Warning Signal**: If the index is rising but Bullish % is falling, it indicates "Narrow Breadth" — a potential trap where only 2-3 stocks are holding up the entire market.</p>
                                             </div>
                                         </div>
                                     </>
@@ -330,15 +333,15 @@ export default function SidebarInternals({ onSectorClick, isOpen }: Props) {
                                         <div className="space-y-4 pt-2">
                                             <div className="flex items-start gap-3">
                                                 <div className="w-2 h-2 rounded-full bg-green-400 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
-                                                <p className="text-sm text-gray-200 leading-snug">**Advancers (▲)**: The live count of stocks from our 120-symbol list currently trading **higher** than yesterday's close.</p>
+                                                <p className="text-sm text-gray-100 leading-snug">**Advancers (▲)**: The live count of stocks from our 120-symbol list currently trading **higher** than yesterday's close.</p>
                                             </div>
                                             <div className="flex items-start gap-3">
                                                 <div className="w-2 h-2 rounded-full bg-red-400 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
-                                                <p className="text-sm text-gray-200 leading-snug">**Decliners (▼)**: The live count of stocks from that same list currently trading **lower** than yesterday's close.</p>
+                                                <p className="text-sm text-gray-100 leading-snug">**Decliners (▼)**: The live count of stocks from that same list currently trading **lower** than yesterday's close.</p>
                                             </div>
                                             <div className="flex items-start gap-3">
                                                 <div className="w-2 h-2 rounded-full bg-white mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.6)]" />
-                                                <p className="text-sm text-gray-200 leading-snug">The ratio reveals if a rally is "Full Participation" (whole army moving) or a "Fake Out" (just a few names moving).</p>
+                                                <p className="text-sm text-gray-100 leading-snug">The ratio reveals if a rally is "Full Participation" (whole army moving) or a "Fake Out" (just a few names moving).</p>
                                             </div>
                                         </div>
                                     </>

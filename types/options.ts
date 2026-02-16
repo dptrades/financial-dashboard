@@ -33,6 +33,7 @@ export interface OptionRecommendation {
     symbol?: string;           // OSI Symbol (e.g. AAPL260320C00185000)
     putCallRatio?: number;     // Put/Call ratio based on volume
     probabilityITM?: number;    // Estimated probability of expiring ITM (0.0 to 1.0)
+    dte?: number;              // Days To Expiration
 }
 
 export interface OptionsChain {

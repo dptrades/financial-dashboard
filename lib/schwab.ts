@@ -11,6 +11,7 @@ export class SchwabClient {
     private refreshToken: string | null = null;
     private accessToken: string | null = null;
     private tokenExpiry: number = 0;
+    private throttledUntil: number = 0;
 
     constructor() {
         this.clientId = env.SCHWAB_CLIENT_ID || '';
@@ -23,6 +24,7 @@ export class SchwabClient {
     }
 
     private async refreshAccessToken(): Promise<string> {
+        if (Date.now() < this.throttledUntil) return '';
         if (this.accessToken && Date.now() < this.tokenExpiry) {
             return this.accessToken;
         }
@@ -51,12 +53,16 @@ export class SchwabClient {
                 return this.accessToken!;
             }
         } catch (error: any) {
+            if (error.response?.status === 429) {
+                this.throttledUntil = Date.now() + (30 * 1000);
+            }
             console.error('[SchwabAPI] Failed to refresh token:', error.response?.data || error.message);
         }
         return '';
     }
 
     async getPriceHistory(symbol: string, periodType: string, period: number, frequencyType: string, frequency: number): Promise<OHLCVData[]> {
+        if (Date.now() < this.throttledUntil) return [];
         const token = await this.refreshAccessToken();
         if (!token) return [];
 
@@ -84,12 +90,16 @@ export class SchwabClient {
                 }));
             }
         } catch (error: any) {
+            if (error.response?.status === 429) {
+                this.throttledUntil = Date.now() + (30 * 1000);
+            }
             console.error(`[SchwabAPI] Failed to fetch price history for ${symbol}:`, error.message);
         }
         return [];
     }
 
     async getOptionChain(symbol: string): Promise<any> {
+        if (Date.now() < this.throttledUntil) return null;
         const token = await this.refreshAccessToken();
         if (!token) return null;
 
@@ -100,13 +110,16 @@ export class SchwabClient {
             });
             return response.data;
         } catch (error: any) {
+            if (error.response?.status === 429) {
+                this.throttledUntil = Date.now() + (30 * 1000);
+            }
             console.error(`[SchwabAPI] Failed to fetch option chain for ${symbol}:`, error.message);
             return null;
         }
     }
 
     async getGreeks(symbol: string): Promise<any> {
-        // Schwab's /chains endpoint usually includes Greeks, but we can also fetch a single quote
+        if (Date.now() < this.throttledUntil) return null;
         const token = await this.refreshAccessToken();
         if (!token) return null;
 
@@ -116,16 +129,21 @@ export class SchwabClient {
             });
             if (response.data && response.data[symbol]) {
                 const quote = response.data[symbol];
+                const q = quote.quote; // Schwab quotes often nested under quote key
                 return {
-                    delta: quote.delta,
-                    gamma: quote.gamma,
-                    theta: quote.theta,
-                    vega: quote.vega,
-                    rho: quote.rho,
-                    impliedVolatility: quote.volatility
+                    delta: q?.delta || 0,
+                    gamma: q?.gamma || 0,
+                    theta: q?.theta || 0,
+                    vega: q?.vega || 0,
+                    rho: q?.rho || 0,
+                    impliedVolatility: q?.volatility || 0,
+                    lastPrice: quote.lastPrice || q?.lastPrice || 0
                 };
             }
         } catch (error: any) {
+            if (error.response?.status === 429) {
+                this.throttledUntil = Date.now() + (30 * 1000);
+            }
             console.error(`[SchwabAPI] Failed to fetch Greeks for ${symbol}:`, error.message);
         }
         return null;

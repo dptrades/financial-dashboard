@@ -22,6 +22,7 @@ export interface PriceStatsData {
     previousMonth: PeriodStats | null;
     currentYear: PeriodStats | null;
     previousYear: PeriodStats | null;
+    fiftyTwoWeek: PeriodStats | null;
     allTime: PeriodStats | null;
 }
 
@@ -31,6 +32,7 @@ export async function fetchPriceStats(symbol: string): Promise<PriceStatsData> {
         currentWeek: null, previousWeek: null,
         currentMonth: null, previousMonth: null,
         currentYear: null, previousYear: null,
+        fiftyTwoWeek: null,
         allTime: null
     };
 
@@ -115,6 +117,14 @@ export async function fetchPriceStats(symbol: string): Promise<PriceStatsData> {
         }
         if (prevYearBars.length > 0) {
             result.previousYear = aggregateBars('Previous Year', prevYearBars);
+        }
+
+        // --- 52 WEEK ---
+        const startOfFiftyTwoWeek = new Date(now);
+        startOfFiftyTwoWeek.setDate(now.getDate() - 365);
+        const fiftyTwoWeekBars = bars.filter(b => b.date >= startOfFiftyTwoWeek);
+        if (fiftyTwoWeekBars.length > 0) {
+            result.fiftyTwoWeek = aggregateBars('52 Week', fiftyTwoWeekBars);
         }
 
         // --- ALL TIME ---

@@ -35,6 +35,12 @@ export interface IndicatorData extends OHLCVData {
   atr14?: number;
   adx14?: number;
 
+  fvg?: {
+    type: 'BULLISH' | 'BEARISH' | 'NONE';
+    gapLow: number;
+    gapHigh: number;
+  };
+
   pattern?: {
     name: 'Doji' | 'Hammer' | 'Shooting Star' | 'Bullish Engulfing' | 'Bearish Engulfing' | 'None';
     signal: 'bullish' | 'bearish' | 'neutral';

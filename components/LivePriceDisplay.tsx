@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Database } from 'lucide-react';
 
 interface LivePriceDisplayProps {
     symbol: string;
@@ -12,9 +12,13 @@ interface LivePriceDisplayProps {
 
 interface PriceData {
     price: number;
+    regularMarketPrice?: number;
     change: number;
     changePercent: number;
+    regularMarketChange?: number;
+    regularMarketChangePercent?: number;
     marketSession?: 'PRE' | 'REG' | 'POST' | 'OFF';
+    source?: string;
 }
 
 export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true, showChange = false }: LivePriceDisplayProps) {
@@ -31,20 +35,29 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
             if (res.ok) {
                 const data = await res.json();
                 if (data.price !== null && data.price !== undefined) {
+                    const isSessionLive = data.marketSession === 'REG';
+                    const latestPrice = isSessionLive ? data.price : (data.regularMarketPrice || data.price);
+                    const latestChange = isSessionLive ? data.change : (data.regularMarketChange || data.change);
+                    const latestChangePercent = isSessionLive ? data.changePercent : (data.regularMarketChangePercent || data.changePercent);
+
                     // Detect price direction change for flash animation
                     if (priceData?.price) {
-                        if (data.price > priceData.price) setPriceFlash('up');
-                        else if (data.price < priceData.price) setPriceFlash('down');
+                        if (latestPrice > priceData.price) setPriceFlash('up');
+                        else if (latestPrice < priceData.price) setPriceFlash('down');
                         else setPriceFlash(null);
                     }
 
                     setPriceData({
-                        price: data.price,
-                        change: data.change || 0,
-                        changePercent: data.changePercent || 0,
-                        marketSession: data.marketSession
+                        price: latestPrice,
+                        regularMarketPrice: data.regularMarketPrice,
+                        change: latestChange,
+                        changePercent: latestChangePercent,
+                        regularMarketChange: data.regularMarketChange,
+                        regularMarketChangePercent: data.regularMarketChangePercent,
+                        marketSession: data.marketSession,
+                        source: data.source
                     });
-                    setIsLive(data.marketSession === 'REG');
+                    setIsLive(isSessionLive);
                     setLastUpdate(new Date());
 
                     // Clear flash after animation
@@ -81,7 +94,7 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
     const isPositive = change >= 0;
 
     if (!displayPrice) {
-        return <span className="text-gray-300">--</span>;
+        return <span className="text-gray-200">--</span>;
     }
 
     return (
@@ -121,7 +134,17 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
                     <span className="text-[10px] text-green-400 uppercase font-bold tracking-wider">Live</span>
                 </div>
             ) : (
-                <span className="text-xs text-gray-300">Last Close</span>
+                <span className="text-xs text-gray-200 font-medium px-2 py-0.5 rounded bg-gray-800/50 border border-gray-700/50">Last Close</span>
+            )}
+
+            {/* Source */}
+            {priceData?.source && (
+                <div className="flex items-center gap-1.5 opacity-60 ml-1">
+                    <Database className="w-2.5 h-2.5 text-blue-400" />
+                    <span className="text-[10px] uppercase font-bold tracking-tight text-gray-300">
+                        via {priceData.source}
+                    </span>
+                </div>
             )}
         </div>
     );

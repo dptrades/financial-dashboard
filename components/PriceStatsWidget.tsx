@@ -11,7 +11,7 @@ function StatCard({ current, previous, periodLabel }: { current: PeriodStats | n
     return (
         <div className="bg-gray-800/40 rounded-lg border border-gray-700/40 overflow-hidden">
             <div className="px-3 py-1.5 bg-gray-800/60 border-b border-gray-700/30">
-                <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">{periodLabel}</span>
+                <span className="text-xs font-semibold text-gray-200 uppercase tracking-wider">{periodLabel}</span>
             </div>
             <div className="grid grid-cols-2 divide-x divide-gray-700/30">
                 <PeriodColumn stats={current} isCurrent={true} />
@@ -25,8 +25,8 @@ function PeriodColumn({ stats, isCurrent }: { stats: PeriodStats | null; isCurre
     if (!stats) {
         return (
             <div className="p-3 text-center">
-                <div className="text-[10px] text-gray-300 uppercase mb-1">{isCurrent ? 'Current' : 'Previous'}</div>
-                <div className="text-gray-200 text-xs">No data</div>
+                <div className="text-[10px] text-gray-200 uppercase mb-1">{isCurrent ? 'Current' : 'Previous'}</div>
+                <div className="text-gray-100 text-xs">No data</div>
             </div>
         );
     }
@@ -38,7 +38,7 @@ function PeriodColumn({ stats, isCurrent }: { stats: PeriodStats | null; isCurre
 
     return (
         <div className="p-2.5">
-            <div className="text-[10px] text-gray-300 uppercase mb-1.5 font-medium">{stats.label}</div>
+            <div className="text-[10px] text-gray-200 uppercase mb-1.5 font-medium">{stats.label}</div>
 
             {/* Change % - hero metric */}
             <div className={`flex items-center gap-1 mb-1.5 ${changeBg} rounded px-1.5 py-0.5 w-fit`}>
@@ -50,19 +50,19 @@ function PeriodColumn({ stats, isCurrent }: { stats: PeriodStats | null; isCurre
 
             {/* OHLC mini grid */}
             <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
-                <div className="text-gray-300">Open</div>
-                <div className="text-gray-300 font-mono text-right">${stats.open.toFixed(2)}</div>
-                <div className="text-gray-300">Close</div>
+                <div className="text-gray-200">Open</div>
+                <div className="text-gray-200 font-mono text-right">${stats.open.toFixed(2)}</div>
+                <div className="text-gray-200">Close</div>
                 <div className={`font-mono text-right ${changeColor}`}>${stats.close.toFixed(2)}</div>
-                <div className="text-gray-300">High</div>
-                <div className="text-gray-300 font-mono text-right">${stats.high.toFixed(2)}</div>
-                <div className="text-gray-300">Low</div>
-                <div className="text-gray-300 font-mono text-right">${stats.low.toFixed(2)}</div>
+                <div className="text-gray-200">High</div>
+                <div className="text-gray-200 font-mono text-right">${stats.high.toFixed(2)}</div>
+                <div className="text-gray-200">Low</div>
+                <div className="text-gray-200 font-mono text-right">${stats.low.toFixed(2)}</div>
             </div>
 
             {/* Volume if available */}
             {stats.volume != null && stats.volume > 0 && (
-                <div className="mt-1 text-[9px] text-gray-300 flex items-center gap-1">
+                <div className="mt-1 text-[9px] text-gray-200 flex items-center gap-1">
                     <BarChart3 className="w-2.5 h-2.5" />
                     {formatVolume(stats.volume)}
                 </div>
@@ -95,17 +95,17 @@ export default function PriceStatsWidget({ priceStats }: PriceStatsWidgetProps) 
             {priceStats.allTime && (
                 <div className="mt-3 bg-gray-800/40 rounded-lg border border-gray-700/40 overflow-hidden">
                     <div className="px-3 py-1.5 bg-gray-800/60 border-b border-gray-700/30">
-                        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">All Time (2Y History)</span>
+                        <span className="text-xs font-semibold text-gray-200 uppercase tracking-wider">All Time (2Y History)</span>
                     </div>
                     <div className="p-2.5 flex items-center gap-4 flex-wrap">
-                        <div className="text-[10px] text-gray-300">
-                            High: <span className="text-gray-200 font-mono font-bold">${priceStats.allTime.high.toFixed(2)}</span>
+                        <div className="text-[10px] text-gray-200">
+                            High: <span className="text-gray-100 font-mono font-bold">${priceStats.allTime.high.toFixed(2)}</span>
                         </div>
-                        <div className="text-[10px] text-gray-300">
-                            Low: <span className="text-gray-200 font-mono font-bold">${priceStats.allTime.low.toFixed(2)}</span>
+                        <div className="text-[10px] text-gray-200">
+                            Low: <span className="text-gray-100 font-mono font-bold">${priceStats.allTime.low.toFixed(2)}</span>
                         </div>
-                        <div className="text-[10px] text-gray-300">
-                            Range: <span className="text-gray-200 font-mono font-bold">${(priceStats.allTime.high - priceStats.allTime.low).toFixed(2)}</span>
+                        <div className="text-[10px] text-gray-200">
+                            Range: <span className="text-gray-100 font-mono font-bold">${(priceStats.allTime.high - priceStats.allTime.low).toFixed(2)}</span>
                         </div>
                         <div className={`flex items-center gap-1 ${priceStats.allTime.changePct >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'} rounded px-1.5 py-0.5`}>
                             {priceStats.allTime.changePct >= 0 ? (

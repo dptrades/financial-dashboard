@@ -249,12 +249,12 @@ export default function PortfolioPage() {
                     <header className="p-6 bg-gray-900/50 border-b border-gray-800 sticky top-0 z-10 backdrop-blur-md">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <Link href="/" className="text-gray-200 hover:text-white transition-colors">
+                                <Link href="/" className="text-gray-100 hover:text-white transition-colors">
                                     <ArrowLeft className="w-5 h-5" />
                                 </Link>
                                 <div>
                                     <h1 className="text-xl font-bold">Paper Trading Portfolio</h1>
-                                    <p className="text-sm text-gray-200">Automated trades via Alpaca</p>
+                                    <p className="text-sm text-gray-100">Automated trades via Alpaca</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
@@ -322,7 +322,7 @@ export default function PortfolioPage() {
                                                     {result.qty} shares
                                                 </span>
                                             </div>
-                                            <div className="text-gray-300 text-xs">
+                                            <div className="text-gray-200 text-xs">
                                                 {result.status.includes('success') || result.status === 'submitted' ? (
                                                     `Success ($${result.estimatedCost?.toFixed(2)})`
                                                 ) : (
@@ -344,19 +344,19 @@ export default function PortfolioPage() {
                                 {/* Account Overview */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                                     <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm">
-                                        <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider font-semibold">Portfolio Value</p>
+                                        <p className="text-gray-200 text-xs mb-1 uppercase tracking-wider font-semibold">Portfolio Value</p>
                                         <p className="text-2xl font-bold">{formatCurrency(portfolio.account.portfolioValue)}</p>
                                     </div>
                                     <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm">
-                                        <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider font-semibold">Equity</p>
+                                        <p className="text-gray-200 text-xs mb-1 uppercase tracking-wider font-semibold">Equity</p>
                                         <p className="text-2xl font-bold">{formatCurrency(portfolio.account.equity)}</p>
                                     </div>
                                     <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm">
-                                        <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider font-semibold">Cash</p>
+                                        <p className="text-gray-200 text-xs mb-1 uppercase tracking-wider font-semibold">Cash</p>
                                         <p className="text-2xl font-bold">{formatCurrency(portfolio.account.cash)}</p>
                                     </div>
                                     <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm">
-                                        <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider font-semibold">Buying Power</p>
+                                        <p className="text-gray-200 text-xs mb-1 uppercase tracking-wider font-semibold">Buying Power</p>
                                         <p className="text-2xl font-bold text-blue-400">{formatCurrency(portfolio.account.buyingPower)}</p>
                                     </div>
                                 </div>
@@ -371,7 +371,7 @@ export default function PortfolioPage() {
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left border-collapse">
                                                 <thead>
-                                                    <tr className="bg-gray-900/30 border-b border-gray-700 text-gray-400 text-xs uppercase font-bold tracking-wider">
+                                                    <tr className="bg-gray-900/30 border-b border-gray-700 text-gray-200 text-xs uppercase font-bold tracking-wider">
                                                         <th className="py-3 px-4">Symbol</th>
                                                         <th className="py-3 px-4">Qty</th>
                                                         <th className="py-3 px-4">Price</th>
@@ -383,7 +383,7 @@ export default function PortfolioPage() {
                                                 <tbody className="divide-y divide-gray-700">
                                                     {portfolio.positions.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={6} className="py-12 text-center text-gray-500 font-medium">No open positions. Click "Execute Trades" to start.</td>
+                                                            <td colSpan={6} className="py-12 text-center text-gray-300 font-medium">No open positions. Click "Execute Trades" to start.</td>
                                                         </tr>
                                                     ) : (
                                                         portfolio.positions.map((pos) => (
@@ -417,7 +417,7 @@ export default function PortfolioPage() {
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left border-collapse">
                                                 <thead>
-                                                    <tr className="bg-gray-900/30 border-b border-gray-700 text-gray-400 text-xs uppercase font-bold tracking-wider">
+                                                    <tr className="bg-gray-900/30 border-b border-gray-700 text-gray-200 text-xs uppercase font-bold tracking-wider">
                                                         <th className="py-3 px-4">Symbol</th>
                                                         <th className="py-3 px-4">Side</th>
                                                         <th className="py-3 px-4">Qty</th>
@@ -429,7 +429,7 @@ export default function PortfolioPage() {
                                                 <tbody className="divide-y divide-gray-700">
                                                     {portfolio.recentOrders.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={6} className="py-12 text-center text-gray-500 font-medium">No recent orders.</td>
+                                                            <td colSpan={6} className="py-12 text-center text-gray-300 font-medium">No recent orders.</td>
                                                         </tr>
                                                     ) : (
                                                         portfolio.recentOrders.map((order) => (
@@ -447,10 +447,10 @@ export default function PortfolioPage() {
                                                                         {order.status}
                                                                     </span>
                                                                 </td>
-                                                                <td className="py-3 px-4 font-mono text-gray-300">
+                                                                <td className="py-3 px-4 font-mono text-gray-200">
                                                                     {order.filledPrice ? formatCurrency(order.filledPrice) : '-'}
                                                                 </td>
-                                                                <td className="py-3 px-4 text-gray-400 text-xs font-mono">
+                                                                <td className="py-3 px-4 text-gray-200 text-xs font-mono">
                                                                     {new Date(order.createdAt).toLocaleString()}
                                                                 </td>
                                                             </tr>
@@ -464,22 +464,22 @@ export default function PortfolioPage() {
 
                                 {/* Trade Settings Info */}
                                 <div className="p-4 bg-gray-800/50 rounded-xl border border-gray-700 border-dashed">
-                                    <h3 className="text-sm font-bold mb-3 uppercase tracking-wider text-gray-400">Trade Configuration</h3>
+                                    <h3 className="text-sm font-bold mb-3 uppercase tracking-wider text-gray-200">Trade Configuration</h3>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                         <div className="flex flex-col">
-                                            <span className="text-gray-400 text-xs">Position Size</span>
+                                            <span className="text-gray-200 text-xs">Position Size</span>
                                             <span className="font-bold text-white">$250</span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-gray-400 text-xs">Stop Loss</span>
+                                            <span className="text-gray-200 text-xs">Stop Loss</span>
                                             <span className="font-bold text-red-400">-15%</span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-gray-400 text-xs">Profit Target</span>
+                                            <span className="text-gray-200 text-xs">Profit Target</span>
                                             <span className="font-bold text-green-400">+25%</span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-gray-400 text-xs">Max Portfolio Risk</span>
+                                            <span className="text-gray-200 text-xs">Max Portfolio Risk</span>
                                             <span className="font-bold text-white">$1000 Total</span>
                                         </div>
                                     </div>

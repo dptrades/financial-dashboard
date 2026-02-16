@@ -35,13 +35,13 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
     if (!data || data.type === 'WAIT') {
         return (
             <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 mb-4 opacity-75">
-                <div className="flex items-center gap-2 mb-2 text-gray-200">
+                <div className="flex items-center gap-2 mb-2 text-gray-100">
                     <MousePointerClick className="w-4 h-4" />
                     <span className="text-xs font-bold uppercase tracking-wider">Options AI</span>
                     {onRefresh && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onRefresh(); }}
-                            className="p-1 hover:bg-gray-700 rounded-md transition-colors text-gray-400 hover:text-white"
+                            className="p-1 hover:bg-gray-700 rounded-md transition-colors text-gray-200 hover:text-white"
                             title="Refresh Signal"
                         >
                             <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
@@ -49,13 +49,29 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                     )}
                 </div>
                 <div className="text-center py-2">
-                    <span className="text-gray-300 font-medium text-sm">No High-Prob Setup</span>
-                    {data && data.reason && (
-                        <span className="block text-[10px] text-gray-400 mt-1">{data.reason}</span>
+                    <div className="text-gray-200 font-bold text-lg mb-1">No High-Prob Setup</div>
+
+                    {data && data.strike > 0 && (
+                        <div className="flex flex-col items-center gap-1 mb-3">
+                            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Intended Alpha Play</div>
+                            <div className="text-white font-mono text-base bg-gray-900/50 px-3 py-1 rounded border border-gray-700/50">
+                                ${data.strike} <span className="text-gray-400 text-xs">Strike</span>
+                            </div>
+                            <div className="text-[9px] text-blue-400/80 font-medium italic mt-1 bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10">
+                                <span className="opacity-60">Logic:</span> Price ± (0.5 × ATR) → Rounded | <span className="text-white font-bold">{data.dte} DTE</span>
+                            </div>
+                        </div>
                     )}
-                    <div className="mt-3">
-                        <span className="text-[10px] text-blue-400 font-bold bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
-                            Refresh to get the latest data
+
+                    {data && data.reason && (
+                        <p className="text-[11px] text-gray-300 px-4 leading-relaxed mb-4">
+                            {data.reason}
+                        </p>
+                    )}
+
+                    <div className="">
+                        <span className="text-[10px] text-blue-400 font-bold bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 animate-pulse">
+                            Monitoring Liquidity...
                         </span>
                     </div>
                 </div>
@@ -91,7 +107,7 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                         onClick={() => setActiveDetail(null)}
                         className="p-1 hover:bg-gray-800 rounded-lg transition-colors border border-gray-700/50"
                     >
-                        <X className="w-4 h-4 text-gray-400" />
+                        <X className="w-4 h-4 text-gray-200" />
                     </button>
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
@@ -99,14 +115,14 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                         details.items.map((item, i) => (
                             <div key={i} className="flex items-start gap-2 bg-gray-800/50 p-2 rounded border border-gray-700/30">
                                 <div className={`w-1 h-1 rounded-full mt-1.5 ${details.color.replace('text', 'bg')}`}></div>
-                                <span className="text-[11px] text-gray-200 font-medium leading-tight">{item}</span>
+                                <span className="text-[11px] text-gray-100 font-medium leading-tight">{item}</span>
                             </div>
                         ))
                     ) : (
-                        <div className="text-[10px] text-gray-400 italic py-2">No detailed factors captured for this signal.</div>
+                        <div className="text-[10px] text-gray-200 italic py-2">No detailed factors captured for this signal.</div>
                     )}
                 </div>
-                <div className="mt-3 text-[9px] text-gray-500 text-center uppercase tracking-widest font-bold">
+                <div className="mt-3 text-[9px] text-gray-300 text-center uppercase tracking-widest font-bold">
                     AI Analysis Result
                 </div>
             </div>
@@ -125,11 +141,11 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     <MousePointerClick className={`w-4 h-4 ${color}`} />
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-200">Options AI</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-100">Options AI</span>
                     {onRefresh && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onRefresh(); }}
-                            className="p-1 hover:bg-gray-700 rounded-md transition-colors text-gray-400 hover:text-white"
+                            className="p-1 hover:bg-gray-700 rounded-md transition-colors text-gray-200 hover:text-white"
                             title="Refresh Signal"
                         >
                             <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
@@ -144,13 +160,13 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
             {/* Signal Type & Strike */}
             <div className="flex justify-between items-end mb-3">
                 <div>
-                    <div className={`text-2xl font-bold ${color} leading-none mb-1`}>
+                    <div className={`text-xl font-bold ${color} leading-none mb-1`}>
                         {data.type}
                     </div>
-                    <div className="text-white font-mono text-lg flex items-center gap-2">
-                        ${data.strike} <span className="text-gray-300 text-sm">Strike</span>
+                    <div className="text-white font-mono text-sm flex items-center gap-2">
+                        ${data.strike} <span className="text-gray-200 text-xs">Strike</span>
                         {data.contractPrice && (
-                            <span className={`text-xs font-bold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/30 transition-colors duration-300 ${priceFlash === 'up' ? 'text-green-400 border-green-500/50' :
+                            <span className={`text-[10px] font-bold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/30 transition-colors duration-300 ${priceFlash === 'up' ? 'text-green-400 border-green-500/50' :
                                 priceFlash === 'down' ? 'text-red-400 border-red-500/50' :
                                     'text-blue-400'
                                 }`}>
@@ -160,8 +176,13 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                     </div>
                 </div>
                 <div className="text-right flex flex-col items-end gap-1">
-                    <div className="text-xs text-gray-200">Expiry</div>
-                    <div className="text-white font-medium">{data.expiry}</div>
+                    <div className="text-[10px] text-gray-100">Expiry</div>
+                    <div className="text-white text-sm font-medium flex items-center gap-2">
+                        {data.expiry}
+                        <span className="text-[10px] text-blue-400 font-bold bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+                            {data.dte}D
+                        </span>
+                    </div>
                     {data.isUnusual && (
                         <span className="text-[8px] font-bold uppercase bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/30">
                             Unusual Vol
@@ -195,22 +216,22 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
             {/* Metrics Row - Responsive Wrap */}
             <div className="flex justify-between items-center mb-4 px-1 flex-wrap gap-2 text-center">
                 <div className="text-center">
-                    <div className="text-[9px] text-gray-200 uppercase font-bold mb-1">Vol / OI</div>
+                    <div className="text-[9px] text-gray-100 uppercase font-bold mb-1">Vol / OI</div>
                     <div className="text-[11px] text-white font-mono font-bold">
                         {data.volume ? (data.volume > 1000 ? `${(data.volume / 1000).toFixed(1)}k` : data.volume) : '---'}
-                        <span className="text-gray-300 mx-1">/</span>
+                        <span className="text-gray-200 mx-1">/</span>
                         {data.openInterest ? (data.openInterest > 1000 ? `${(data.openInterest / 1000).toFixed(1)}k` : data.openInterest) : '---'}
                     </div>
                 </div>
                 <div className="text-center">
-                    <div className="text-[9px] text-gray-200 uppercase font-bold mb-1">IV</div>
+                    <div className="text-[9px] text-gray-100 uppercase font-bold mb-1">IV</div>
                     <div className={`text-[11px] font-mono font-bold ${(data.iv || 0) > 0.5 ? 'text-yellow-400' : 'text-emerald-400'}`}>
                         {data.iv ? `${(data.iv * 100).toFixed(1)}%` : '---'}
                     </div>
                 </div>
                 {data.probabilityITM !== undefined && (
                     <div className="text-center border-l border-gray-700/50 pl-3">
-                        <div className="text-[9px] text-gray-200 uppercase font-bold mb-1">Prob. ITM</div>
+                        <div className="text-[9px] text-gray-100 uppercase font-bold mb-1">Prob. ITM</div>
                         <div className={`text-[11px] font-mono font-bold ${(data.probabilityITM || 0) > 0.6 ? 'text-emerald-400' : (data.probabilityITM || 0) < 0.3 ? 'text-red-400' : 'text-blue-400'}`}>
                             {(data.probabilityITM * 100).toFixed(1)}%
                         </div>
@@ -221,7 +242,7 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
             {/* Confirmations Section */}
             <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/30 mb-4">
                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] uppercase font-bold text-gray-300 tracking-wider">Confluence Analysis</span>
+                    <span className="text-[10px] uppercase font-bold text-gray-200 tracking-wider">Confluence Analysis</span>
                     <span className="text-[10px] font-mono text-blue-400 font-bold">{(data.technicalConfirmations || 0) + (data.fundamentalConfirmations || 0) + (data.socialConfirmations || 0)} Factors</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -229,8 +250,8 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                         onClick={() => setActiveDetail('tech')}
                         className={`text-center bg-gray-800/30 rounded-md p-1.5 border border-gray-700/20 hover:bg-gray-700/30 transition-all ${isCall ? 'hover:border-emerald-500/50' : 'hover:border-red-500/50'}`}
                     >
-                        <div className="text-[9px] font-bold text-gray-400 uppercase mb-1">Technical</div>
-                        <div className={`text-[10px] font-bold leading-tight ${data.technicalConfirmations && data.technicalConfirmations >= 3 ? (isCall ? 'text-emerald-400' : 'text-red-400') : 'text-gray-200'}`}>
+                        <div className="text-[9px] font-bold text-gray-200 uppercase mb-1">Technical</div>
+                        <div className={`text-[10px] font-bold leading-tight ${data.technicalConfirmations && data.technicalConfirmations >= 3 ? (isCall ? 'text-emerald-400' : 'text-red-400') : 'text-gray-100'}`}>
                             {(data.technicalConfirmations || 0) >= 4 ? (isCall ? 'Overlapping' : 'Breakdown') : (data.technicalConfirmations || 0) >= 3 ? (isCall ? 'Bullish' : 'Bearish') : 'Neutral'}
                         </div>
                     </button>
@@ -238,8 +259,8 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                         onClick={() => setActiveDetail('fund')}
                         className="text-center bg-gray-800/30 rounded-md p-1.5 border border-gray-700/20 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all"
                     >
-                        <div className="text-[9px] font-bold text-gray-400 uppercase mb-1">Fundamental</div>
-                        <div className={`text-[10px] font-bold leading-tight ${data.fundamentalConfirmations && data.fundamentalConfirmations >= 1 ? 'text-blue-400' : 'text-gray-200'}`}>
+                        <div className="text-[9px] font-bold text-gray-200 uppercase mb-1">Fundamental</div>
+                        <div className={`text-[10px] font-bold leading-tight ${data.fundamentalConfirmations && data.fundamentalConfirmations >= 1 ? 'text-blue-400' : 'text-gray-100'}`}>
                             {(data.fundamentalConfirmations || 0) >= 2 ? 'Strong Value' : (data.fundamentalConfirmations || 0) >= 1 ? 'Fair Value' : 'Mixed'}
                         </div>
                     </button>
@@ -247,8 +268,8 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                         onClick={() => setActiveDetail('social')}
                         className="text-center bg-gray-800/30 rounded-md p-1.5 border border-gray-700/20 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all"
                     >
-                        <div className="text-[9px] font-bold text-gray-400 uppercase mb-1">Sentiment</div>
-                        <div className={`text-[10px] font-bold leading-tight ${data.socialConfirmations && data.socialConfirmations >= 1 ? 'text-purple-400' : 'text-gray-200'}`}>
+                        <div className="text-[9px] font-bold text-gray-200 uppercase mb-1">Sentiment</div>
+                        <div className={`text-[10px] font-bold leading-tight ${data.socialConfirmations && data.socialConfirmations >= 1 ? 'text-purple-400' : 'text-gray-100'}`}>
                             {(data.socialConfirmations || 0) >= 2 ? 'Viral Buzz' : (data.socialConfirmations || 0) >= 1 ? 'Positive' : 'Quiet'}
                         </div>
                     </button>
@@ -258,7 +279,7 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
             {/* === TRADE PLAN === */}
             {data.entryPrice && (
                 <div className="space-y-2 pt-3 border-t border-gray-700/50">
-                    <div className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Trade Plan</div>
+                    <div className="text-xs font-bold text-gray-200 uppercase tracking-wider mb-2">Trade Plan</div>
 
                     {/* Trade Plan Grid (Entry, Stop, Target) - Responsive */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -266,7 +287,7 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                         <div className="flex flex-col bg-gray-900/50 rounded-lg p-2 border border-gray-700/30">
                             <div className="flex items-center gap-1 mb-1">
                                 <Crosshair className="w-3 h-3 text-blue-400" />
-                                <span className="text-[9px] text-gray-300 uppercase font-bold">Entry</span>
+                                <span className="text-[9px] text-gray-200 uppercase font-bold">Entry</span>
                             </div>
                             <div className="text-xs font-mono text-white font-bold">${data.entryPrice.toFixed(2)}</div>
                         </div>
@@ -293,13 +314,13 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                     {/* Secondary Trade Info (Entry Condition & R:R) */}
                     <div className="flex items-center justify-between px-1 text-[10px]">
                         {data.entryCondition && (
-                            <div className="flex items-center gap-1 text-gray-400">
+                            <div className="flex items-center gap-1 text-gray-200">
                                 <Zap className="w-3 h-3 text-yellow-400" />
                                 <span>{data.entryCondition}</span>
                             </div>
                         )}
                         {data.riskReward && (
-                            <div className="text-gray-400 border border-gray-700/50 px-1.5 rounded bg-gray-900/50">
+                            <div className="text-gray-200 border border-gray-700/50 px-1.5 rounded bg-gray-900/50">
                                 R:R Target: <span className="text-yellow-400 font-bold">{data.riskReward}</span>
                             </div>
                         )}
@@ -308,8 +329,8 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                     {/* Max Loss Note */}
                     {data.maxLoss && (
                         <div className="flex items-start gap-1.5 pt-1">
-                            <AlertCircle className="w-3.5 h-3.5 text-gray-200 mt-0.5 flex-shrink-0" />
-                            <p className="text-[11px] text-gray-200 leading-tight">
+                            <AlertCircle className="w-3.5 h-3.5 text-gray-100 mt-0.5 flex-shrink-0" />
+                            <p className="text-[11px] text-gray-100 leading-tight">
                                 Max loss: {data.maxLoss}. {data.reason}.
                             </p>
                         </div>

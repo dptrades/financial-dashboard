@@ -6,7 +6,7 @@ import { getNewsData } from './news-service';
 import { fetchAlpacaBars } from './alpaca';
 import { publicClient } from './public-api';
 import { runSmartScan, DiscoveredStock } from './smart-scanner';
-import { SECTOR_MAP, SCANNER_WATCHLIST } from './constants';
+import { getSectorMap, SCANNER_WATCHLIST } from './constants';
 import { generateOptionSignal } from './options';
 
 // Import and re-export types for backwards compatibility
@@ -14,76 +14,58 @@ import type { ConvictionStock } from '../types/stock';
 import type { OptionRecommendation } from '../types/options';
 export type { ConvictionStock } from '../types/stock';
 
-// Disable dynamic discovery - focus only on mega-cap curated list
-const ENABLE_SMART_DISCOVERY = false;
+// Enable dynamic discovery - expand search beyond mega caps
+const ENABLE_SMART_DISCOVERY = true;
 
-// High Mega Cap Stocks - S&P 500 & Nasdaq 100 Only (Market Cap > $200B)
-// These are the largest, most liquid companies in both indices
+// High Mega Cap & Large Cap Stocks - Top ~250 by Market Cap (S&P 500 & Nasdaq 100 Leaders)
 const CONVICTION_WATCHLIST = [
-    // Magnificent 7 + Top Tech (All in both SPX & NDX)
-    'AAPL',   // Apple - $2.8T
-    'MSFT',   // Microsoft - $3.1T
-    'GOOGL',  // Alphabet - $2.0T
-    'AMZN',   // Amazon - $2.0T
-    'NVDA',   // NVIDIA - $2.5T
-    'META',   // Meta Platforms - $1.4T
-    'TSLA',   // Tesla - $800B
+    // --- MAGNIFICENT 7 & MEGA TECH ---
+    'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AVGO',
 
-    // Top Tech / Semiconductors
-    'AVGO',   // Broadcom - $700B
-    'ORCL',   // Oracle - $400B
-    'ADBE',   // Adobe - $230B
-    'CRM',    // Salesforce - $280B
-    'AMD',    // AMD - $250B
-    'QCOM',   // Qualcomm - $200B
-    'INTC',   // Intel - $200B
-    'CSCO',   // Cisco - $230B
-    'INTU',   // Intuit - $200B
+    // --- TOP SEMICONDUCTORS & HARDWARE ---
+    'AMD', 'QCOM', 'INTC', 'TXN', 'AMAT', 'MU', 'LRCX', 'ADI', 'KLAC', 'MCHP', 'MRVL', 'STM', 'NXPI', 'ON', 'MPWR',
+    'CSCO', 'IBM', 'APH', 'TEL', 'HPQ', 'DELL', 'ANET', 'GLW', 'STX', 'WDC', 'HPE', 'NTAP', 'PSTG', 'SMCI',
 
-    // Finance / Payments (S&P 500 Mega Caps in NDX-adjacent sectors)
-    'V',      // Visa - $550B
-    'MA',     // Mastercard - $450B
-    'JPM',    // JPMorgan - $600B
-    'BRK-B',  // Berkshire - $900B
+    // --- SOFTWARE & CLOUD ---
+    'ORCL', 'CRM', 'ADBE', 'INTU', 'NOW', 'UBER', 'ABNB', 'PANW', 'SNOW', 'PLTR', 'CRWD', 'WDAY', 'ADSK', 'SNPS', 'CDNS',
+    'FTNT', 'ZS', 'DDOG', 'NET', 'TEAM', 'HUBS', 'MDB', 'SQ', 'SHOP', 'TTD', 'RBLX', 'ZM', 'DOCU', 'OKTA', 'TWLO',
 
-    // Healthcare Giants
-    'LLY',    // Eli Lilly - $750B
-    'UNH',    // UnitedHealth - $500B
-    'JNJ',    // Johnson & Johnson - $400B
-    'MRK',    // Merck - $300B
-    'ABBV',   // AbbVie - $350B
-    'PFE',    // Pfizer - $200B
-    'TMO',    // Thermo Fisher - $220B
+    // --- FINANCE & PAYMENTS ---
+    'JPM', 'V', 'MA', 'BAC', 'WFC', 'C', 'MS', 'GS', 'BLK', 'AXP', 'SPGI', 'MCO', 'PGR', 'CB', 'MMC', 'AON', 'ICE', 'CME',
+    'SCHW', 'BX', 'KKR', 'APO', 'USB', 'PNC', 'TFC', 'BK', 'STT', 'COF', 'DFS', 'HIG', 'ALL', 'TRV', 'AIG', 'MET', 'PRU',
+    'PYPL', 'HOOD', 'SOFI', 'COIN', 'AFRM', 'UPST',
 
-    // Consumer / Retail Mega Caps
-    'COST',   // Costco - $400B
-    'WMT',    // Walmart - $500B
-    'PG',     // P&G - $400B
-    'KO',     // Coca-Cola - $270B
-    'PEP',    // PepsiCo - $240B
-    'HD',     // Home Depot - $380B
-    'MCD',    // McDonald's - $210B
-    'NKE',    // Nike - $200B
+    // --- HEALTHCARE & PHARMA ---
+    'LLY', 'UNH', 'JNJ', 'MRK', 'ABBV', 'TMO', 'PFE', 'AMGN', 'ISRG', 'SYK', 'ELV', 'CVS', 'CI', 'GILD', 'REGN', 'VRTX',
+    'BMY', 'ZTS', 'BSX', 'BDX', 'HUM', 'MCK', 'COR', 'HCA', 'DXCM', 'EW', 'ALGN', 'RMD', 'STE', 'BAX', 'ILMN', 'BIIB',
+    'MRNA', 'BNTX', 'PFE', 'NVS', 'AZN', 'SNY',
 
-    // Communication / Media
-    'NFLX',   // Netflix - $300B
-    'DIS',    // Disney - $200B
+    // --- CONSUMER DISCRETIONARY & RETAIL ---
+    'WMT', 'COST', 'HD', 'MCD', 'NKE', 'SBUX', 'TGT', 'LOW', 'TJX', 'BKNG', 'MAR', 'HLT', 'CMG', 'YUM', 'DRI', 'DPZ',
+    'LULU', 'ORLY', 'AZO', 'ROST', 'FAST', 'TSCO', 'ULTA', 'BBY', 'DG', 'DLTR', 'KSS', 'M', 'JWN', 'GPS', 'AEO', 'ANF',
+    'CROX', 'DECK', 'ONON', 'SKX', 'WSM', 'RH', 'W', 'ETSY', 'EBAY', 'CHWY',
 
-    // Energy
-    'XOM',    // Exxon Mobil - $500B
-    'CVX',    // Chevron - $290B
+    // --- CONSUMER STAPLES ---
+    'PG', 'KO', 'PEP', 'PM', 'MO', 'EL', 'CL', 'KMB', 'GIS', 'K', 'HSY', 'MDLZ', 'MNST', 'STZ', 'BF-B', 'ADM', 'SYY',
+    'KR', 'ACI', 'DG', 'DLTR', 'COST', 'BJ', 'WBA',
 
-    // Industrial
-    'CAT',    // Caterpillar - $200B
-    'GE',     // GE Aerospace - $200B
-    'HON',    // Honeywell - $200B
+    // --- COMMUNICATION & MEDIA ---
+    'NFLX', 'DIS', 'CMCSA', 'TMUS', 'VZ', 'T', 'CHTR', 'WBD', 'PARA', 'LYV', 'SIRI', 'FOXA', 'OMC', 'IPG', 'TTWO', 'EA',
 
-    // Indices & Metals (Market Context)
-    'SPY', 'QQQ', 'DIA', 'IWM',
-    'GLD', 'SLV', 'GDX', 'GDXJ',
+    // --- ENERGY & UTILITIES ---
+    'XOM', 'CVX', 'COP', 'SLB', 'EOG', 'PXD', 'MPC', 'PSX', 'VLO', 'OXY', 'HES', 'DVN', 'FANG', 'HAL', 'BKR', 'KMI', 'WMB',
+    'NEE', 'DUK', 'SO', 'D', 'AEP', 'SRE', 'EXC', 'XEL', 'ED', 'PEG', 'WEC', 'ES', 'ETR', 'FE', 'PPL',
 
-    // Sector ETFs (Key for Heatmap)
-    'XLK', 'XLF', 'XLE', 'XLY', 'XLP', 'XLV', 'XLI', 'XLB', 'XLU', 'XLRE', 'XLC'
+    // --- INDUSTRIAL & AEROSPACE ---
+    'CAT', 'DE', 'GE', 'HON', 'UNP', 'UPS', 'FDX', 'LMT', 'RTX', 'BA', 'GD', 'NOC', 'LHX', 'TXT', 'HWM', 'TDG', 'GE',
+    'MMM', 'ETN', 'ITW', 'PH', 'EMR', 'CMI', 'PCAR', 'ROK', 'AME', 'DOV', 'SWK', 'GWW', 'FAST', 'URI', 'XYL',
+
+    // --- MATERIALS & REAL ESTATE ---
+    'LIN', 'SHW', 'APD', 'ECL', 'FCX', 'NEM', 'SCCO', 'NUE', 'STLD', 'CLF', 'X', 'AA', 'MOS', 'CF', 'CTVA', 'FMC', 'ALB',
+    'PLD', 'AMT', 'CCI', 'EQIX', 'DLR', 'PSA', 'O', 'SPG', 'VICI', 'WELL', 'AVB', 'EQR', 'INVH', 'MAA', 'ESS', 'CPT',
+
+    // --- INDICES (Context) ---
+    'SPY', 'QQQ', 'DIA', 'IWM'
 ];
 
 
@@ -100,7 +82,7 @@ const ALPHA_HUNTER_WATCHLIST = Array.from(new Set([
 
 // Separate caches for each scan mode
 // Separate caches for each scan mode
-const CACHE_TTL = 7 * 60 * 1000; // 7 minutes (Ensures site-wide < 10 min freshness)
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes (Standard Auto-Refresh)
 
 declare global {
     var _megaCapCache: { data: ConvictionStock[], timestamp: number } | null;
@@ -114,17 +96,23 @@ if (!global._alphaHunterCache) global._alphaHunterCache = null;
 let isScanning = false;
 
 export async function scanConviction(forceRefresh = false): Promise<ConvictionStock[]> {
-    // Return cached data if valid
+    const marketSession = publicClient.getMarketSession();
+
+    // Logic: If market is OFF, only scan if cache is empty (one-time baseline fetch).
+    // Otherwise, always serve cache during OFF hours to prevent redundant load.
+    if (marketSession === 'OFF' && global._megaCapCache && !forceRefresh) {
+        console.log("🌙 Market is CLOSED. Serving preserved Top Picks cache.");
+        return global._megaCapCache.data;
+    }
+
+    // Return cached data if valid and not force-refresh
     if (!forceRefresh && global._megaCapCache && (Date.now() - global._megaCapCache.timestamp < CACHE_TTL)) {
         console.log("⚡ Returning cached mega-cap conviction data");
         return global._megaCapCache.data;
     }
 
-    // Prevent concurrent scans if one is already running (simple lock)
-    if (isScanning && !forceRefresh && global._megaCapCache) {
-        console.log("⚠️ Scan in progress, returning stale mega-cap cache");
-        return global._megaCapCache.data;
-    }
+    // Clear old cache to force immediate update for user
+    if (forceRefresh) global._megaCapCache = null;
 
     isScanning = true;
     const results: ConvictionStock[] = [];
@@ -159,8 +147,11 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
         }
     }
 
+    // Fetch Dynamic Sector Map
+    const currentSectorMap = await getSectorMap();
+
     // Limit total symbols to prevent timeout (Raised limit for Sectors + Picks coverage)
-    symbolsToScan = symbolsToScan.slice(0, 120);
+    symbolsToScan = symbolsToScan.slice(0, 300);
     console.log(`📊 Total symbols to scan: ${symbolsToScan.length}`);
 
     // 4. Batch Processing Helper
@@ -398,7 +389,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                     volume,
                     volumeAvg1y,
                     volumeDiff,
-                    sector: SECTOR_MAP[symbol] || quote?.assetProfile?.sector || 'Other',
+                    sector: currentSectorMap[symbol] || quote?.assetProfile?.sector || 'Other',
 
                     suggestedOption: optionSignal
                 } as ConvictionStock;
@@ -441,22 +432,27 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     };
     isScanning = false;
 
-    return sorted;
+    return sorted.slice(0, 50);
 }
 
 // Alpha Hunter - Broader Market Scan with Smart Discovery
 export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionStock[]> {
+    const marketSession = publicClient.getMarketSession();
+
+    // Logic: If market is OFF, only scan if cache is empty.
+    if (marketSession === 'OFF' && global._alphaHunterCache && !forceRefresh) {
+        console.log("🌙 Market is CLOSED. Serving preserved Alpha Hunter cache.");
+        return global._alphaHunterCache.data;
+    }
+
     // Return cached data if valid
     if (!forceRefresh && global._alphaHunterCache && (Date.now() - global._alphaHunterCache.timestamp < CACHE_TTL)) {
         console.log("⚡ Returning cached Alpha Hunter data");
         return global._alphaHunterCache.data;
     }
 
-    // Prevent concurrent scans if one is already running (simple lock)
-    if (isScanning && !forceRefresh && global._alphaHunterCache) {
-        console.log("⚠️ Scan in progress, returning stale Alpha Hunter cache");
-        return global._alphaHunterCache.data;
-    }
+    // Clear old cache to force immediate update for user
+    if (forceRefresh) global._alphaHunterCache = null;
 
     isScanning = true;
     const results: ConvictionStock[] = [];
@@ -490,8 +486,11 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
         console.error("Smart Discovery failed:", e);
     }
 
+    // Fetch Dynamic Sector Map
+    const currentSectorMap = await getSectorMap();
+
     // Limit total symbols to prevent timeout
-    symbolsToScan = symbolsToScan.slice(0, 120);
+    symbolsToScan = symbolsToScan.slice(0, 150);
     console.log(`📊 Total symbols to scan: ${symbolsToScan.length}`);
 
     // 4. Batch Processing Helper
@@ -702,7 +701,7 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                     volume,
                     volumeAvg1y,
                     volumeDiff,
-                    sector: SECTOR_MAP[symbol] || quote?.assetProfile?.sector || 'Other',
+                    sector: currentSectorMap[symbol] || quote?.assetProfile?.sector || 'Other',
 
                     suggestedOption: optionSignal
                 } as ConvictionStock;
@@ -749,5 +748,5 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
         return [];
     }
 
-    return sorted;
+    return sorted.slice(0, 50);
 }

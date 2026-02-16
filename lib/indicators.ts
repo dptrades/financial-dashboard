@@ -95,6 +95,8 @@ export const calculateIndicators = (data: OHLCVData[], vwapAnchor: VWAPAnchor = 
     };
     const adx = ADX.calculate(adxInput);
 
+    let activeFvg: { type: 'BULLISH' | 'BEARISH' | 'NONE'; gapLow: number; gapHigh: number } = { type: 'NONE', gapLow: 0, gapHigh: 0 };
+
     results.forEach((d, i) => {
         d.atr14 = atrs[i];
         // ADX result is an object { adx: number, pdi: number, mdi: number }
@@ -103,6 +105,32 @@ export const calculateIndicators = (data: OHLCVData[], vwapAnchor: VWAPAnchor = 
         // Let's safe map it
         const adxVal = i >= (14) ? adx[i - 14] : undefined;
         d.adx14 = adxVal?.adx;
+
+        // -------------------------------------------------------------------------
+        // 4. FAIR VALUE GAP (FVG) DETECTION & TRACKING
+        // -------------------------------------------------------------------------
+        if (i >= 2) {
+            const c1 = results[i - 2];
+            const c3 = results[i];
+
+            // A. Detect NEW FVG
+            if (c3.low > c1.high) {
+                activeFvg = { type: 'BULLISH', gapLow: c1.high, gapHigh: c3.low };
+            } else if (c3.high < c1.low) {
+                activeFvg = { type: 'BEARISH', gapLow: c3.high, gapHigh: c1.low };
+            }
+
+            // B. Check if price "FILLED" the active FVG
+            if (activeFvg.type === 'BULLISH' && d.low <= activeFvg.gapLow) {
+                activeFvg = { type: 'NONE', gapLow: 0, gapHigh: 0 };
+            } else if (activeFvg.type === 'BEARISH' && d.high >= activeFvg.gapHigh) {
+                activeFvg = { type: 'NONE', gapLow: 0, gapHigh: 0 };
+            }
+
+            d.fvg = { ...activeFvg };
+        } else {
+            d.fvg = { type: 'NONE', gapLow: 0, gapHigh: 0 };
+        }
     });
 
     return results;

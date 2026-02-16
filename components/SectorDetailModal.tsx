@@ -50,11 +50,11 @@ export default function SectorDetailModal({ sector, onClose, onSelectStock }: Pr
                                 {sector.avgChange > 0 ? '+' : ''}{sector.avgChange.toFixed(2)}%
                             </div>
                         </div>
-                        <p className="text-gray-300 text-sm mt-1">Sector Overview • {sector.stocks.length} Assets Tracked</p>
+                        <p className="text-gray-200 text-sm mt-1">Sector Overview • {sector.stocks.length} Assets Tracked</p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-200 hover:text-white"
+                        className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-100 hover:text-white"
                     >
                         <X className="w-6 h-6" />
                     </button>
@@ -68,7 +68,7 @@ export default function SectorDetailModal({ sector, onClose, onSelectStock }: Pr
                                 <TrendingUp className="w-5 h-5 text-green-400" />
                             </div>
                             <h3 className="text-xl font-bold text-white">Top Gainers</h3>
-                            <span className="text-xs text-gray-300 bg-gray-800 px-2 py-0.5 rounded ml-2">Relative Strength</span>
+                            <span className="text-xs text-gray-200 bg-gray-800 px-2 py-0.5 rounded ml-2">Relative Strength</span>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -83,7 +83,7 @@ export default function SectorDetailModal({ sector, onClose, onSelectStock }: Pr
                                 />
                             ))}
                             {gainers.length === 0 && (
-                                <div className="col-span-full py-12 text-center text-gray-200 border border-dashed border-gray-800 rounded-xl">
+                                <div className="col-span-full py-12 text-center text-gray-100 border border-dashed border-gray-800 rounded-xl">
                                     No significant gainers found in this sector today.
                                 </div>
                             )}
@@ -97,7 +97,7 @@ export default function SectorDetailModal({ sector, onClose, onSelectStock }: Pr
                                 <TrendingDown className="w-5 h-5 text-red-400" />
                             </div>
                             <h3 className="text-xl font-bold text-white">Top Losers</h3>
-                            <span className="text-xs text-gray-300 bg-gray-800 px-2 py-0.5 rounded ml-2">Potential Value / Oversold</span>
+                            <span className="text-xs text-gray-200 bg-gray-800 px-2 py-0.5 rounded ml-2">Potential Value / Oversold</span>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -112,7 +112,7 @@ export default function SectorDetailModal({ sector, onClose, onSelectStock }: Pr
                                 />
                             ))}
                             {losers.length === 0 && (
-                                <div className="col-span-full py-12 text-center text-gray-200 border border-dashed border-gray-800 rounded-xl">
+                                <div className="col-span-full py-12 text-center text-gray-100 border border-dashed border-gray-800 rounded-xl">
                                     No significant losers found in this sector today.
                                 </div>
                             )}
@@ -124,7 +124,7 @@ export default function SectorDetailModal({ sector, onClose, onSelectStock }: Pr
                 <div className="p-6 border-t border-gray-800 bg-gray-900/50 flex justify-center">
                     <button
                         onClick={onClose}
-                        className="text-gray-200 hover:text-white transition-colors flex items-center gap-2 font-medium"
+                        className="text-gray-100 hover:text-white transition-colors flex items-center gap-2 font-medium"
                     >
                         Close Exploration <ArrowRight className="w-4 h-4" />
                     </button>

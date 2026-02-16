@@ -38,7 +38,7 @@ export default function SocialPulseCard({ stock, onSelect }: SocialPulseCardProp
                         {stock.symbol}
                         {stock.heat > 85 && <Flame className="w-5 h-5 text-orange-500 animate-pulse" />}
                     </h3>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">{stock.name}</p>
+                    <p className="text-[10px] text-gray-200 font-bold uppercase tracking-widest mt-1">{stock.name}</p>
                 </div>
                 <div className="text-right">
                     <div className="text-lg font-mono font-bold text-white">${stock.price.toFixed(2)}</div>
@@ -53,11 +53,11 @@ export default function SocialPulseCard({ stock, onSelect }: SocialPulseCardProp
                 <div className="bg-gray-900/60 p-3 rounded-xl border border-gray-700/30">
                     <div className="flex items-center gap-1.5 mb-1.5">
                         <Flame className={`w-3.5 h-3.5 ${heatColor}`} />
-                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">Social Heat</span>
+                        <span className="text-[10px] font-bold text-gray-200 uppercase tracking-wider">Social Heat</span>
                     </div>
                     <div className="flex items-end gap-2">
                         <span className={`text-xl font-black ${heatColor} leading-none`}>{stock.heat}</span>
-                        <span className="text-[10px] text-gray-500 font-bold mb-0.5">/ 100</span>
+                        <span className="text-[10px] text-gray-300 font-bold mb-0.5">/ 100</span>
                     </div>
                     {/* Heat Bar */}
                     <div className="w-full bg-gray-700 h-1 rounded-full mt-2 overflow-hidden">
@@ -71,13 +71,13 @@ export default function SocialPulseCard({ stock, onSelect }: SocialPulseCardProp
                 <div className="bg-gray-900/60 p-3 rounded-xl border border-gray-700/30">
                     <div className="flex items-center gap-1.5 mb-1.5">
                         <MessageSquare className={`w-3.5 h-3.5 ${sentimentColor}`} />
-                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">Sentiment</span>
+                        <span className="text-[10px] font-bold text-gray-200 uppercase tracking-wider">Sentiment</span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className={`text-xs font-black uppercase ${sentimentColor}`}>
                             {stock.sentiment > 0.7 ? 'Bullish' : stock.sentiment < 0.4 ? 'Bearish' : 'Neutral'}
                         </span>
-                        <span className="text-[10px] font-mono text-gray-400">{(stock.sentiment * 100).toFixed(0)}%</span>
+                        <span className="text-[10px] font-mono text-gray-200">{(stock.sentiment * 100).toFixed(0)}%</span>
                     </div>
                     {/* Sentiment Meter */}
                     <div className="w-full bg-gray-700 h-1 rounded-full mt-2 relative">
@@ -95,7 +95,7 @@ export default function SocialPulseCard({ stock, onSelect }: SocialPulseCardProp
                 <div className="flex justify-between items-center px-1">
                     <div className="flex items-center gap-2">
                         <Users className="w-3.5 h-3.5 text-blue-400" />
-                        <span className="text-[11px] font-medium text-gray-200">{stock.mentions.toLocaleString()} Mentions</span>
+                        <span className="text-[11px] font-medium text-gray-100">{stock.mentions.toLocaleString()} Mentions</span>
                     </div>
                     <div className="flex items-center gap-1.5 bg-gray-900/80 px-2 py-0.5 rounded-md border border-gray-700/50">
                         <Globe className="w-3 h-3 text-purple-400" />
@@ -104,7 +104,7 @@ export default function SocialPulseCard({ stock, onSelect }: SocialPulseCardProp
                 </div>
 
                 <div className="bg-gray-900/40 p-3 rounded-xl border border-gray-700/20">
-                    <p className="text-[11px] text-gray-300 leading-relaxed italic line-clamp-2">
+                    <p className="text-[11px] text-gray-200 leading-relaxed italic line-clamp-2">
                         "{stock.description}"
                     </p>
                 </div>
@@ -113,7 +113,7 @@ export default function SocialPulseCard({ stock, onSelect }: SocialPulseCardProp
             {/* Retail vs Institutional Flow */}
             <div className="pt-3 border-t border-gray-700/30 flex justify-between items-center relative z-10">
                 <div className="flex flex-col">
-                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Retail Flow</span>
+                    <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Retail Flow</span>
                     <span className="text-xs font-black text-emerald-400 uppercase tracking-tighter">Buying Heavy</span>
                 </div>
                 <div className="flex -space-x-1.5">

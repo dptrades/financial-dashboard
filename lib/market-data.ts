@@ -4,6 +4,8 @@ import { calculateIndicators } from './indicators';
 import { ConvictionStock } from '../types/stock';
 import { publicClient } from './public-api';
 import { schwabClient } from './schwab';
+import { calculateGammaSqueezeProbability } from './options';
+import { finnhubClient } from './finnhub';
 
 const yahooFinance = new YahooFinance();
 
@@ -30,6 +32,11 @@ export interface TimeframeData {
         pb: number; // %B
     } | null;
     vwap: number | null;
+    fvg?: {
+        type: 'BULLISH' | 'BEARISH' | 'NONE';
+        gapLow: number;
+        gapHigh: number;
+    } | null;
     priceRelToEma: {
         ema9: number; // % distance
         ema21: number;
@@ -51,12 +58,121 @@ export interface MultiTimeframeAnalysis {
         volatility: number; // ATR as % of price
         dayHigh: number;
         dayLow: number;
+        beta?: number;
+        gammaSqueeze?: {
+            score: number;
+            details: string[];
+        };
     };
     dataSource: string;
     marketSession: 'PRE' | 'REG' | 'POST' | 'OFF';
 }
 
-// Helper to map timeframe to Alpaca/Yahoo/Schwab format
+// 1. Live Price Waterfall: Public -> Schwab -> Alpaca -> Yahoo
+export async function fetchLivePrice(symbol: string): Promise<{ price: number, source: string }> {
+    // A. Public.com (Primary for Real-Time) - 10s Cache internal
+    try {
+        const publicQuote = await publicClient.getQuote(symbol);
+        if (publicQuote && publicQuote.price > 0) {
+            return { price: publicQuote.price, source: 'Public.com' };
+        }
+    } catch (e) {
+        console.warn(`[Waterfall] Public.com failed for ${symbol}`);
+    }
+
+    // B. Schwab (Professional Fallback)
+    if (schwabClient.isConfigured()) {
+        try {
+            const schwabGreeks = await schwabClient.getGreeks(symbol); // getGreeks also returns price/bid/ask in some formats, but we use it as a probe
+            if (schwabGreeks && schwabGreeks.lastPrice > 0) {
+                return { price: schwabGreeks.lastPrice, source: 'Schwab Pro' };
+            }
+        } catch (e) {
+            console.warn(`[Waterfall] Schwab failed for ${symbol}`);
+        }
+    }
+
+    // C. Alpaca (Retail Secondary)
+    try {
+        const alpacaPrice = await fetchAlpacaPrice(symbol);
+        if (alpacaPrice && alpacaPrice > 0) {
+            return { price: alpacaPrice, source: 'Alpaca IEX' };
+        }
+    } catch (e) {
+        console.warn(`[Waterfall] Alpaca failed for ${symbol}`);
+    }
+
+    // D. Yahoo Finance (Final Safety Net)
+    try {
+        const quote = await yahooFinance.quote(symbol);
+        if (quote && quote.regularMarketPrice) {
+            return { price: quote.regularMarketPrice, source: 'Yahoo Finance' };
+        }
+    } catch (e) {
+        console.error(`[Waterfall] All sources failed for ${symbol}`);
+    }
+
+    return { price: 0, source: 'None' };
+}
+
+// 2. Multi-Level Timeframe Fallback Strategy
+async function fetchHistoricalData(symbol: string, alpacaTf: string, yahooTf: string, limit: number, schwabConfig?: any) {
+    // Tier 1: Schwab Professional
+    if (schwabClient.isConfigured() && schwabConfig) {
+        try {
+            const bars = await schwabClient.getPriceHistory(
+                symbol,
+                schwabConfig.periodType,
+                schwabConfig.period,
+                schwabConfig.frequencyType,
+                schwabConfig.frequency
+            );
+            if (bars && bars.length > 0) {
+                return { bars: bars.map(b => ({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume })), source: 'Schwab Professional' };
+            }
+        } catch (e) {
+            console.warn(`[Waterfall] Schwab historical failed for ${symbol}, falling to Alpaca...`);
+        }
+    }
+
+    // Tier 2: Alpaca
+    try {
+        const bars = await fetchAlpacaBars(symbol, alpacaTf as any, limit);
+        if (bars && bars.length > 0) {
+            return {
+                bars: bars.map((b: any) => ({
+                    time: new Date(b.t).getTime(),
+                    open: b.o, high: b.h, low: b.l, close: b.c, volume: b.v
+                })),
+                source: 'Alpaca'
+            };
+        }
+    } catch (e) {
+        console.warn(`[Waterfall] Alpaca historical failed for ${symbol}, falling to Yahoo...`);
+    }
+
+    // Tier 3: Yahoo Finance
+    try {
+        const now = new Date();
+        let daysBack = (yahooTf === '1d') ? 365 * 3 : (yahooTf === '1wk') ? 365 * 10 : (yahooTf === '60m') ? 120 : (yahooTf === '5m') ? 20 : 45;
+        const period1 = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+        const result = await yahooFinance.chart(symbol, { period1, interval: yahooTf as any });
+        if (result && result.quotes) {
+            return {
+                bars: result.quotes.map((q: any) => ({
+                    time: new Date(q.date).getTime(),
+                    open: q.open, high: q.high, low: q.low, close: q.close, volume: q.volume
+                })).filter(q => q.close !== null),
+                source: 'Yahoo Finance'
+            };
+        }
+    } catch (e) {
+        console.error(`[Waterfall] Yahoo history failed for ${symbol} ${yahooTf}`, e);
+    }
+
+    return { bars: [], source: 'Error' };
+}
+
 function mapTimeframe(tf: string): {
     alpaca: string,
     yahoo: string,
@@ -67,25 +183,25 @@ function mapTimeframe(tf: string): {
         case '10m': return {
             alpaca: '10Min',
             yahoo: '5m',
-            schwab: { periodType: 'day', period: 1, frequencyType: 'minute', frequency: 10 },
+            schwab: { periodType: 'day', period: 10, frequencyType: 'minute', frequency: 10 },
             bars: 1000
         };
         case '1h': return {
             alpaca: '1Hour',
             yahoo: '60m',
-            schwab: { periodType: 'day', period: 2, frequencyType: 'minute', frequency: 30 },
+            schwab: { periodType: 'day', period: 10, frequencyType: 'minute', frequency: 60 },
             bars: 1000
         };
         case '1d': return {
             alpaca: '1Day',
             yahoo: '1d',
-            schwab: { periodType: 'year', period: 1, frequencyType: 'daily', frequency: 1 },
+            schwab: { periodType: 'year', period: 5, frequencyType: 'daily', frequency: 1 },
             bars: 1000
         };
-        case '1w': return {
-            alpaca: '1Week',
+        case '1w' as any: return {
+            alpaca: '1Week' as any,
             yahoo: '1wk',
-            schwab: { periodType: 'year', period: 2, frequencyType: 'weekly', frequency: 1 },
+            schwab: { periodType: 'year', period: 10, frequencyType: 'weekly', frequency: 1 },
             bars: 1000
         };
         default: return {
@@ -112,13 +228,16 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
     let dailyData: any[] = [];
 
     // Run concurrently for performance
-    const [dailyBars, publicQuote] = await Promise.all([
-        fetchMarketData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars, dailyConfig.schwab),
-        publicClient.getQuote(symbol, forceRefresh)
+    const [dailyResult, liveData, finnhubMetrics] = await Promise.all([
+        fetchHistoricalData(symbol, dailyConfig.alpaca, dailyConfig.yahoo, dailyConfig.bars, dailyConfig.schwab),
+        fetchLivePrice(symbol),
+        finnhubClient.getBasicFinancials(symbol).catch(() => null)
     ]);
 
-    dailyData = dailyBars;
-    livePrice = publicQuote?.price || 0;
+    dailyData = dailyResult.bars;
+    livePrice = liveData.price;
+    const beta = finnhubMetrics?.metric?.beta;
+    const dataOrigin = dailyResult.source;
 
     if (!dailyData || dailyData.length < 50) {
         console.error(`Insufficient daily data for ${symbol}`);
@@ -129,10 +248,54 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
     const dailyIndicators = calculateIndicators(dailyData);
     const latestDaily = dailyIndicators[dailyIndicators.length - 1];
 
-    // Use live price if available and market is open/recent, otherwise last close
+    // HYBRID MERGE: Use live price to update the last bar's close for sub-second accuracy
     currentPrice = livePrice || latestDaily.close;
+    if (livePrice > 0) {
+        dailyData[dailyData.length - 1].close = livePrice;
+    }
 
     dailyAtr = latestDaily.atr14 || 0;
+
+    // --- NEW METRICS FOR GAMMA SQUEEZE ---
+    // 1. 52-Week High/Low
+    let fiftyTwoWeekHigh = 0;
+    let fiftyTwoWeekLow = Infinity;
+    const oneYearBars = dailyData.slice(-252);
+    if (oneYearBars.length > 0) {
+        fiftyTwoWeekHigh = Math.max(...oneYearBars.map(b => b.high));
+        fiftyTwoWeekLow = Math.min(...oneYearBars.map(b => b.low));
+    }
+
+    // 2. Historical Volatility (30-day Annualized)
+    let historicalVolatility = 0;
+    const volatilityWindow = 30;
+    if (dailyData.length > volatilityWindow) {
+        const slice = dailyData.slice(-volatilityWindow);
+        const logReturns = [];
+        for (let i = 1; i < slice.length; i++) {
+            const currentClose = slice[i].close;
+            const prevClose = slice[i - 1].close;
+            if (prevClose > 0) {
+                logReturns.push(Math.log(currentClose / prevClose));
+            }
+        }
+        if (logReturns.length > 0) {
+            const mean = logReturns.reduce((a, b) => a + b, 0) / logReturns.length;
+            const variance = logReturns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / logReturns.length;
+            const stdDev = Math.sqrt(variance);
+            historicalVolatility = stdDev * Math.sqrt(252); // Annualize
+        }
+    }
+
+    // NOW calculate Gamma Squeeze with the correct currentPrice, ATR, and NEW metrics
+    const gammaSqueeze = await calculateGammaSqueezeProbability(
+        symbol,
+        currentPrice,
+        dailyAtr,
+        fiftyTwoWeekHigh,
+        fiftyTwoWeekLow,
+        historicalVolatility
+    );
 
     // Calculate 1y Volume Avg (~252 trading days)
     const volSlice = dailyData.slice(-252);
@@ -148,13 +311,30 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
 
         if (tf !== '1d') {
             const config = mapTimeframe(tf);
-            data = await fetchMarketData(symbol, config.alpaca, config.yahoo, config.bars, config.schwab);
+            const res = await fetchHistoricalData(symbol, config.alpaca, config.yahoo, config.bars, config.schwab);
+            data = res.bars;
         }
 
         if (data && data.length > 0) {
-            // INJECT LIVE PRICE FOR INTRADAY
-            if (livePrice && (tf === '10m' || tf === '1h')) {
+            // HYBRID STITCH: Inject live price into intraday datasets
+            if (livePrice > 0 && (tf === '10m' || tf === '1h')) {
                 const lastBar = data[data.length - 1];
+                const oneDayInMs = 24 * 60 * 60 * 1000;
+                const isStale = (Date.now() - lastBar.time) > oneDayInMs;
+
+                // 1. Time-Staleness Check (Market is active but data is old)
+                if (isStale && marketSession !== 'OFF' && marketSession !== 'OFF' as any) {
+                    console.warn(`[MarketData] ${symbol} ${tf} data is stale. Skipping.`);
+                    return;
+                }
+
+                // 2. Price Consistency Check (Prevents showing EMAs at $200 when price is $350)
+                const deviation = Math.abs(livePrice - lastBar.close) / lastBar.close;
+                if (deviation > 0.15 && !isStale) {
+                    console.warn(`[MarketData] ${symbol} ${tf} price deviation too high (${(deviation * 100).toFixed(1)}%). Possible data mismatch. skipping.`);
+                    return;
+                }
+
                 data = [...data];
                 data[data.length - 1] = {
                     ...lastBar,
@@ -208,6 +388,7 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
                 macd: macdData,
                 bollinger: bbData,
                 vwap: last.vwap || null,
+                fvg: last.fvg,
                 priceRelToEma: {
                     ema9: ema9Diff,
                     ema21: ema21Diff,
@@ -224,6 +405,8 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
 
     const headerPrice = marketSession === 'REG' ? currentPrice : latestDaily.close;
 
+    const sourceString = liveData.source === 'Public.com' ? `Public.com Live + ${dataOrigin}` : `${liveData.source} + ${dataOrigin}`;
+
     return {
         symbol,
         currentPrice,
@@ -235,75 +418,17 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
             volumeDiff: volDiff,
             volatility: (dailyAtr / currentPrice) * 100,
             dayHigh: dailyData[dailyData.length - 1].high,
-            dayLow: dailyData[dailyData.length - 1].low
+            dayLow: dailyData[dailyData.length - 1].low,
+            beta,
+            gammaSqueeze
         },
-        dataSource: schwabClient.isConfigured() ? 'Schwab Professional Feed' : 'Hybrid (Alpaca + Public)',
+        dataSource: sourceString,
         marketSession
     };
 }
 
+// Deprecated but kept for internal compatibility
 async function fetchMarketData(symbol: string, alpacaTf: string, yahooTf: string, limit: number, schwabConfig?: any) {
-    if (schwabClient.isConfigured() && schwabConfig) {
-        try {
-            const bars = await schwabClient.getPriceHistory(
-                symbol,
-                schwabConfig.periodType,
-                schwabConfig.period,
-                schwabConfig.frequencyType,
-                schwabConfig.frequency
-            );
-            if (bars && bars.length > 0) {
-                return bars.map(b => ({
-                    time: b.time,
-                    open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume
-                }));
-            }
-        } catch (e) {
-            console.error(`[V3] Schwab fetch failed for ${symbol}, falling back...`);
-        }
-    }
-
-    try {
-        const bars = await fetchAlpacaBars(symbol, alpacaTf as any, limit);
-        if (bars && bars.length > 0) {
-            const lastBar = bars[bars.length - 1];
-            const lastTime = new Date(lastBar.t).getTime();
-            const now = Date.now();
-            const isIntraday = alpacaTf.includes('Min') || alpacaTf.includes('Hour');
-
-            if (isIntraday && (now - lastTime > 24 * 60 * 60 * 1000)) {
-                console.warn(`[Alpaca] Stale data for ${symbol} ${alpacaTf} (Last: ${lastBar.t}). Falling back to Yahoo.`);
-                throw new Error("Stale data");
-            }
-
-            return bars.map((b: any) => ({
-                time: new Date(b.t).getTime(),
-                open: b.o, high: b.h, low: b.l, close: b.c, volume: b.v
-            }));
-        }
-    } catch (e) { }
-
-    try {
-        const now = new Date();
-        let daysBack = 30;
-        if (yahooTf === '1d') daysBack = 365 * 2;
-        else if (yahooTf === '1wk') daysBack = 365 * 5;
-        else if (yahooTf === '60m') daysBack = 60;
-        else if (yahooTf === '5m') daysBack = 5;
-
-        const period1 = new Date(now.setDate(now.getDate() - daysBack));
-        const result = await yahooFinance.chart(symbol, {
-            period1: period1,
-            interval: yahooTf as any
-        });
-        if (result && result.quotes) {
-            return result.quotes.map((q: any) => ({
-                time: new Date(q.date).getTime(),
-                open: q.open, high: q.high, low: q.low, close: q.close, volume: q.volume
-            })).filter(q => q.close !== null);
-        }
-    } catch (e) {
-        console.error(`Yahoo fetch failed for ${symbol} ${yahooTf}`, e);
-    }
-    return [];
+    const res = await fetchHistoricalData(symbol, alpacaTf, yahooTf, limit, schwabConfig);
+    return res.bars;
 }

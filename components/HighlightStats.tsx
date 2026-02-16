@@ -10,7 +10,7 @@ export default function HighlightStats({ stats }: { stats: PriceStats | null }) 
         { label: 'Last Week', high: stats.previousWeek.high, low: stats.previousWeek.low },
         { label: 'This Month', high: stats.currentMonth.high, low: stats.currentMonth.low },
         { label: 'This Year', high: stats.currentYear.high, low: stats.currentYear.low },
-        { label: 'All Time', high: stats.allTime.high, low: stats.allTime.low },
+        { label: '52 Week', high: stats.fiftyTwoWeek.high, low: stats.fiftyTwoWeek.low },
     ];
 
     return (
@@ -18,14 +18,14 @@ export default function HighlightStats({ stats }: { stats: PriceStats | null }) 
             <div className="grid grid-cols-2 gap-2">
                 {items.map((item, i) => (
                     <div key={i} className="flex flex-col bg-gray-900/50 p-2 rounded-lg border border-gray-700/50">
-                        <span className="text-[10px] text-gray-200 uppercase tracking-wider font-bold mb-1">{item.label}</span>
+                        <span className="text-[10px] text-gray-100 uppercase tracking-wider font-bold mb-1">{item.label}</span>
                         <div className="flex justify-between items-end">
                             <div>
-                                <span className="text-[9px] text-gray-300 block">High</span>
+                                <span className="text-[9px] text-gray-200 block">High</span>
                                 <span className="text-xs font-mono text-green-400 font-bold">${item.high.toFixed(2)}</span>
                             </div>
                             <div className="text-right ml-2">
-                                <span className="text-[9px] text-gray-300 block">Low</span>
+                                <span className="text-[9px] text-gray-200 block">Low</span>
                                 <span className="text-xs font-mono text-red-400 font-bold">${item.low.toFixed(2)}</span>
                             </div>
                         </div>

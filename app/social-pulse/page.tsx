@@ -8,6 +8,9 @@ import SocialPulseCard from '@/components/SocialPulseCard';
 import DataSourceIndicator from '@/components/ui/DataSourceIndicator';
 import { Loading } from '@/components/ui/Loading';
 import SectorDetailModal from '@/components/SectorDetailModal';
+import { REFRESH_INTERVALS, isMarketActive, getNextMarketOpen } from '@/lib/refresh-utils';
+import { Activity } from 'lucide-react';
+import HeaderFundamentals from '@/components/HeaderFundamentals';
 
 export default function SocialPulsePage() {
     const router = useRouter();
@@ -17,6 +20,7 @@ export default function SocialPulsePage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [showLogic, setShowLogic] = useState(false);
     const [selectedSector, setSelectedSector] = useState<any>(null);
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
     // Sidebar Props (Standardized)
     const [symbol, setSymbol] = useState('TSLA');
@@ -35,12 +39,27 @@ export default function SocialPulsePage() {
         localStorage.setItem('sidebarExpanded', isSidebarOpen.toString());
     }, [isSidebarOpen]);
 
+    useEffect(() => {
+        fetchPulse();
+
+        // 15-minute auto-refresh during market hours
+        const interval = setInterval(() => {
+            if (isMarketActive()) {
+                console.log('[Social Pulse] Auto-refreshing...');
+                fetchPulse();
+            }
+        }, REFRESH_INTERVALS.AUTO_REFRESH);
+
+        return () => clearInterval(interval);
+    }, []);
+
     const fetchPulse = async () => {
         setRefreshing(true);
         try {
             const res = await fetch('/api/social-pulse', { cache: 'no-store' });
             const data = await res.json();
             setTrending(data.data || []);
+            setLastUpdated(new Date());
         } catch (err) {
             console.error('Failed to fetch social pulse:', err);
         } finally {
@@ -49,19 +68,13 @@ export default function SocialPulsePage() {
         }
     };
 
-    useEffect(() => {
-        fetchPulse();
-        const interval = setInterval(fetchPulse, 60000); // Refresh every minute
-        return () => clearInterval(interval);
-    }, []);
-
     return (
         <div className="flex h-screen bg-[#0a0a0b] text-white font-sans overflow-hidden">
             {/* Sidebar Container */}
             <div className={`
                 fixed inset-y-0 left-0 z-[110] transition-transform duration-300 ease-in-out md:relative md:translate-x-0
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                ${isSidebarOpen ? 'w-[280px]' : 'w-0'} 
+                ${isSidebarOpen ? 'w-[18vw] min-w-[200px]' : 'w-0'} 
                 h-full overflow-hidden flex-shrink-0 border-r border-gray-800
             `}>
                 <Sidebar
@@ -92,7 +105,7 @@ export default function SocialPulsePage() {
                     </button>
                 )}
 
-                <div className={`flex-1 p-6 md:p-10 overflow-y-auto transition-all duration-300 ${isSidebarOpen ? 'md:max-w-[calc(100vw-280px)]' : 'md:max-w-full'}`}>
+                <div className="flex-1 p-6 md:p-10 overflow-y-auto transition-all duration-300">
                     {/* Header */}
                     <header className="mb-10">
                         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
@@ -111,24 +124,45 @@ export default function SocialPulsePage() {
                                         (How did I do that?)
                                     </button>
                                 </div>
-                                <p className="text-gray-400 max-w-2xl text-sm font-medium leading-relaxed">
+                                <div className="flex items-center gap-3 mt-2 mb-3">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20 uppercase tracking-wider">
+                                        Source: Social Intelligence AI
+                                    </span>
+                                    {lastUpdated && (
+                                        <span className="text-[10px] text-gray-300 font-mono">
+                                            Last Updated: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-gray-200 max-w-2xl text-sm font-medium leading-relaxed">
                                     Tracking the top 25 stocks driving the strongest retail momentum across WallStreetBets, Twitter/X, and StockTwits.
                                     Detecting surges in mention velocity and sentiment shifts before they hit the tape.
                                 </p>
+                                <div className="mt-4">
+                                    <HeaderFundamentals symbol={symbol} />
+                                </div>
                             </div>
 
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={fetchPulse}
-                                    disabled={refreshing}
-                                    className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-5 py-2.5 rounded-xl border border-gray-700 transition-all font-bold text-sm disabled:opacity-50"
-                                >
-                                    <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                                    {refreshing ? 'REFRESHING...' : 'REFRESH PULSE'}
-                                </button>
-                                <div className="bg-blue-500/10 border border-blue-500/30 p-2.5 rounded-xl">
+                            <div className="flex flex-col items-end gap-2">
+                                <div className="bg-blue-500/10 border border-blue-500/30 p-2.5 rounded-xl hidden xl:block mb-1">
                                     <DataSourceIndicator source="Social Intelligence AI" />
                                 </div>
+
+                                {isMarketActive() ? (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-lg text-[10px] text-orange-400 font-bold uppercase tracking-wider animate-pulse">
+                                        <Activity className="w-3 h-3" />
+                                        Live Pulse Streaming
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/80 border border-gray-700/50 rounded-lg text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                            Market Closed • Displaying Last Analysis
+                                        </div>
+                                        <div className="text-[9px] text-gray-400 font-mono">
+                                            Scan restarts at: {getNextMarketOpen().toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -158,7 +192,7 @@ export default function SocialPulsePage() {
                     )}
 
                     {/* Footer */}
-                    <footer className="mt-16 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500">
+                    <footer className="mt-16 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-300">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-center md:text-left">
                             © 2026 AntiGravity V3 • Institutional Intelligence Engine
                         </p>
@@ -179,11 +213,11 @@ export default function SocialPulsePage() {
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
                                         <h2 className="text-2xl font-bold text-white mb-1 uppercase tracking-tighter italic">Social Pulse Intelligence</h2>
-                                        <p className="text-gray-400 text-sm">Quantifying retail momentum and sentiment velocity</p>
+                                        <p className="text-gray-200 text-sm">Quantifying retail momentum and sentiment velocity</p>
                                     </div>
                                     <button
                                         onClick={() => setShowLogic(false)}
-                                        className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 transition-colors"
+                                        className="p-2 hover:bg-gray-800 rounded-lg text-gray-200 transition-colors"
                                     >
                                         <RefreshCw className="w-5 h-5 rotate-45" />
                                     </button>
@@ -196,7 +230,7 @@ export default function SocialPulsePage() {
                                                 <div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
                                                 <span className="font-bold text-orange-400 text-xs uppercase tracking-wider">Mention Velocity (40%)</span>
                                             </div>
-                                            <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                                            <p className="text-[11px] text-gray-200 leading-relaxed font-medium">
                                                 Scans high-frequency channels (WSB, Twitter, StockTwits) for surges in ticker mentions. We calculate the rate of change against a 7-day rolling average to detect organic viral expansion.
                                             </p>
                                         </div>
@@ -206,7 +240,7 @@ export default function SocialPulsePage() {
                                                 <div className="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.8)]" />
                                                 <span className="font-bold text-yellow-400 text-xs uppercase tracking-wider">Sentiment NLP (30%)</span>
                                             </div>
-                                            <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                                            <p className="text-[11px] text-gray-200 leading-relaxed font-medium">
                                                 Uses Natural Language Processing to categorize retail mood. We filter out "noise" and bot activity to extract high-conviction bullish/bearish intent from real traders.
                                             </p>
                                         </div>
@@ -216,7 +250,7 @@ export default function SocialPulsePage() {
                                                 <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
                                                 <span className="font-bold text-blue-400 text-xs uppercase tracking-wider">Asset Correlation (15%)</span>
                                             </div>
-                                            <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                                            <p className="text-[11px] text-gray-200 leading-relaxed font-medium">
                                                 Maps social ripples to price action. We prioritize stocks where mentions precede price breakout, identifying potential "lead indicators" for momentum.
                                             </p>
                                         </div>
@@ -226,7 +260,7 @@ export default function SocialPulsePage() {
                                                 <div className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]" />
                                                 <span className="font-bold text-purple-400 text-xs uppercase tracking-wider">Flow Contrast (15%)</span>
                                             </div>
-                                            <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                                            <p className="text-[11px] text-gray-200 leading-relaxed font-medium">
                                                 Weighting retail "buying heavy" flow against institutional positioning. High social heat combined with heavy institutional call buying creates an "Ultimate Bull" signal.
                                             </p>
                                         </div>
@@ -237,7 +271,7 @@ export default function SocialPulsePage() {
                                             <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                                             <span className="font-bold text-white text-xs uppercase tracking-wider">The "Divergence" Metric</span>
                                         </div>
-                                        <p className="text-[11px] text-gray-200 leading-relaxed font-medium">
+                                        <p className="text-[11px] text-gray-100 leading-relaxed font-medium">
                                             The Social Pulse is designed to find **Psychology/Price Divergence**. When social heat is extreme (&gt;90) but price is flat, a volatility event is often imminent. Use this with Alpha Hunter to confirm setups.
                                         </p>
                                     </div>
@@ -259,9 +293,7 @@ export default function SocialPulsePage() {
                 <SectorDetailModal
                     sector={selectedSector}
                     onClose={() => setSelectedSector(null)}
-                    onSelectStock={(s) => {
-                        router.push(`/?symbol=${s}`);
-                    }}
+                    onSelectStock={(s) => router.push(`/?symbol=${s}`)}
                 />
             </main>
         </div>

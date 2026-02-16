@@ -11,10 +11,12 @@ declare global {
 if (!(globalThis as any)._pcrCache) {
     (globalThis as any)._pcrCache = new Map<string, { data: any; timestamp: number }>();
 }
-const PCR_CACHE_TTL = 7 * 60 * 1000; // 7 minutes
+const PCR_CACHE_TTL = 15 * 60 * 1000; // 15 minutes (increased for reliability)
 
+// Force server rebuild: 1
 export function getNextMonthlyExpiry(): string {
     const d = new Date();
+    d.setHours(12, 0, 0, 0); // Normalize to noon to prevent UTC rollover issues
     d.setDate(d.getDate() + 30);
     while (d.getDay() !== 5) d.setDate(d.getDate() + 1);
     return d.toISOString().split('T')[0];
@@ -55,7 +57,7 @@ export function calculateVolatilityProxy(price: number, atr?: number, symbol?: s
  */
 export async function generateOptionSignal(
     currentPrice: number,
-    atr: number,
+    atr: number | undefined,
     trend: 'bullish' | 'bearish' | 'neutral',
     rsi: number,
     ema50?: number,
@@ -65,7 +67,34 @@ export async function generateOptionSignal(
     socialConfirmations?: number,
     skipCache: boolean = false
 ): Promise<OptionRecommendation> {
-    const expiry = getNextMonthlyExpiry();
+    // 1. Determine Best Expiry (Monthly ~30-45 days out)
+    let expiry = getNextMonthlyExpiry(); // Default naive guess
+    try {
+        if (symbol) {
+            const expirations = await publicClient.getOptionExpirations(symbol);
+            if (expirations && expirations.length > 0) {
+                // Target: ~35 days out (Monthly)
+                const targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + 35);
+                const targetTime = targetDate.getTime();
+
+                // Find expiry closest to target date
+                expiry = expirations.reduce((prev, curr) => {
+                    const prevDiff = Math.abs(new Date(prev).getTime() - targetTime);
+                    const currDiff = Math.abs(new Date(curr).getTime() - targetTime);
+                    return currDiff < prevDiff ? curr : prev;
+                });
+                console.log(`[Options] Auto-selected expiry for ${symbol}: ${expiry}`);
+            }
+        }
+    } catch (e) {
+        console.warn(`[Options] Failed to fetch live expirations for ${symbol}, using default ${expiry}`);
+    }
+
+    const dte = Math.ceil((new Date(expiry).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+
+    // Safety check for ATR to prevent NaN strikes
+    const effectiveAtr = (atr && !isNaN(atr) && atr > 0) ? atr : (currentPrice * 0.02);
 
     let bullScore = 0;
     let bearScore = 0;
@@ -150,15 +179,16 @@ export async function generateOptionSignal(
             reason: `Neutral trend.${fallbackSignals.slice(0, 2).join(', ')} `,
             technicalConfirmations: 0,
             fundamentalConfirmations: fundamentalConfirmations || 1,
-            socialConfirmations: socialConfirmations || 1
+            socialConfirmations: socialConfirmations || 1,
+            dte
         };
     }
 
     const isCall = direction === 'CALL';
     const signals = isCall ? bullSignals : bearSignals;
     const techConfirmations = signals.length;
-    const strikeOffset = atr * 0.5;
-    const strike = roundToStrike(isCall ? currentPrice + strikeOffset : currentPrice - strikeOffset);
+    const strikeOffset = effectiveAtr * 0.5;
+    const intendedStrike = roundToStrike(isCall ? currentPrice + strikeOffset : currentPrice - strikeOffset);
 
     let realOption = null;
     let actualAsk = 0;
@@ -171,7 +201,7 @@ export async function generateOptionSignal(
             if (chain && chain.options[expiry]) {
                 const strikeKeys = Object.keys(chain.options[expiry]).map(Number).sort((a, b) => a - b);
                 const closestStrike = strikeKeys.reduce((prev, curr) =>
-                    Math.abs(curr - strike) < Math.abs(prev - strike) ? curr : prev
+                    Math.abs(curr - intendedStrike) < Math.abs(prev - intendedStrike) ? curr : prev
                 );
                 const strikeData = chain.options[expiry][closestStrike];
                 if (strikeData) {
@@ -214,8 +244,8 @@ export async function generateOptionSignal(
         }
     }
 
-    const stopLoss = isCall ? currentPrice - atr : currentPrice + atr;
-    const takeProfit1 = isCall ? currentPrice + atr * 2 : currentPrice - atr * 2;
+    const stopLoss = isCall ? currentPrice - effectiveAtr : currentPrice + effectiveAtr;
+    const takeProfit1 = isCall ? currentPrice + effectiveAtr * 2 : currentPrice - effectiveAtr * 2;
 
     const fundamentalDetails = fundamentalConfirmations && fundamentalConfirmations >= 2
         ? ["Strong Earnings Growth", "Undervalued P/E Ratio", "Healthy Debt-to-Equity"]
@@ -233,20 +263,37 @@ export async function generateOptionSignal(
         ((socialConfirmations || 0) * 5)
     );
 
-    // REMOVED: getPutCallRatio is heavy and shouldn't be in the broad scanner.
-    // It will be lazily loaded in the Deep Dive instead.
-
-    // If no real option was found or volume is too low, downgrade to WAIT
-    if (!realOption || (realOption.volume || 0) < 2) {
+    // If no real option was found, we must wait.
+    if (!realOption) {
         return {
             type: 'WAIT',
-            strike: 0,
-            expiry: '',
+            strike: intendedStrike,
+            expiry: expiry,
             confidence: 50,
-            reason: `No high-volume liquidity found for the desired strike.`,
+            reason: `No institutional option contract found for the calculated $${intendedStrike} strike.`,
             technicalConfirmations: techConfirmations,
             fundamentalConfirmations: fundamentalConfirmations || 1,
-            socialConfirmations: socialConfirmations || 1
+            socialConfirmations: socialConfirmations || 1,
+            dte
+        };
+    }
+
+    const marketSession = publicClient.getMarketSession();
+    const isMarketOpen = marketSession === 'REG' || marketSession === 'PRE' || marketSession === 'POST';
+    const volumeThreshold = isMarketOpen ? 2 : 0; // Relax volume requirement during OFF hours to show the "Plan"
+
+    // If volume is too low DURING market hours, downgrade to WAIT
+    if ((realOption.volume || 0) < volumeThreshold) {
+        return {
+            type: 'WAIT',
+            strike: intendedStrike,
+            expiry: expiry,
+            confidence: 50,
+            reason: `Low liquidity detected for the $${intendedStrike} strike. Monitoring for institutional volume entry.`,
+            technicalConfirmations: techConfirmations,
+            fundamentalConfirmations: fundamentalConfirmations || 1,
+            socialConfirmations: socialConfirmations || 1,
+            dte
         };
     }
 
@@ -276,9 +323,13 @@ export async function generateOptionSignal(
         fundamentalDetails,
         socialDetails,
         symbol: realOption.symbol,
-        probabilityITM: realOption.greeks?.delta ? Math.abs(realOption.greeks.delta) : undefined
+        probabilityITM: realOption.greeks?.delta ? Math.abs(realOption.greeks.delta) : undefined,
+        dte
     };
 }
+
+// Duplicate removed
+
 
 /**
  * Calculates the Put/Call ratio based on volume and open interest for a given symbol
@@ -296,7 +347,7 @@ export async function getPutCallRatio(symbol: string, skipCache: boolean = false
 
     try {
         const chain = await publicClient.getOptionChain(symbol);
-        if (!chain) return null;
+        if (!chain) throw new Error("No chain data");
 
         let totalCallVolume = 0;
         let totalPutVolume = 0;
@@ -333,10 +384,134 @@ export async function getPutCallRatio(symbol: string, skipCache: boolean = false
         return result;
     } catch (e) {
         console.error('Error calculating Put/Call ratio:', e);
+        // GRACEFUL FALLBACK: Serve stale cache if available
+        const cached = global._pcrCache.get(symbol);
+        if (cached) {
+            console.warn(`[Options] Serving stale PCR data for ${symbol}`);
+            return cached.data;
+        }
         return null;
     }
 }
 
+/**
+ * Calculates the probability of a Gamma Squeeze (0-100)
+ */
+export async function calculateGammaSqueezeProbability(
+    symbol: string,
+    currentPrice: number,
+    atr: number,
+    fiftyTwoWeekHigh?: number,
+    fiftyTwoWeekLow?: number,
+    historicalVolatility?: number
+): Promise<{ score: number, details: string[] }> {
+    try {
+        const pcrData = await getPutCallRatio(symbol);
+        const chain = await publicClient.getOptionChain(symbol);
+
+        if (!pcrData || !chain) return { score: 0, details: ["Insufficient data"] };
+
+        let score = 0;
+        const details: string[] = [];
+
+        // 1. Put/Call Ratio (40 pts)
+        // "< 0.6 (Heavy Call Bias)"
+        if (pcrData.volumeRatio < 0.6) {
+            score += 40;
+            details.push(`Heavy Call Bias (PCR ${pcrData.volumeRatio})`);
+        } else if (pcrData.volumeRatio < 0.75) {
+            score += 20; // Partial credit
+            details.push(`Moderate Call Bias (PCR ${pcrData.volumeRatio})`);
+        }
+
+        // 2. Relative Volume vs Open Interest (30 pts)
+        // "Vol > 100% of Open Interest (New Money)"
+        if (pcrData.totalCalls > 0) {
+            const expiry = chain.expirations[0]; // Nearest expiry
+            const strikes = chain.options[expiry];
+            let nearCallOI = 0;
+            let nearCallVol = 0;
+
+            for (const strikeStr in strikes) {
+                const strike = parseFloat(strikeStr);
+                // Filter for "Near the Money" (+/- 5%)
+                if (Math.abs(strike - currentPrice) / currentPrice < 0.05) {
+                    const data = strikes[strike];
+                    if (data.call) {
+                        nearCallOI += data.call.openInterest || 0;
+                        nearCallVol += data.call.volume || 0;
+                    }
+                }
+            }
+
+            // Criteria: Vol > 100% of OI
+            if (nearCallVol > nearCallOI) {
+                score += 30;
+                details.push("Aggressive New Money (Vol > OI)");
+            } else if (nearCallVol > nearCallOI * 0.5) {
+                score += 15; // Partial credit
+                details.push("Strong Volume Flow");
+            }
+        }
+
+        // 3. IV Percentile (20 pts)
+        // "IV > 80th Percentile (Price Explosion Expected)"
+        const ivProxy = calculateVolatilityProxy(currentPrice, atr, symbol);
+
+        // If we have historical volatility, compare against it roughly or use raw high IV check
+        // Ideally we'd have a true "IV Rank", but for now we can approximate:
+        // High IV relative to HV is a sign of "pricing in a move"
+        // Or just raw high IV > 60% as a proxy for >80th percentile for most stocks
+
+        let ivScoreMatch = false;
+
+        // Method A: IV vs HV (The "Explosion" Check)
+        if (historicalVolatility && historicalVolatility > 0) {
+            if (ivProxy > historicalVolatility * 1.5) { // 50% higher than realized vol
+                ivScoreMatch = true;
+                details.push(`High Implied Volatility (Live ${(ivProxy * 100).toFixed(0)}% vs HV ${(historicalVolatility * 100).toFixed(0)}%)`);
+            }
+        }
+
+        // Method B: Raw High Volatility (Fallback for "Explosive")
+        if (!ivScoreMatch && ivProxy > 0.60) {
+            ivScoreMatch = true;
+            details.push(`Explosive IV Levels (${(ivProxy * 100).toFixed(0)}%)`);
+        }
+
+        if (ivScoreMatch) {
+            score += 20;
+        }
+
+        // 4. Proximity to Resistance (10 pts)
+        // "Price within 1% of Resistance (The Trigger)"
+        // We use 52-Week High as the major resistance proxy
+        if (fiftyTwoWeekHigh) {
+            const distFromHigh = (fiftyTwoWeekHigh - currentPrice) / currentPrice;
+
+            // "Within 1%" means distFromHigh < 0.01. 
+            // Also covers breakout (currentPrice > high)
+            if (distFromHigh < 0.01 && distFromHigh > -0.05) { // -0.05 protects against massive breakout already happened? No, let's just say "near high"
+                score += 10;
+                details.push("At 52-Week High Resistance Trigger");
+            }
+        }
+
+        console.log(`[GammaSqz] ${symbol} calculated: Score ${score}%, Details: ${details.join(', ')}`);
+
+        return {
+            score: Math.min(100, score),
+            details
+        };
+    } catch (e) {
+        console.error("Gamma Squeeze Calc Error:", e);
+        return { score: 0, details: ["Calculation error"] };
+    }
+}
+
+/**
+ * Finds top options plays for broader scanning
+ */
 export async function findTopOptions(
     symbol: string,
     currentPrice: number,
@@ -356,6 +531,9 @@ export async function findTopOptions(
             return diffDays >= 1 && diffDays <= 60;
         });
 
+        const marketSession = publicClient.getMarketSession();
+        const isMarketOpen = marketSession === 'REG' || marketSession === 'PRE' || marketSession === 'POST';
+
         for (const exp of validExpirations) {
             const strikes = chain.options[exp];
             for (const strikeStr in strikes) {
@@ -364,7 +542,13 @@ export async function findTopOptions(
                 const types: Array<'CALL' | 'PUT'> = ['CALL', 'PUT'];
                 for (const type of types) {
                     const opt = type === 'CALL' ? data.call : data.put;
-                    if (!opt || opt.volume < 2) continue;
+                    if (!opt) continue;
+
+                    // If market is open, we need volume. If closed, we can rely on Open Interest.
+                    const volumeThreshold = isMarketOpen ? 2 : 0;
+                    const oiThreshold = isMarketOpen ? 0 : 50;
+
+                    if ((opt.volume || 0) < volumeThreshold && (opt.openInterest || 0) < oiThreshold) continue;
                     if (trend === 'bullish' && type === 'PUT') continue;
                     if (trend === 'bearish' && type === 'CALL') continue;
 

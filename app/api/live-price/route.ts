@@ -48,10 +48,18 @@ export async function GET(request: Request) {
             }
         }
 
+        let regularMarketPrice = 0;
+        let regularMarketChange = 0;
+        let regularMarketChangePercent = 0;
+
         // 3. Fallback/Metadata from Yahoo Finance
         try {
             const quote: any = await yahooFinance.quote(ticker);
             if (quote) {
+                regularMarketPrice = quote.regularMarketPrice || 0;
+                regularMarketChange = quote.regularMarketChange || 0;
+                regularMarketChangePercent = quote.regularMarketChangePercent || 0;
+
                 if (price === null) {
                     price = quote.regularMarketPrice || null;
                     change = quote.regularMarketChange || 0;
@@ -63,6 +71,11 @@ export async function GET(request: Request) {
         } catch (yahooError) {
             console.warn('[Live Price] Yahoo quote error:', yahooError);
         }
+
+        // If Yahoo failed to provide regular values, use current as fallback
+        if (!regularMarketPrice && price) regularMarketPrice = price;
+        if (!regularMarketChange && change) regularMarketChange = change;
+        if (!regularMarketChangePercent && changePercent) regularMarketChangePercent = changePercent;
 
         if (price === null) {
             return NextResponse.json({
@@ -76,8 +89,11 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
             price,
+            regularMarketPrice,
             change,
             changePercent,
+            regularMarketChange,
+            regularMarketChangePercent,
             previousClose,
             marketSession,
             source,

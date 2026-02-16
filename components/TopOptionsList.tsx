@@ -69,10 +69,10 @@ export default function TopOptionsList({ options, symbol, loading }: TopOptionsL
             <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-8 mb-6 backdrop-blur-sm text-center">
                 <div className="flex flex-col items-center gap-3">
                     <div className="p-3 bg-gray-700/30 rounded-full">
-                        <Shield className="w-8 h-8 text-gray-500" />
+                        <Shield className="w-8 h-8 text-gray-300" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-400">No High-Conviction Option Play</h3>
-                    <p className="text-sm text-gray-500 max-w-sm mb-2">
+                    <h3 className="text-xl font-bold text-gray-200">No High-Conviction Option Play</h3>
+                    <p className="text-sm text-gray-300 max-w-sm mb-2">
                         Current liquidity and flow metrics do not justify a defensive or aggressive setup for {symbol} at this time.
                     </p>
                     <p className="text-xs text-blue-400 font-bold bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
@@ -92,7 +92,7 @@ export default function TopOptionsList({ options, symbol, loading }: TopOptionsL
                     </div>
                     <h3 className="text-lg font-bold text-white tracking-tight">Top High-Conviction Options</h3>
                 </div>
-                <span className="text-[10px] font-mono text-gray-300 uppercase tracking-widest bg-gray-900/50 px-2 py-0.5 rounded border border-gray-700">Live Feedback</span>
+                <span className="text-[10px] font-mono text-gray-200 uppercase tracking-widest bg-gray-900/50 px-2 py-0.5 rounded border border-gray-700">Live Feedback</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -115,7 +115,7 @@ export default function TopOptionsList({ options, symbol, loading }: TopOptionsL
                                     )}
                                 </div>
                                 <div className="flex items-center space-x-3 mt-1.5">
-                                    <div className="flex items-center space-x-1 text-gray-300">
+                                    <div className="flex items-center space-x-1 text-gray-200">
                                         <Clock className="w-3.5 h-3.5 text-blue-400/80" />
                                         <span className="text-xs font-bold">{opt.expiry}</span>
                                     </div>
@@ -142,39 +142,39 @@ export default function TopOptionsList({ options, symbol, loading }: TopOptionsL
 
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
                             <div className="flex justify-between text-xs py-0.5">
-                                <span className="text-gray-200 font-medium">Volume</span>
+                                <span className="text-gray-100 font-medium">Volume</span>
                                 <span className="text-blue-400 font-mono font-bold">{opt.volume?.toLocaleString() || '---'}</span>
                             </div>
                             <div className="flex justify-between text-xs py-0.5">
-                                <span className="text-gray-200 font-medium">Open Int.</span>
+                                <span className="text-gray-100 font-medium">Open Int.</span>
                                 <span className="text-gray-100 font-mono font-bold">{opt.openInterest?.toLocaleString() || '---'}</span>
                             </div>
                             <div className="flex justify-between text-xs py-0.5">
-                                <span className="text-gray-200 font-medium">Implied Vol</span>
+                                <span className="text-gray-100 font-medium">Implied Vol</span>
                                 <span className={`font-mono font-extrabold ${(opt.iv || 0) > 0.5 ? 'text-yellow-400' : 'text-emerald-400'}`}>
                                     {opt.iv ? `${(opt.iv * 100).toFixed(1)}%` : '---'}
                                 </span>
                             </div>
                             <div className="flex justify-between text-xs py-0.5">
-                                <span className="text-gray-200 font-medium">Prob. ITM</span>
+                                <span className="text-gray-100 font-medium">Prob. ITM</span>
                                 <span className={`font-mono font-extrabold ${(opt.probabilityITM || 0) > 0.6 ? 'text-emerald-400' : (opt.probabilityITM || 0) < 0.3 ? 'text-red-400' : 'text-blue-400'}`}>
                                     {opt.probabilityITM ? `${(opt.probabilityITM * 100).toFixed(1)}%` : '---'}
                                 </span>
                             </div>
                             <div className="flex justify-between text-xs py-0.5">
-                                <span className="text-gray-200 font-medium">Strategy</span>
-                                <span className="text-gray-200 font-bold italic truncate max-w-[85px] text-right">{opt.strategy}</span>
+                                <span className="text-gray-100 font-medium">Strategy</span>
+                                <span className="text-gray-100 font-bold italic truncate max-w-[85px] text-right">{opt.strategy}</span>
                             </div>
                         </div>
 
                         <div className="pt-3 border-t border-gray-700/50">
                             <div className="grid grid-cols-2 gap-2 text-center text-[10px] font-mono">
                                 <div className="bg-gray-800/50 p-1.5 rounded border border-gray-700/30">
-                                    <div className="text-gray-300 mb-0.5">TP (1:2)</div>
+                                    <div className="text-gray-200 mb-0.5">TP (1:2)</div>
                                     <div className="text-emerald-400 font-bold">{opt.takeProfit1 ? `$${opt.takeProfit1.toFixed(2)}` : '---'}</div>
                                 </div>
                                 <div className="bg-gray-800/50 p-1.5 rounded border border-gray-700/30">
-                                    <div className="text-gray-300 mb-0.5">Stop Loss</div>
+                                    <div className="text-gray-200 mb-0.5">Stop Loss</div>
                                     <div className="text-rose-400 font-bold">{opt.stopLoss ? `$${opt.stopLoss.toFixed(2)}` : '---'}</div>
                                 </div>
                             </div>
@@ -184,7 +184,7 @@ export default function TopOptionsList({ options, symbol, loading }: TopOptionsL
             </div>
 
             <div className="mt-4 flex items-center justify-between border-t border-gray-700/50 pt-2 px-2">
-                <p className="text-[10px] text-gray-400 max-w-md">
+                <p className="text-[10px] text-gray-200 max-w-md">
                     Targeting 1:2 Risk/Reward on premium. Calculated via Public.com Greeks.
                 </p>
                 <DataSourceIndicator source="Public.com / AI" />

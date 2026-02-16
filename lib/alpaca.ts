@@ -33,9 +33,9 @@ export async function fetchAlpacaBars(symbol: string, timeframe: '1Day' | '1Hour
         else if (timeframe === '10Min' as any) barsPerDay = 39;
         else if (timeframe === '1Week' as any) barsPerDay = 0.2; // 1 bar per week
 
-        // Calculate days back needed ~ (limit / barsPerDay) * 1.5 (reduced from 2.5 to avoid hitting data gaps in sparse feeds like IEX)
-        // Example: 500 1h bars -> 500/7 = 71 days -> *1.5 = 106 days back.
-        const daysBack = Math.ceil((limit / barsPerDay) * 1.5) + 5;
+        // Calculate days back needed ~ (limit / barsPerDay) * 3.0 (Increased from 1.5 to handle IEX data gaps)
+        // Example: 1000 1h bars -> 1000/7 = 142 days -> *3.0 = 426 days back.
+        const daysBack = Math.ceil((limit / barsPerDay) * 3.0) + 15;
 
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - daysBack);

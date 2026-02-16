@@ -12,6 +12,7 @@ export interface PriceStats {
     previousWeek: TimeFrameStats;
     currentMonth: TimeFrameStats;
     currentYear: TimeFrameStats;
+    fiftyTwoWeek: TimeFrameStats;
     allTime: TimeFrameStats;
 }
 
@@ -25,6 +26,7 @@ export const calculatePriceStats = (data: OHLCVData[]): PriceStats => {
             previousWeek: empty,
             currentMonth: empty,
             currentYear: empty,
+            fiftyTwoWeek: empty,
             allTime: empty
         };
     }
@@ -96,6 +98,10 @@ export const calculatePriceStats = (data: OHLCVData[]): PriceStats => {
     // Current Year
     const currentYearStart = new Date(now.getFullYear(), 0, 1);
 
+    // 52 Week
+    const fiftyTwoWeekStart = new Date(now);
+    fiftyTwoWeekStart.setDate(now.getDate() - 365);
+
     // All Time (from available data)
     const allHighs = sortedData.map(d => d.high);
     const allLows = sortedData.map(d => d.low);
@@ -107,6 +113,7 @@ export const calculatePriceStats = (data: OHLCVData[]): PriceStats => {
         previousWeek: getHighLow(prevWeekStart, prevWeekEnd),
         currentMonth: getHighLow(currentMonthStart, now),
         currentYear: getHighLow(currentYearStart, now),
+        fiftyTwoWeek: getHighLow(fiftyTwoWeekStart, now),
         allTime: { high: Math.max(...allHighs), low: Math.min(...allLows) }
     };
 };

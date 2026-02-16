@@ -35,15 +35,15 @@ export default function AIAnalysisWidget({ symbol, analysis, optionsFlow, fundam
                 {/* LEFT: SIGNAL & SCORE (compact) */}
                 <div className="flex-shrink-0 flex flex-col items-center gap-2">
                     <div className="text-center">
-                        <div className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-1">AI Signal</div>
+                        <div className="text-[10px] font-medium text-gray-200 uppercase tracking-widest mb-1">AI Signal</div>
                         <div className={`text-xl font-bold ${scoreColor} leading-tight mb-0.5`}>{signal}</div>
                         <div className="text-3xl font-black text-white leading-none">
-                            {score}<span className="text-sm text-gray-400">/10</span>
+                            {score}<span className="text-sm text-gray-200">/10</span>
                         </div>
                     </div>
                     {fundamentals.targetMeanPrice && (
-                        <div className="text-xs text-gray-200 bg-gray-800/80 px-3 py-1.5 rounded-lg border border-gray-700/50 flex flex-col items-center gap-0.5 mt-1 shadow-md">
-                            <div className="flex items-center gap-1 font-bold uppercase text-[9px] text-gray-400 tracking-wider">
+                        <div className="text-xs text-gray-100 bg-gray-800/80 px-3 py-1.5 rounded-lg border border-gray-700/50 flex flex-col items-center gap-0.5 mt-1 shadow-md">
+                            <div className="flex items-center gap-1 font-bold uppercase text-[9px] text-gray-200 tracking-wider">
                                 <Target className="w-2.5 h-2.5 text-blue-400" /> Target Price
                             </div>
                             <div className="flex items-baseline gap-1">
@@ -61,12 +61,12 @@ export default function AIAnalysisWidget({ symbol, analysis, optionsFlow, fundam
 
                 {/* RIGHT: SUMMARY + DRIVERS (compact) */}
                 <div className="flex-grow min-w-0">
-                    <p className="text-gray-200 text-sm md:text-base leading-relaxed mb-3 font-medium">
+                    <p className="text-gray-100 text-sm md:text-base leading-relaxed mb-3 font-medium">
                         {summary}
                     </p>
                     <div className="flex flex-wrap gap-2">
                         {reasons.slice(0, 4).map((reason, i) => (
-                            <span key={i} className="flex items-center gap-1.5 text-[11px] text-gray-200 bg-gray-800/60 px-2.5 py-1.5 rounded-lg border border-gray-700/50 shadow-sm">
+                            <span key={i} className="flex items-center gap-1.5 text-[11px] text-gray-100 bg-gray-800/60 px-2.5 py-1.5 rounded-lg border border-gray-700/50 shadow-sm">
                                 {reason.sentiment === 'positive' ? (
                                     <TrendingUp className="w-3.5 h-3.5 text-green-400" />
                                 ) : reason.sentiment === 'negative' ? (
@@ -88,9 +88,7 @@ function generateSignal(symbol: string, analysis: MultiTimeframeAnalysis, option
     let score = 5.0; // Neutral Start
     const reasons: { text: string, sentiment: 'positive' | 'negative' | 'neutral' }[] = [];
 
-    // 1. TECHNICALS (Weight: 50%)
-
-    // Trend Alignment (Daily)
+    // 1. TECHNICALS (FVG + Trends)
     const daily = analysis.timeframes.find(t => t.timeframe === '1d');
     const hourly = analysis.timeframes.find(t => t.timeframe === '1h');
 
@@ -103,62 +101,74 @@ function generateSignal(symbol: string, analysis: MultiTimeframeAnalysis, option
             reasons.push({ text: "Daily Trend is Bearish", sentiment: 'negative' });
         }
 
+        // FVG Check
+        if (daily.fvg?.type === 'BULLISH') {
+            score += 0.8;
+            reasons.push({ text: "Active Bullish Fair Value Gap (Institutional Support)", sentiment: 'positive' });
+        } else if (daily.fvg?.type === 'BEARISH') {
+            score -= 0.8;
+            reasons.push({ text: "Active Bearish Fair Value Gap (Price Imbalance)", sentiment: 'negative' });
+        }
+
         // EMA 200 (Long Term)
         if (daily.ema200 && daily.close > daily.ema200) {
-            score += 1.0;
-            reasons.push({ text: "Price above 200-Day Moving Average", sentiment: 'positive' });
-        } else if (daily.ema200 && daily.close < daily.ema200) {
-            score -= 1.0;
-            reasons.push({ text: "Price below 200-Day Moving Average", sentiment: 'negative' });
-        }
-
-        // RSI
-        if (daily.rsi) {
-            if (daily.rsi < 30) {
-                score += 1.5; // Contrarian Buy
-                reasons.push({ text: "Daily RSI Oversold (<30) - Potential Bounce", sentiment: 'positive' });
-            } else if (daily.rsi > 70) {
-                score -= 0.5; // Caution
-                reasons.push({ text: "Daily RSI Overbought (>70) - Evaluation Risk", sentiment: 'neutral' });
-            }
+            score += 0.7;
+            reasons.push({ text: "Stable above 200-Day Moving Average", sentiment: 'positive' });
         }
     }
 
-    // 2. FUNDAMENTALS (Weight: 30%)
-    if (fundamentals.recommendationKey) {
-        if (fundamentals.recommendationKey === 'strong_buy' || fundamentals.recommendationKey === 'buy') {
-            score += 1.0;
-            reasons.push({ text: `Analyst Consensus: ${fundamentals.recommendationKey.toUpperCase()}`, sentiment: 'positive' });
-        } else if (fundamentals.recommendationKey === 'sell' || fundamentals.recommendationKey === 'underperform') {
-            score -= 1.0;
-            reasons.push({ text: `Analyst Consensus: ${fundamentals.recommendationKey.toUpperCase()}`, sentiment: 'negative' });
+    // 2. GAMMA SQUEEZE & OPTIONS DYNAMICS
+    const gamma = analysis.metrics.gammaSqueeze;
+    if (gamma && gamma.score > 60) {
+        const boost = (gamma.score / 100) * 1.5;
+        score += boost;
+        reasons.push({ text: `High Gamma Squeeze Probability (${gamma.score}%)`, sentiment: 'positive' });
+    }
+
+    // P/C Ratio Calculation
+    const callFlow = options.filter(o => o.type === 'CALL').length;
+    const putFlow = options.filter(o => o.type === 'PUT').length;
+    const totalFlow = callFlow + putFlow;
+
+    if (totalFlow > 0) {
+        const pcRatio = putFlow / callFlow;
+        if (pcRatio < 0.6) {
+            score += 0.7;
+            reasons.push({ text: `Bullish P/C Balance (${pcRatio.toFixed(2)})`, sentiment: 'positive' });
+        } else if (pcRatio > 1.4) {
+            score -= 0.7;
+            reasons.push({ text: `Bearish P/C Balance (${pcRatio.toFixed(2)})`, sentiment: 'negative' });
         }
     }
 
+    // 3. FUNDAMENTALS & RISK (BETA)
+    const beta = fundamentals.beta || analysis.metrics.beta;
+    if (beta) {
+        if (beta > 1.3 && score > 6) {
+            score += 0.5; // High beta momentum tailwind
+            reasons.push({ text: `High Beta (${beta.toFixed(2)}) amplification on trend`, sentiment: 'positive' });
+        } else if (beta < 0.8) {
+            reasons.push({ text: `Low Beta (${beta.toFixed(2)}) - Defensive profile`, sentiment: 'neutral' });
+        }
+    }
+
+    if (fundamentals.recommendationKey === 'strong_buy' || fundamentals.recommendationKey === 'buy') {
+        score += 0.8;
+        reasons.push({ text: "Institutional Consensus: BUY", sentiment: 'positive' });
+    }
+
+    // 4. PRICE TARGET & VOLUME
     if (fundamentals.targetMeanPrice) {
         const upside = ((fundamentals.targetMeanPrice - analysis.currentPrice) / analysis.currentPrice) * 100;
         if (upside > 15) {
-            score += 1.0;
-            reasons.push({ text: `Analyst Target suggests ${upside.toFixed(0)}% upside`, sentiment: 'positive' });
+            score += 0.5;
+            reasons.push({ text: `Analyst Target: ${upside.toFixed(0)}% Upside`, sentiment: 'positive' });
         }
     }
 
-    // 3. OPTIONS / MOMENTUM (Weight: 20%)
-    const callVol = options.filter(o => o.type === 'CALL').length;
-    const putVol = options.filter(o => o.type === 'PUT').length;
-
-    if (callVol > putVol * 1.5) {
+    if (analysis.metrics.volumeDiff > 30) {
         score += 0.5;
-        reasons.push({ text: "Bullish Options Flow detected", sentiment: 'positive' });
-    } else if (putVol > callVol * 1.5) {
-        score -= 0.5;
-        reasons.push({ text: "Bearish Options Flow detected", sentiment: 'negative' });
-    }
-
-    // Volume
-    if (analysis.metrics.volumeDiff > 25 && daily?.close && daily?.open && daily.close > daily.open) {
-        score += 0.5;
-        reasons.push({ text: "High Volume Buying detected today", sentiment: 'positive' });
+        reasons.push({ text: "Institutional Accumulation (High Vol)", sentiment: 'positive' });
     }
 
     // Clamp Score
@@ -173,23 +183,18 @@ function generateSignal(symbol: string, analysis: MultiTimeframeAnalysis, option
     else if (score <= 4) signal = "SELL";
 
     // Natural Language Summary
-    let summary = "";
-    const isBullish = score > 5;
+    let summary = `Our AI analysis of ${symbol} across technical imbalances and options flow indicates a ${signal} signal with a ${score}/10 conviction score. `;
 
-    summary = `The AI model detects a ${signal} signal for ${symbol} with a conviction score of ${score}/10. `;
-
-    if (isBullish) {
-        summary += `Technical indicators are predominantly positive, with the price trading above key moving averages. `;
-        if (fundamentals.recommendationKey === 'buy') summary += `Fundamental analysts also support this view. `;
-        summary += `Traders should watch for continued momentum above $${daily?.ema200?.toFixed(0) || 'support'}.`;
-    } else {
-        summary += `Technical indicators show weakness or overextension. `;
-        if (daily?.ema200 && daily.close < daily.ema200) summary += `The stock is in a downtrend below the 200-day average. `;
-        summary += `Caution is advised until a clear reversal pattern emerges.`;
+    if (daily?.fvg?.type === 'BULLISH' || (gamma && gamma.score > 70)) {
+        summary += "Strong institutional imbalances suggest a supply-demand mismatch favoring bulls. ";
     }
 
-    if (Math.abs(analysis.metrics.volumeDiff) > 50) {
-        summary += ` Significant volume activity (${analysis.metrics.volumeDiff > 0 ? '+' : ''}${analysis.metrics.volumeDiff.toFixed(0)}% vs avg) suggests increased institutional interest.`;
+    if (score > 7) {
+        summary += `The combination of ${daily?.trend === 'BULLISH' ? 'trend alignment' : 'strong metrics'} and ${gamma && gamma.score > 50 ? 'Gamma Squeeze risk' : 'Options flow'} creates a high-probability setup. `;
+    } else if (score < 4) {
+        summary += "Technical structure remains weak with significant overhead supply or bearish options sentiment. ";
+    } else {
+        summary += "Market forces are currently balanced; wait for FVG filling or trend breakout for clear entry. ";
     }
 
     return { signal, score, reasons, summary };
