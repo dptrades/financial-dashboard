@@ -121,11 +121,12 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     const results: ConvictionStock[] = [];
 
     // Updated score weightings (now includes discovery bonus)
-    const W_TECH = 0.25;
-    const W_FUND = 0.20;
-    const W_ANALYST = 0.15;
-    const W_SOCIAL = 0.15;
-    const W_DISCOVERY = 0.25; // Bonus for smart discovery signals
+    // Top Picks weights (Rebalanced to sum to 1.0 since discovery is disabled)
+    const W_TECH = 0.30;
+    const W_FUND = 0.25;
+    const W_ANALYST = 0.25;
+    const W_SOCIAL = 0.20;
+    const W_DISCOVERY = 0;
 
     console.log("🚀 Starting Mega-Cap Conviction Scan (Top Picks)...");
     console.log("🔑 Public.com API Status:", publicClient.isConfigured() ? "Configured (Live) ✅" : "Missing (Estimated) ⚠️");
@@ -553,13 +554,26 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                 const rsi = latest.rsi14 || 50;
 
                 if (latest.close > (latest.ema50 || 0) && (latest.ema50 || 0) > (latest.ema200 || 0)) {
-                    techScore += 20; trend = 'BULLISH';
+                    techScore += 15; trend = 'BULLISH';
                 } else if (latest.close < (latest.ema50 || 0)) {
-                    techScore -= 20; trend = 'BEARISH';
+                    techScore -= 15; trend = 'BEARISH';
                 }
-                if (rsi > 50 && rsi < 70) techScore += 10;
-                if (rsi < 30) techScore += 15;
-                if (rsi > 80) techScore -= 10;
+                if (rsi > 50 && rsi < 70) techScore += 5;
+                else if (rsi < 30) techScore += 10;
+                else if (rsi > 80) techScore -= 10;
+
+                // MACD Logic (Synchronized)
+                if (latest.macd && latest.macd.MACD !== undefined && latest.macd.signal !== undefined) {
+                    if (latest.macd.MACD > latest.macd.signal) techScore += 10;
+                    else techScore -= 5;
+                }
+
+                // Bollinger Logic (Synchronized)
+                if (latest.bollinger && latest.bollinger.upper && latest.bollinger.lower && latest.bollinger.middle) {
+                    if (latest.close > latest.bollinger.middle && latest.close < latest.bollinger.upper) techScore += 5;
+                    if (latest.close > latest.bollinger.upper) techScore += 10;
+                }
+
                 techScore = Math.max(0, Math.min(100, techScore));
 
 
