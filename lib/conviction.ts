@@ -88,13 +88,13 @@ const ALPHA_HUNTER_WATCHLIST = Array.from(new Set([
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes (Standard Auto-Refresh)
 
 declare global {
-    var _megaCapCache: { data: ConvictionStock[], timestamp: number } | null;
-    var _alphaHunterCache: { data: ConvictionStock[], timestamp: number } | null;
+    var _megaCapCacheV2: { data: ConvictionStock[], timestamp: number } | null;
+    var _alphaHunterCacheV2: { data: ConvictionStock[], timestamp: number } | null;
 }
 
-// Initialize global cache if not exists
-if (!global._megaCapCache) global._megaCapCache = null;
-if (!global._alphaHunterCache) global._alphaHunterCache = null;
+// Initialize global cache if not exists (V2 to force refresh with names)
+if (!global._megaCapCacheV2) global._megaCapCacheV2 = null;
+if (!global._alphaHunterCacheV2) global._alphaHunterCacheV2 = null;
 
 let isScanning = false;
 
@@ -103,19 +103,19 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
 
     // Logic: If market is OFF, only scan if cache is empty (one-time baseline fetch).
     // Otherwise, always serve cache during OFF hours to prevent redundant load.
-    if (marketSession === 'OFF' && global._megaCapCache && !forceRefresh) {
+    if (marketSession === 'OFF' && global._megaCapCacheV2 && !forceRefresh) {
         console.log("🌙 Market is CLOSED. Serving preserved Top Picks cache.");
-        return global._megaCapCache.data;
+        return global._megaCapCacheV2.data;
     }
 
     // Return cached data if valid and not force-refresh
-    if (!forceRefresh && global._megaCapCache && (Date.now() - global._megaCapCache.timestamp < CACHE_TTL)) {
+    if (!forceRefresh && global._megaCapCacheV2 && (Date.now() - global._megaCapCacheV2.timestamp < CACHE_TTL)) {
         console.log("⚡ Returning cached mega-cap conviction data");
-        return global._megaCapCache.data;
+        return global._megaCapCacheV2.data;
     }
 
     // Clear old cache to force immediate update for user
-    if (forceRefresh) global._megaCapCache = null;
+    if (forceRefresh) global._megaCapCacheV2 = null;
 
     isScanning = true;
     const results: ConvictionStock[] = [];
@@ -373,7 +373,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
 
                 return {
                     symbol,
-                    name: (quote?.price as any)?.longName || symbol,
+                    name: (quote?.price as any)?.longName || (quote?.price as any)?.shortName || (quote as any)?.displayName || symbol,
                     price: finalPrice,
                     score: Math.round(finalScore),
                     technicalScore: Math.round(techScore),
@@ -433,7 +433,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     const sorted = results.sort((a, b) => b.score - a.score);
 
     // Update Cache
-    global._megaCapCache = {
+    global._megaCapCacheV2 = {
         data: sorted,
         timestamp: Date.now()
     };
@@ -447,19 +447,19 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
     const marketSession = publicClient.getMarketSession();
 
     // Logic: If market is OFF, only scan if cache is empty.
-    if (marketSession === 'OFF' && global._alphaHunterCache && !forceRefresh) {
+    if (marketSession === 'OFF' && global._alphaHunterCacheV2 && !forceRefresh) {
         console.log("🌙 Market is CLOSED. Serving preserved Alpha Hunter cache.");
-        return global._alphaHunterCache.data;
+        return global._alphaHunterCacheV2.data;
     }
 
     // Return cached data if valid
-    if (!forceRefresh && global._alphaHunterCache && (Date.now() - global._alphaHunterCache.timestamp < CACHE_TTL)) {
+    if (!forceRefresh && global._alphaHunterCacheV2 && (Date.now() - global._alphaHunterCacheV2.timestamp < CACHE_TTL)) {
         console.log("⚡ Returning cached Alpha Hunter data");
-        return global._alphaHunterCache.data;
+        return global._alphaHunterCacheV2.data;
     }
 
     // Clear old cache to force immediate update for user
-    if (forceRefresh) global._alphaHunterCache = null;
+    if (forceRefresh) global._alphaHunterCacheV2 = null;
 
     isScanning = true;
     const results: ConvictionStock[] = [];
@@ -685,7 +685,7 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
 
                 return {
                     symbol,
-                    name: (quote?.price as any)?.longName || symbol,
+                    name: (quote?.price as any)?.longName || (quote?.price as any)?.shortName || (quote as any)?.displayName || symbol,
                     price: finalPrice,
                     score: Math.round(finalScore),
                     technicalScore: Math.round(techScore),
@@ -745,7 +745,7 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
     const sorted = results.sort((a, b) => b.score - a.score);
 
     // Update Cache
-    global._alphaHunterCache = {
+    global._alphaHunterCacheV2 = {
         data: sorted,
         timestamp: Date.now()
     };
