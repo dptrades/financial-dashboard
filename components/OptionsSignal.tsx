@@ -76,7 +76,7 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                     </div>
                 </div>
                 <div className="mt-4 pt-2 border-t border-gray-700/30 flex justify-end">
-                    <DataSourceIndicator source="Public.com / AI" />
+                    <DataSourceIndicator source="Schwab / AI" />
                 </div>
             </div>
         );
@@ -338,7 +338,7 @@ export default function OptionsSignal({ data, loading, onRefresh }: OptionsSigna
                 </div>
             )}
             <div className="mt-4 pt-2 border-t border-gray-700/30 flex justify-end">
-                <DataSourceIndicator source="Public.com / AI" />
+                <DataSourceIndicator source="Schwab / AI" />
             </div>
         </div>
     );

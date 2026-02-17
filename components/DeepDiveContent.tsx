@@ -412,7 +412,7 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true, onRefr
                 <div className="mt-6 pt-2 border-t border-gray-800/50 flex justify-end items-center gap-1.5 opacity-60">
                     <Database className="w-2.5 h-2.5 text-blue-500" />
                     <span className="text-[10px] font-bold uppercase tracking-tight text-gray-300">
-                        via Schwab / Public (Options), Alpaca (Price), Finnhub (Beta)
+                        via Schwab (Options/Greeks), Alpaca (Price), Finnhub (Beta)
                     </span>
                 </div>
             </div >

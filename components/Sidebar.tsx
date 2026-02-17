@@ -208,7 +208,7 @@ export default function Sidebar({
             {/* Footer: Source & Timestamp */}
             <div className="p-3 border-t border-gray-800 bg-gray-900/50 text-center">
                 <p className="text-[9px] text-gray-300 font-mono mb-0.5">
-                    Source: Alpaca / Public / Finnhub
+                    Source: Schwab / Alpaca / Public / Finnhub
                 </p>
                 <p className="text-[9px] text-gray-400 font-mono">
                     Updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

@@ -185,9 +185,9 @@ export default function TopOptionsList({ options, symbol, loading }: TopOptionsL
 
             <div className="mt-4 flex items-center justify-between border-t border-gray-700/50 pt-2 px-2">
                 <p className="text-[10px] text-gray-200 max-w-md">
-                    Targeting 1:2 Risk/Reward on premium. Calculated via Public.com Greeks.
+                    Targeting 1:2 Risk/Reward on premium. Calculated via Schwab Greeks.
                 </p>
-                <DataSourceIndicator source="Public.com / AI" />
+                <DataSourceIndicator source="Schwab / AI" />
             </div>
         </div >
     );
