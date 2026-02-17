@@ -1,14 +1,27 @@
 import { NewsItem } from './news';
+import { finnhubClient } from './finnhub';
 import YahooFinance from 'yahoo-finance2';
 
 const yahooFinance = new YahooFinance();
 
 export async function getNewsData(symbol: string, type: 'news' | 'social' | 'analyst' = 'news'): Promise<NewsItem[]> {
     try {
-        const results = await yahooFinance.search(symbol, { newsCount: 20 });
+        // Fetch articles and Finnhub NLP sentiment in parallel
+        const [results, finnhubSentiment] = await Promise.all([
+            yahooFinance.search(symbol, { newsCount: 20 }),
+            finnhubClient.getNewsSentiment(symbol).catch(() => null)
+        ]);
 
         if (!results.news || results.news.length === 0) {
             return [];
+        }
+
+        // Derive overall bias from Finnhub NLP if available
+        let nlpBias: 'positive' | 'negative' | 'neutral' = 'neutral';
+        if (finnhubSentiment?.sentiment) {
+            const { bullishPercent, bearishPercent } = finnhubSentiment.sentiment;
+            if (bullishPercent > 0.6) nlpBias = 'positive';
+            else if (bearishPercent > 0.6) nlpBias = 'negative';
         }
 
         const now = Date.now();
@@ -27,7 +40,6 @@ export async function getNewsData(symbol: string, type: 'news' | 'social' | 'ana
 
                 // Filter: only articles from the last 72 hours
                 if (article.providerPublishTime) {
-                    // providerPublishTime is already a Date object in yahoo-finance2 v3
                     const publishedMs = new Date(article.providerPublishTime).getTime();
                     if (now - publishedMs > SEVENTY_TWO_HOURS) return false;
                 }
@@ -58,11 +70,17 @@ export async function getNewsData(symbol: string, type: 'news' | 'social' | 'ana
                 const titleLower = title.toLowerCase();
                 let sentiment: 'positive' | 'negative' | 'neutral' = 'neutral';
 
-                const bullishWords = ['surge', 'jump', 'rally', 'gain', 'up', 'rise', 'high', 'beat', 'bull', 'grow', 'boost', 'soar', 'upgrade', 'breakout', 'record', 'strong'];
-                const bearishWords = ['drop', 'fall', 'decline', 'down', 'slip', 'loss', 'bear', 'cut', 'warn', 'crash', 'plunge', 'sell', 'downgrade', 'risk', 'concern', 'weak'];
+                // Improved Sentiment: Use Finnhub NLP bias as base, then refine with keywords
+                const bullishWords = ['surge', 'jump', 'rally', 'gain', 'rise', 'beat', 'bull', 'boost', 'soar', 'upgrade', 'breakout', 'record', 'strong', 'outperform', 'buy'];
+                const bearishWords = ['drop', 'fall', 'decline', 'slip', 'loss', 'bear', 'cut', 'warn', 'crash', 'plunge', 'sell', 'downgrade', 'risk', 'concern', 'weak', 'underperform'];
 
-                if (bullishWords.some(w => titleLower.includes(w))) sentiment = 'positive';
-                else if (bearishWords.some(w => titleLower.includes(w))) sentiment = 'negative';
+                const hasBullish = bullishWords.some(w => titleLower.includes(w));
+                const hasBearish = bearishWords.some(w => titleLower.includes(w));
+
+                if (hasBullish && !hasBearish) sentiment = 'positive';
+                else if (hasBearish && !hasBullish) sentiment = 'negative';
+                else if (!hasBullish && !hasBearish) sentiment = nlpBias; // Use Finnhub NLP when keywords are ambiguous
+                // If both bullish & bearish keywords are present, stay neutral
 
                 // providerPublishTime is already a Date object
                 const publishedAt = article.providerPublishTime

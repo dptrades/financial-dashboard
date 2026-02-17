@@ -3,6 +3,7 @@ import { calculateIndicators } from './indicators';
 import { getNewsData } from './news-service';
 import { calculateSentimentScore } from './news';
 import { publicClient } from './public-api';
+import { schwabClient } from './schwab';
 import { calculateVolatilityProxy, getNextMonthlyExpiry } from './options';
 import { ConvictionStock } from '../types/stock';
 import { OptionRecommendation } from '../types/options';
@@ -66,9 +67,18 @@ export async function getDayDreamPicks(): Promise<DayDreamPick[]> {
             const totalScore = (techScore * 0.4) + (newsSentiment.score * 0.3) + (socialSentiment.score * 0.3);
             const direction = totalScore > 50 ? 'CALL' : 'PUT';
 
-            // 4. Expiry Selection
-            const expirations = await publicClient.getOptionExpirations(symbol);
-            if (!expirations || expirations.length === 0) {
+            // 4. Expiry Selection — Schwab chain includes expirations, use that first
+            let expirations: string[] = [];
+            let chain: any = null;
+
+            if (schwabClient.isConfigured()) {
+                chain = await schwabClient.getOptionChainNormalized(symbol);
+                if (chain) expirations = chain.expirations;
+            }
+            if (expirations.length === 0) {
+                expirations = await publicClient.getOptionExpirations(symbol) || [];
+            }
+            if (expirations.length === 0) {
                 console.warn(`[DayDream] ❌ No expirations found for ${symbol}`);
                 continue;
             }
@@ -80,8 +90,10 @@ export async function getDayDreamPicks(): Promise<DayDreamPick[]> {
 
             console.log(`[DayDream] 📅 ${symbol} Target Expiry: ${expiry}`);
 
-            // 5. Fetch Full Chain for THIS Expiry
-            const chain = await publicClient.getOptionChain(symbol, expiry);
+            // 5. Fetch Full Chain for THIS Expiry — reuse Schwab chain if already fetched, else fallback
+            if (!chain) {
+                chain = await publicClient.getOptionChain(symbol, expiry);
+            }
             const candidates: OptionRecommendation[] = [];
             const strikes = chain?.options?.[expiry];
 

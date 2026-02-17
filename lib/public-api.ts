@@ -59,7 +59,7 @@ export class PublicClient {
     private throttledUntil: number = 0;
     private quoteCache: Map<string, { data: PublicQuote; expiry: number }> = new Map();
     private chainCache: Map<string, { data: PublicOptionChain; expiry: number }> = new Map();
-    private CACHE_TTL = 10 * 1000; // 10 seconds cache for quotes
+    private CACHE_TTL = 60 * 1000; // 60 seconds cache for quotes (matches 1-min polling interval)
     private CHAIN_TTL = 5 * 60 * 1000; // 5 minutes cache for option chains (increased for reliability)
 
     constructor() {
@@ -207,8 +207,8 @@ export class PublicClient {
             const status = error.response?.status;
             const message = error.response?.data?.message || error.message;
 
-            if (status === 429) {
-                console.error(`[PublicAPI] 🛑 Rate Limit Hit (429). Activating cool-down for 30 seconds.`);
+            if (status === 429 || status === 403) {
+                console.error(`[PublicAPI] 🛑 Rate Limit Hit (${status}). Activating cool-down for 30 seconds.`);
                 this.throttledUntil = Date.now() + (30 * 1000);
             }
 

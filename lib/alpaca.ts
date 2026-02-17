@@ -3,6 +3,9 @@ import { env } from './env';
 const BASE_URL = 'https://paper-api.alpaca.markets/v2';
 const DATA_URL = 'https://data.alpaca.markets/v2';
 
+// Rate-limit protection
+let alpacaThrottledUntil = 0;
+
 export interface AlpacaBar {
     t: string; // Timestamp
     o: number; // Open
@@ -13,6 +16,11 @@ export interface AlpacaBar {
 }
 
 export async function fetchAlpacaBars(symbol: string, timeframe: '1Day' | '1Hour' | '15Min' = '1Day', limit: number = 100): Promise<AlpacaBar[]> {
+    // Check rate-limit cooldown
+    if (Date.now() < alpacaThrottledUntil) {
+        console.warn(`[Alpaca] Rate limit cool-down active. Skipping ${symbol} ${timeframe}.`);
+        return [];
+    }
     // Fallback to provided keys if env vars fail
     const apiKey = env.ALPACA_API_KEY;
     const apiSecret = env.ALPACA_API_SECRET;
@@ -43,7 +51,7 @@ export async function fetchAlpacaBars(symbol: string, timeframe: '1Day' | '1Hour
 
         // 2. Request limit * 2 (buffer) to ensure we cover the period.
         // We just need enough to return 'limit' bars at the end.
-        const apiLimit = Math.min(10000, limit * 5);
+        const apiLimit = Math.min(10000, limit * 3);
 
         let url = `${DATA_URL}/stocks/${symbol}/bars?timeframe=${timeframe}&limit=${apiLimit}&start=${startIso}&adjustment=raw&feed=iex`;
 
@@ -66,6 +74,10 @@ export async function fetchAlpacaBars(symbol: string, timeframe: '1Day' | '1Hour
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`[Alpaca] Error ${response.status}: ${errorText}`);
+            if (response.status === 429) {
+                alpacaThrottledUntil = Date.now() + (30 * 1000);
+                console.error('[Alpaca] 🛑 Rate limit hit (429). Cooldown 30s.');
+            }
             return [];
         }
 
@@ -81,6 +93,10 @@ export async function fetchAlpacaBars(symbol: string, timeframe: '1Day' | '1Hour
 }
 
 export async function fetchAlpacaPrice(symbol: string): Promise<number | null> {
+    if (Date.now() < alpacaThrottledUntil) {
+        console.warn(`[Alpaca] Rate limit cool-down active. Skipping price for ${symbol}.`);
+        return null;
+    }
     const apiKey = env.ALPACA_API_KEY;
     const apiSecret = env.ALPACA_API_SECRET;
 
@@ -97,7 +113,13 @@ export async function fetchAlpacaPrice(symbol: string): Promise<number | null> {
             cache: 'no-store'
         });
 
-        if (!response.ok) return null;
+        if (!response.ok) {
+            if (response.status === 429) {
+                alpacaThrottledUntil = Date.now() + (30 * 1000);
+                console.error('[Alpaca] 🛑 Rate limit hit (429). Cooldown 30s.');
+            }
+            return null;
+        }
 
         const data = await response.json();
         // Return mid-price or last trade if quote is empty

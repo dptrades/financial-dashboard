@@ -8,6 +8,7 @@ interface LivePriceDisplayProps {
     fallbackPrice?: number;
     enabled?: boolean;
     showChange?: boolean;
+    refreshKey?: number; // Parent-driven refresh trigger (synchronized 60s timer)
 }
 
 interface PriceData {
@@ -21,7 +22,7 @@ interface PriceData {
     source?: string;
 }
 
-export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true, showChange = false }: LivePriceDisplayProps) {
+export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true, showChange = false, refreshKey }: LivePriceDisplayProps) {
     const [priceData, setPriceData] = useState<PriceData | null>(null);
     const [isLive, setIsLive] = useState(false);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -72,13 +73,10 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
         }
     }, [symbol, enabled, priceData?.price]);
 
+    // Fetch on mount + whenever parent's refreshKey changes (synchronized 60s timer)
     useEffect(() => {
         fetchLivePrice();
-
-        const pollInterval = 60000;
-        const interval = setInterval(fetchLivePrice, pollInterval);
-        return () => clearInterval(interval);
-    }, [fetchLivePrice]);
+    }, [symbol, refreshKey]);
 
     // Reset when symbol changes
     useEffect(() => {

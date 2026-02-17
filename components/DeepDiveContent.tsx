@@ -3,7 +3,6 @@ import { Loader2, TrendingUp, TrendingDown, Activity, BarChart2, AlertCircle, In
 import { MultiTimeframeAnalysis } from "@/lib/market-data";
 import { UnusualOption } from "@/lib/options-flow";
 import AIAnalysisWidget, { Fundamentals } from "./AIAnalysisWidget";
-import { REFRESH_INTERVALS, isMarketActive } from "../lib/refresh-utils";
 
 interface DeepDiveContentProps {
     symbol: string | null;
@@ -32,15 +31,6 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true, onRefr
             setData(null);
             setError("");
             fetchDetails(symbol);
-
-            // Auto-refresh every 10 minutes
-            const intervalId = setInterval(() => {
-                if (isMarketActive()) {
-                    fetchDetails(symbol);
-                }
-            }, REFRESH_INTERVALS.DEEP_DIVE);
-
-            return () => clearInterval(intervalId);
         } else {
             setData(null);
         }

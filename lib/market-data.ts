@@ -69,11 +69,14 @@ export interface MultiTimeframeAnalysis {
 }
 
 // 1. Live Price Waterfall: Public -> Schwab -> Alpaca -> Yahoo
-export async function fetchLivePrice(symbol: string): Promise<{ price: number, source: string }> {
-    // A. Public.com (Primary for Real-Time) - 10s Cache internal
+export async function fetchLivePrice(symbol: string): Promise<{ price: number, source: string } | null> {
+    const start = Date.now();
+
+    // A. Public.com (Primary for Real-Time) - 60s Cache internal
     try {
         const publicQuote = await publicClient.getQuote(symbol);
         if (publicQuote && publicQuote.price > 0) {
+            console.log(`[Waterfall] ${symbol} resolved via Public.com in ${Date.now() - start}ms`);
             return { price: publicQuote.price, source: 'Public.com' };
         }
     } catch (e) {
@@ -83,8 +86,9 @@ export async function fetchLivePrice(symbol: string): Promise<{ price: number, s
     // B. Schwab (Professional Fallback)
     if (schwabClient.isConfigured()) {
         try {
-            const schwabGreeks = await schwabClient.getGreeks(symbol); // getGreeks also returns price/bid/ask in some formats, but we use it as a probe
+            const schwabGreeks = await schwabClient.getGreeks(symbol);
             if (schwabGreeks && schwabGreeks.lastPrice > 0) {
+                console.log(`[Waterfall] ${symbol} resolved via Schwab in ${Date.now() - start}ms`);
                 return { price: schwabGreeks.lastPrice, source: 'Schwab Pro' };
             }
         } catch (e) {
@@ -96,6 +100,7 @@ export async function fetchLivePrice(symbol: string): Promise<{ price: number, s
     try {
         const alpacaPrice = await fetchAlpacaPrice(symbol);
         if (alpacaPrice && alpacaPrice > 0) {
+            console.log(`[Waterfall] ${symbol} resolved via Alpaca in ${Date.now() - start}ms`);
             return { price: alpacaPrice, source: 'Alpaca IEX' };
         }
     } catch (e) {
@@ -106,13 +111,14 @@ export async function fetchLivePrice(symbol: string): Promise<{ price: number, s
     try {
         const quote = await yahooFinance.quote(symbol);
         if (quote && quote.regularMarketPrice) {
+            console.log(`[Waterfall] ${symbol} resolved via Yahoo in ${Date.now() - start}ms`);
             return { price: quote.regularMarketPrice, source: 'Yahoo Finance' };
         }
     } catch (e) {
-        console.error(`[Waterfall] All sources failed for ${symbol}`);
+        console.error(`[Waterfall] All sources failed for ${symbol} (${Date.now() - start}ms)`);
     }
 
-    return { price: 0, source: 'None' };
+    return null;
 }
 
 // 2. Multi-Level Timeframe Fallback Strategy
@@ -235,7 +241,7 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
     ]);
 
     dailyData = dailyResult.bars;
-    livePrice = liveData.price;
+    livePrice = liveData?.price || 0;
     const beta = finnhubMetrics?.metric?.beta;
     const dataOrigin = dailyResult.source;
 
@@ -411,7 +417,8 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
     // Ensure currentPrice reflects the most recent data (Post-Market)
     // while headerPrice stays as the Regular Close
 
-    const sourceString = liveData.source === 'Public.com' ? `Public.com Live + ${dataOrigin}` : `${liveData.source} + ${dataOrigin}`;
+    const liveSource = liveData?.source || 'Historical Only';
+    const sourceString = liveSource === 'Public.com' ? `Public.com Live + ${dataOrigin}` : `${liveSource} + ${dataOrigin}`;
 
     return {
         symbol,

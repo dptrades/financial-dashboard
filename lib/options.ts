@@ -147,8 +147,14 @@ export async function generateOptionSignal(
 
     if (symbol) {
         try {
-            // HYBRID POWER SETUP: Get live Greeks (Delta/IV) from Public.com
-            const chain = await publicClient.getOptionChain(symbol, expiry);
+            // PRIORITY: Schwab (10-min cache, SIP data) → Public.com fallback
+            let chain = schwabClient.isConfigured()
+                ? await schwabClient.getOptionChainNormalized(symbol, expiry)
+                : null;
+            if (!chain) {
+                chain = await publicClient.getOptionChain(symbol, expiry);
+            }
+
             if (chain && chain.options[expiry]) {
                 const strikeKeys = Object.keys(chain.options[expiry]).map(Number).sort((a, b) => a - b);
                 const closestStrike = strikeKeys.reduce((prev, curr) =>
@@ -161,8 +167,10 @@ export async function generateOptionSignal(
                         realOption = opt;
                         actualAsk = opt.ask;
 
-                        // 1. Try Schwab for High-Fidelity Greeks (V3)
-                        if (schwabClient.isConfigured()) {
+                        // Greeks: Inline from Schwab chain → Schwab getGreeks → Public.com → proxy
+                        if (opt.greeks && opt.greeks.delta !== 0) {
+                            probabilityITM = Math.abs(opt.greeks.delta);
+                        } else if (schwabClient.isConfigured()) {
                             const schwabGreeks = await schwabClient.getGreeks(opt.symbol);
                             if (schwabGreeks) {
                                 realOption.greeks = schwabGreeks;
@@ -170,14 +178,12 @@ export async function generateOptionSignal(
                             }
                         }
 
-                        // 2. Fallback to Public.com if no Schwab data
-                        if (!realOption.greeks) {
+                        if (!realOption.greeks || realOption.greeks.delta === 0) {
                             const greeks = await publicClient.getGreeks(opt.symbol);
                             if (greeks) {
                                 realOption.greeks = greeks;
                                 probabilityITM = Math.abs(greeks.delta);
                             } else {
-                                // 3. Last resort high-fidelity fallback
                                 const distFromPrice = Math.abs(currentPrice - closestStrike) / currentPrice;
                                 probabilityITM = Math.max(0.1, 0.5 - (distFromPrice * 2));
                                 const ivProxy = calculateVolatilityProxy(currentPrice, atr, symbol);
@@ -191,7 +197,7 @@ export async function generateOptionSignal(
                 }
             }
         } catch (e) {
-            console.error('Failed to fetch real option chain from Public.com', e);
+            console.error('Failed to fetch option chain (Schwab → Public.com)', e);
         }
     }
 
@@ -291,7 +297,11 @@ export async function getPutCallRatio(symbol: string, skipCache: boolean = false
     }
 
     try {
-        const chain = await publicClient.getOptionChain(symbol);
+        // Schwab (primary, 10-min cache) → Public.com (fallback)
+        let chain = schwabClient.isConfigured()
+            ? await schwabClient.getOptionChainNormalized(symbol)
+            : null;
+        if (!chain) chain = await publicClient.getOptionChain(symbol);
         if (!chain) throw new Error("No chain data");
 
         let totalCallVolume = 0;
@@ -352,7 +362,11 @@ export async function calculateGammaSqueezeProbability(
 ): Promise<{ score: number, details: string[] }> {
     try {
         const pcrData = await getPutCallRatio(symbol);
-        const chain = await publicClient.getOptionChain(symbol);
+        // Schwab (primary, 10-min cache) → Public.com fallback
+        let chain = schwabClient.isConfigured()
+            ? await schwabClient.getOptionChainNormalized(symbol)
+            : null;
+        if (!chain) chain = await publicClient.getOptionChain(symbol);
 
         if (!pcrData || !chain) return { score: 0, details: ["Insufficient data"] };
 
@@ -465,7 +479,11 @@ export async function findTopOptions(
     skipCache: boolean = false
 ): Promise<OptionRecommendation[]> {
     try {
-        const chain = await publicClient.getOptionChain(symbol);
+        // Schwab (primary, 10-min cache) → Public.com fallback
+        let chain = schwabClient.isConfigured()
+            ? await schwabClient.getOptionChainNormalized(symbol)
+            : null;
+        if (!chain) chain = await publicClient.getOptionChain(symbol);
         if (!chain) return []; // Return empty if no chain found
 
         const candidates: Array<{ recommendation: OptionRecommendation, score: number }> = [];
@@ -548,26 +566,34 @@ export async function findTopOptions(
         const topCandidates = candidates.sort((a, b) => b.score - a.score).slice(0, 5);
 
         // Parallelize Greek fetching for the top candidates
+        // Greeks: Use inline Greeks from chain (Schwab includes them), or fallback to individual lookups
         await Promise.all(topCandidates.map(async (candidate) => {
             const rec = candidate.recommendation;
-            if (publicClient.isConfigured() && rec.symbol) {
-                try {
-                    const greeks = await publicClient.getGreeks(rec.symbol);
-                    if (greeks) {
-                        rec.iv = greeks.impliedVolatility;
-                        rec.probabilityITM = Math.abs(greeks.delta);
-                        rec.reason += ` (Live IV: ${(greeks.impliedVolatility * 100).toFixed(1)}%)`;
-                    } else {
-                        // Better fallback
-                        rec.iv = calculateVolatilityProxy(currentPrice, 0, symbol);
-                        const distFromPrice = Math.abs(currentPrice - rec.strike) / currentPrice;
-                        rec.probabilityITM = Math.max(0.1, 0.5 - (distFromPrice * 2));
-                    }
-                } catch (e) {
-                    // If getGreeks fails, ensure probabilityITM is still set
+            if (!rec.symbol) return;
+
+            // If chain came from Schwab, Greeks may already be inline
+            // Check if they're populated, otherwise fetch individually
+            try {
+                // Try Schwab getGreeks first, then Public.com
+                let greeks = schwabClient.isConfigured()
+                    ? await schwabClient.getGreeks(rec.symbol)
+                    : null;
+                if (!greeks && publicClient.isConfigured()) {
+                    greeks = await publicClient.getGreeks(rec.symbol);
+                }
+
+                if (greeks) {
+                    rec.iv = greeks.impliedVolatility;
+                    rec.probabilityITM = Math.abs(greeks.delta);
+                    rec.reason += ` (Live IV: ${(greeks.impliedVolatility * 100).toFixed(1)}%)`;
+                } else {
+                    rec.iv = calculateVolatilityProxy(currentPrice, 0, symbol);
                     const distFromPrice = Math.abs(currentPrice - rec.strike) / currentPrice;
                     rec.probabilityITM = Math.max(0.1, 0.5 - (distFromPrice * 2));
                 }
+            } catch (e) {
+                const distFromPrice = Math.abs(currentPrice - rec.strike) / currentPrice;
+                rec.probabilityITM = Math.max(0.1, 0.5 - (distFromPrice * 2));
             }
         }));
 

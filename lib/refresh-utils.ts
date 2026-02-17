@@ -13,31 +13,66 @@ const isMarketHoliday = (date: Date): boolean => {
     const year = date.getFullYear();
     const month = date.getMonth(); // 0-indexed
     const day = date.getDate();
-    const weekDay = date.getDay(); // 0 is Sunday, 1 is Monday...
 
-    // Date string for easy specific matching
-    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    // Helper: get Nth weekday of a month (e.g., 3rd Monday)
+    const nthWeekday = (y: number, m: number, weekday: number, n: number): number => {
+        const first = new Date(y, m, 1).getDay();
+        let d = 1 + ((weekday - first + 7) % 7) + (n - 1) * 7;
+        return d;
+    };
 
-    // 2026 Specific Holidays (US Market)
-    const holidays2026 = [
-        '2026-01-01', // New Year's
-        '2026-01-19', // MLK Day
-        '2026-02-16', // Presidents' Day
-        '2026-04-03', // Good Friday
-        '2026-05-25', // Memorial Day
-        '2026-06-19', // Juneteenth
-        '2026-07-03', // Independence Day (Observed)
-        '2026-09-07', // Labor Day
-        '2026-11-26', // Thanksgiving
-        '2026-12-25', // Christmas
-    ];
+    // Helper: compute Easter Sunday (Butcher's algorithm)
+    const easterSunday = (y: number): Date => {
+        const a = y % 19;
+        const b = Math.floor(y / 100);
+        const c = y % 100;
+        const d = Math.floor(b / 4);
+        const e = b % 4;
+        const f = Math.floor((b + 8) / 25);
+        const g = Math.floor((b - f + 1) / 3);
+        const h = (19 * a + b - d - g + 15) % 30;
+        const i = Math.floor(c / 4);
+        const k = c % 4;
+        const l = (32 + 2 * e + 2 * i - h - k) % 7;
+        const m2 = Math.floor((a + 11 * h + 22 * l) / 451);
+        const em = Math.floor((h + l - 7 * m2 + 114) / 31);
+        const ed = ((h + l - 7 * m2 + 114) % 31) + 1;
+        return new Date(y, em - 1, ed);
+    };
 
-    if (holidays2026.includes(dateStr)) return true;
-
-    // Generic Rules if missing from specific list
-    if (month === 0 && day === 1) return true; // New Year
+    // Fixed holidays
+    if (month === 0 && day === 1) return true; // New Year's Day
+    if (month === 6 && day === 4) return true; // Independence Day
+    if (month === 5 && day === 19) return true; // Juneteenth
     if (month === 11 && day === 25) return true; // Christmas
-    if (month === 6 && day === 4) return true; // July 4th
+
+    // Observed holidays (if falls on Sat → Fri, if Sun → Mon)
+    const weekDay = date.getDay();
+    if (month === 0 && day === 2 && weekDay === 1) return true; // New Year's observed (Sun→Mon)
+    if (month === 6 && day === 3 && weekDay === 5) return true; // July 4th observed (Sat→Fri)
+    if (month === 6 && day === 5 && weekDay === 1) return true; // July 4th observed (Sun→Mon)
+    if (month === 5 && day === 18 && weekDay === 5) return true; // Juneteenth observed
+    if (month === 5 && day === 20 && weekDay === 1) return true; // Juneteenth observed
+    if (month === 11 && day === 24 && weekDay === 5) return true; // Christmas observed
+    if (month === 11 && day === 26 && weekDay === 1) return true; // Christmas observed
+
+    // Dynamic holidays (Nth weekday of month)
+    if (month === 0 && day === nthWeekday(year, 0, 1, 3)) return true; // MLK Day: 3rd Monday of Jan
+    if (month === 1 && day === nthWeekday(year, 1, 1, 3)) return true; // Presidents' Day: 3rd Monday of Feb
+    if (month === 4 && day === nthWeekday(year, 4, 1, 4)) return true; // Memorial Day: last Monday of May (approx via 4th, adjust below)
+    if (month === 8 && day === nthWeekday(year, 8, 1, 1)) return true; // Labor Day: 1st Monday of Sep
+    if (month === 10 && day === nthWeekday(year, 10, 4, 4)) return true; // Thanksgiving: 4th Thursday of Nov
+
+    // Memorial Day correction: last Monday of May
+    const lastMay = new Date(year, 5, 0); // May 31
+    const lastMayMonday = lastMay.getDate() - ((lastMay.getDay() + 6) % 7);
+    if (month === 4 && day === lastMayMonday) return true;
+
+    // Good Friday: 2 days before Easter Sunday
+    const easter = easterSunday(year);
+    const goodFriday = new Date(easter);
+    goodFriday.setDate(goodFriday.getDate() - 2);
+    if (month === goodFriday.getMonth() && day === goodFriday.getDate()) return true;
 
     return false;
 };

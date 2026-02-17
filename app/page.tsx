@@ -56,9 +56,11 @@ export default function Dashboard() {
   const [symbol, setSymbol] = useState('SPY');
   const [stockInput, setStockInput] = useState('SPY');
   const [refreshTrigger, setRefreshTrigger] = useState(0); // For manual refresh
+  const [priceRefreshKey, setPriceRefreshKey] = useState(0); // Synchronized 60s price timer for header + deep dive
 
   const handleManualRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
+    setPriceRefreshKey(prev => prev + 1); // Also sync price on manual refresh
   };
 
   // Load initial symbol from localStorage on mount (client-side only)
@@ -269,13 +271,10 @@ export default function Dashboard() {
     // Initial Load
     loadData();
 
-    // 1. Price Refresh (1 Minute) - FAST
+    // 1. Synchronized Price Refresh (60s) — drives BOTH header LivePriceDisplay and Deep Dive
     const priceInterval = setInterval(() => {
       if (document.hidden || ignore || !isMarketActive()) return;
-      // We could have a lighter endpoint for just price, 
-      // but for now we'll rely on the LivePriceDisplay component's own polling 
-      // or re-fetch data if needed. 
-      // Actually, let's keep the main data fetch at 10m and let price update via the dedicated component.
+      setPriceRefreshKey(prev => prev + 1);
     }, REFRESH_INTERVALS.PRICE);
 
     // 2. Chart & Deep Dive Data (15 Minutes) - MEDIUM - Universal Auto-Refresh
@@ -479,6 +478,7 @@ export default function Dashboard() {
                     fallbackPrice={stats?.currentPrice}
                     enabled={!loading}
                     showChange={true}
+                    refreshKey={priceRefreshKey}
                   />
                   {lastUpdated && (
                     <span className="text-[10px] text-gray-400 font-mono mt-1">
@@ -531,7 +531,7 @@ export default function Dashboard() {
                       symbol={symbol}
                       showOptionsFlow={false}
                       onRefresh={handleManualRefresh}
-                      refreshKey={refreshTrigger}
+                      refreshKey={priceRefreshKey}
                     />
                   </div>
                 </div>

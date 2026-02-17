@@ -1,6 +1,7 @@
 import YahooFinance from 'yahoo-finance2';
 import { OptionsChain, OptionContract } from '../types/options';
 import { publicClient } from './public-api';
+import { schwabClient } from './schwab';
 
 const yahooFinance = new YahooFinance();
 
@@ -18,47 +19,50 @@ export interface UnusualOption {
 }
 
 export async function scanUnusualOptions(symbol: string): Promise<UnusualOption[]> {
-    // 1. Try Public.com First (Primary Source for Options)
-    if (publicClient.isConfigured()) {
-        try {
-            console.log(`[OptionsFlow] Fetching unusual options from Public.com for ${symbol}...`);
-            const chain = await publicClient.getOptionChain(symbol);
-            if (chain) {
-                const unusual: UnusualOption[] = [];
-                for (const exp in chain.options) {
-                    for (const strikeStr in chain.options[exp]) {
-                        const strike = parseFloat(strikeStr);
-                        const data = chain.options[exp][strike];
+    // 1. Try Schwab First (Primary, 10-min cache) → Public.com fallback
+    try {
+        console.log(`[OptionsFlow] Fetching unusual options for ${symbol}...`);
+        let chain = schwabClient.isConfigured()
+            ? await schwabClient.getOptionChainNormalized(symbol)
+            : null;
+        if (!chain && publicClient.isConfigured()) {
+            chain = await publicClient.getOptionChain(symbol);
+        }
+        if (chain) {
+            const unusual: UnusualOption[] = [];
+            for (const exp in chain.options) {
+                for (const strikeStr in chain.options[exp]) {
+                    const strike = parseFloat(strikeStr);
+                    const data = chain.options[exp][strike];
 
-                        const process = (opt: any, type: 'CALL' | 'PUT') => {
-                            if (opt && opt.volume > (opt.openInterest || 0) && opt.volume > 100) {
-                                const ratio = opt.openInterest > 0 ? (opt.volume / opt.openInterest) : opt.volume;
-                                unusual.push({
-                                    symbol: opt.symbol,
-                                    type,
-                                    strike: opt.strike,
-                                    expiry: opt.expiration,
-                                    lastPrice: opt.last,
-                                    volume: opt.volume,
-                                    openInterest: opt.openInterest,
-                                    volToOiRatio: parseFloat(ratio.toFixed(2)),
-                                    impliedVolatility: opt.greeks?.impliedVolatility ? parseFloat((opt.greeks.impliedVolatility * 100).toFixed(1)) : 0,
-                                    bias: type === 'CALL' ? 'BULLISH' : 'BEARISH'
-                                });
-                            }
-                        };
-                        process(data.call, 'CALL');
-                        process(data.put, 'PUT');
-                    }
-                }
-                if (unusual.length > 0) {
-                    console.log(`[OptionsFlow] Found ${unusual.length} unusual options on Public.com`);
-                    return unusual.sort((a, b) => b.volume - a.volume);
+                    const process = (opt: any, type: 'CALL' | 'PUT') => {
+                        if (opt && opt.volume > (opt.openInterest || 0) && opt.volume > 100) {
+                            const ratio = opt.openInterest > 0 ? (opt.volume / opt.openInterest) : opt.volume;
+                            unusual.push({
+                                symbol: opt.symbol,
+                                type,
+                                strike: opt.strike,
+                                expiry: opt.expiration,
+                                lastPrice: opt.last,
+                                volume: opt.volume,
+                                openInterest: opt.openInterest,
+                                volToOiRatio: parseFloat(ratio.toFixed(2)),
+                                impliedVolatility: opt.greeks?.impliedVolatility ? parseFloat((opt.greeks.impliedVolatility * 100).toFixed(1)) : 0,
+                                bias: type === 'CALL' ? 'BULLISH' : 'BEARISH'
+                            });
+                        }
+                    };
+                    process(data.call, 'CALL');
+                    process(data.put, 'PUT');
                 }
             }
-        } catch (e) {
-            console.error(`Public.com Options Scan failed for ${symbol}`, e);
+            if (unusual.length > 0) {
+                console.log(`[OptionsFlow] Found ${unusual.length} unusual options`);
+                return unusual.sort((a, b) => b.volume - a.volume);
+            }
         }
+    } catch (e) {
+        console.error(`Options Scan failed for ${symbol}`, e);
     }
 
     // 2. Fallback to Yahoo Finance
@@ -66,40 +70,23 @@ export async function scanUnusualOptions(symbol: string): Promise<UnusualOption[
         console.log(`[OptionsFlow] Falling back to Yahoo Finance for ${symbol}...`);
         const queryOptions = { lang: 'en-US', region: 'US' };
         const result = await yahooFinance.options(symbol, queryOptions);
-        // ... (rest of the existing Yahoo logic)
 
         if (!result || !result.options || result.options.length === 0) return [];
 
         const unusual: UnusualOption[] = [];
-
-        // Iterate through all expirations (Yahoo returns all if no date specified? Usually need to loop dates)
-        // With yahoo-finance2, 'options' returns the chain for a specific date (nearest by default). 
-        // We might want to look at the first 2-3 expirations.
-
         const expirationDates = (result as any).meta?.expirationDates;
 
         if (!expirationDates || expirationDates.length === 0) return [];
 
-        // Take first 3 expirations (approx 90 days coverage usually covers 3-4 months if monthly)
         const targetDates = expirationDates.slice(0, 3);
 
         for (const date of targetDates) {
-            // We need to fetch specific date chain if not already in result (result is only for first date usually)
-            // But to avoid too many API calls, let's just process the first one provided in 'result' if it matches, 
-            // and maybe one more. 
-            // Actually, let's just stick to the nearest expiry for speed, or fetch one more if needed.
-
-            // For this implementation, let's just process the data we have in 'result' which is the nearest chain.
-            // If we want more, we need multiple await calls.
-
-            // Process Calls
             result.options[0].calls.forEach((c: any) => {
                 if (isUnusual(c)) {
                     unusual.push(mapToUnusual(symbol, c, 'CALL', new Date(date * 1000)));
                 }
             });
 
-            // Process Puts
             result.options[0].puts.forEach((p: any) => {
                 if (isUnusual(p)) {
                     unusual.push(mapToUnusual(symbol, p, 'PUT', new Date(date * 1000)));
@@ -107,7 +94,6 @@ export async function scanUnusualOptions(symbol: string): Promise<UnusualOption[
             });
         }
 
-        // Sort by Volume descending
         return unusual.sort((a, b) => b.volume - a.volume);
 
     } catch (e) {
@@ -117,18 +103,10 @@ export async function scanUnusualOptions(symbol: string): Promise<UnusualOption[
 }
 
 function isUnusual(option: any): boolean {
-    // 1. Volume significant (> 500 contracts)
-    // 2. Volume > Open Interest (Aggressive new positioning)
-    // 3. Not deep ITM (OTM or ATM preferred for directional bets)
-
-    // Check volume threshold
-    if (option.volume < 200) return false; // Lowered threshold for broader catch
-
-    // Check Vol > OI (or at least significant relative to OI)
+    if (option.volume < 200) return false;
     if (option.openInterest > 0 && option.volume > option.openInterest) {
         return true;
     }
-
     return false;
 }
 
