@@ -106,13 +106,25 @@ export async function GET(request: Request) {
                 const sector = sectorMap[d.symbol] || 'Other';
 
                 // Intelligent Sentiment Mapping based on real headlines if available
-                let sentiment = 0.65;
+                let sentiment = 0.50; // Start neutral, not bullish-biased
                 const signalStr = (latestHeadline + ' ' + d.signal).toLowerCase();
-                if (d.source === 'technical' || signalStr.includes('% today')) sentiment = 0.75 + (Math.random() * 0.15);
-                if (d.source === 'options' || signalStr.includes('options')) sentiment = 0.8 + (Math.random() * 0.1);
-                if (signalStr.includes('upgrade') || signalStr.includes('beat')) sentiment = 0.85;
-                if (signalStr.includes('downgrade') || signalStr.includes('miss')) sentiment = 0.25;
-                if (d.source === 'social') sentiment = 0.5 + (Math.random() * 0.35);
+
+                // Bullish signals
+                if (signalStr.includes('upgrade') || signalStr.includes('beat') || signalStr.includes('raises')) sentiment = 0.80 + (Math.random() * 0.1);
+                else if (d.source === 'options' || signalStr.includes('options') || signalStr.includes('call')) sentiment = 0.70 + (Math.random() * 0.15);
+                else if (signalStr.includes('buy') || signalStr.includes('bullish') || signalStr.includes('surge')) sentiment = 0.70 + (Math.random() * 0.15);
+                else if (d.source === 'technical' || signalStr.includes('% today')) sentiment = 0.55 + (Math.random() * 0.25); // Could be up OR down %
+
+                // Bearish signals
+                else if (signalStr.includes('downgrade') || signalStr.includes('miss') || signalStr.includes('cut')) sentiment = 0.20 + (Math.random() * 0.1);
+                else if (signalStr.includes('sell') || signalStr.includes('bearish') || signalStr.includes('drop') || signalStr.includes('fall')) sentiment = 0.25 + (Math.random() * 0.1);
+                else if (signalStr.includes('warning') || signalStr.includes('risk') || signalStr.includes('concern')) sentiment = 0.30 + (Math.random() * 0.1);
+
+                // Mixed/social — wider range
+                else if (d.source === 'social') sentiment = 0.35 + (Math.random() * 0.40); // 0.35 to 0.75
+
+                // Derive retailBuyRatio from sentiment (correlated but with some noise)
+                const retailBuyRatio = Math.max(0.1, Math.min(0.95, sentiment + (Math.random() * 0.2 - 0.1)));
 
                 const hasVerifiedName = detail?.longName || detail?.shortName || detail?.displayName;
                 const isNoise = !hasVerifiedName || tickerName.toUpperCase() === d.symbol.toUpperCase();
@@ -129,7 +141,7 @@ export async function GET(request: Request) {
                     heat: d.strength,
                     sentiment: sentiment,
                     mentions: news ? Math.round(d.strength * (25 + news.length)) : Math.round(d.strength * (20 + Math.random() * 30)),
-                    retailBuyRatio: 0.6 + (Math.random() * 0.3),
+                    retailBuyRatio: retailBuyRatio,
                     topPlatform: d.source === 'social' ? 'Twitter/X' : d.source === 'news' ? 'Google News' : d.source === 'options' ? 'Institutional Flow' : 'Market Screener',
                     description: latestHeadline,
                     _isVerified: !!hasVerifiedName

@@ -119,19 +119,48 @@ export default function SocialPulseCard({ stock, onSelect }: SocialPulseCardProp
             </div>
 
             {/* Retail vs Institutional Flow */}
-            <div className="pt-3 border-t border-gray-700/30 flex justify-between items-center relative z-10">
-                <div className="flex flex-col">
-                    <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Retail Flow</span>
-                    <span className="text-xs font-black text-emerald-400 uppercase tracking-tighter">Buying Heavy</span>
-                </div>
-                <div className="flex -space-x-1.5">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="w-6 h-6 rounded-full border-2 border-gray-800 bg-gray-700 flex items-center justify-center overflow-hidden">
-                            <TrendingUp className="w-3 h-3 text-emerald-500" />
+            {(() => {
+                const ratio = stock.retailBuyRatio;
+                const sent = stock.sentiment;
+                let flowLabel: string;
+                let flowColor: string;
+                let FlowIcon = TrendingUp;
+
+                if (ratio > 0.7 && sent > 0.65) {
+                    flowLabel = 'Buying Heavy';
+                    flowColor = 'text-emerald-400';
+                } else if (ratio > 0.55 || sent > 0.55) {
+                    flowLabel = 'Leaning Bullish';
+                    flowColor = 'text-green-300';
+                } else if (ratio < 0.3 && sent < 0.35) {
+                    flowLabel = 'Selling Heavy';
+                    flowColor = 'text-red-400';
+                    FlowIcon = TrendingDown;
+                } else if (ratio < 0.45 || sent < 0.45) {
+                    flowLabel = 'Leaning Bearish';
+                    flowColor = 'text-red-300';
+                    FlowIcon = TrendingDown;
+                } else {
+                    flowLabel = 'Mixed / Neutral';
+                    flowColor = 'text-yellow-400';
+                }
+
+                return (
+                    <div className="pt-3 border-t border-gray-700/30 flex justify-between items-center relative z-10">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Retail Flow</span>
+                            <span className={`text-xs font-black uppercase tracking-tighter ${flowColor}`}>{flowLabel}</span>
                         </div>
-                    ))}
-                </div>
-            </div>
+                        <div className="flex -space-x-1.5">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="w-6 h-6 rounded-full border-2 border-gray-800 bg-gray-700 flex items-center justify-center overflow-hidden">
+                                    <FlowIcon className={`w-3 h-3 ${flowColor}`} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }
