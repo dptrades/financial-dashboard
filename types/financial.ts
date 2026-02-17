@@ -22,7 +22,7 @@ export interface BollingerBandsOutput {
 }
 
 export interface IndicatorData extends OHLCVData {
-  ema9?: number;
+  ema10?: number;
   ema21?: number;
   ema50?: number;
   ema200?: number;

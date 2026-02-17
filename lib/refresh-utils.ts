@@ -3,7 +3,7 @@ export type MarketSession = 'PRE' | 'REG' | 'POST' | 'OFF';
 export const REFRESH_INTERVALS = {
     PRICE: 60 * 1000,           // 1 Minute
     DAYDREAM: 5 * 60 * 1000,    // 5 Minutes
-    DEEP_DIVE: 10 * 60 * 1000,  // 10 Minutes
+    DEEP_DIVE: 60 * 1000,  // 1 Minute
     WIDGETS: 15 * 60 * 1000,    // 15 Minutes
     NEWS: 2 * 60 * 60 * 1000,       // 2 Hours
     AUTO_REFRESH: 15 * 60 * 1000, // 15 Minutes (Universal for Alpha Hunter, Top Picks, etc)

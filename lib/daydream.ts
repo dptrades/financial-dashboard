@@ -29,6 +29,7 @@ export async function getDayDreamPicks(): Promise<DayDreamPick[]> {
 
             // 1. Fetch Technicals
             const bars = await fetchAlpacaBars(symbol, '1Day', 200);
+            console.log(`[DayDream] 📊 ${symbol} fetched ${bars?.length || 0} bars`);
             if (!bars || bars.length < 50) {
                 console.warn(`[DayDream] ⚠️ Not enough bars for ${symbol}`);
                 continue;
@@ -41,6 +42,7 @@ export async function getDayDreamPicks(): Promise<DayDreamPick[]> {
             const currentPrice = cleanData[cleanData.length - 1].close;
             const indicators = calculateIndicators(cleanData);
             const latest = indicators[indicators.length - 1];
+            console.log(`[DayDream] 📈 ${symbol} latest price: ${currentPrice}, RSI: ${latest?.rsi14}`);
 
             // Technical Score
             let techScore = 50;
@@ -84,54 +86,80 @@ export async function getDayDreamPicks(): Promise<DayDreamPick[]> {
             const strikes = chain?.options?.[expiry];
 
             if (strikes) {
-                console.log(`[DayDream] ⛓️ ${symbol} processing ${Object.keys(strikes).length} strikes`);
-                for (const strikePrice in strikes) {
+                // Focus on strikes near current price
+                const strikeKeys = Object.keys(strikes)
+                    .map(s => parseFloat(s))
+                    .sort((a, b) => Math.abs(a - currentPrice) - Math.abs(b - currentPrice))
+                    .slice(0, 15); // Top 15 strikes near ATM
+
+                console.log(`[DayDream] ⛓️ ${symbol} processing ${strikeKeys.length} nearby strikes`);
+
+                const optionSymbolsToFetch: string[] = [];
+                const tempCandidates: any[] = [];
+
+                for (const strikePrice of strikeKeys) {
                     const data = strikes[strikePrice];
                     const opt = direction === 'CALL' ? data.call : data.put;
 
                     if (!opt) continue;
                     if (opt.volume < 1 && opt.openInterest < 10) continue;
 
-                    const greeks = await publicClient.getGreeks(opt.symbol);
-                    if (!greeks) continue;
+                    optionSymbolsToFetch.push(opt.symbol);
+                    tempCandidates.push({
+                        type: direction,
+                        strike: strikePrice,
+                        expiry,
+                        contractPrice: (opt.bid + opt.ask) / 2 || opt.last,
+                        volume: opt.volume,
+                        openInterest: opt.openInterest,
+                        symbol: opt.symbol,
+                        strategy: "Golden Strike"
+                    });
+                }
 
-                    const delta = Math.abs(greeks.delta);
-                    if (delta >= 0.20 && delta <= 0.80) {
-                        const volToOiRatio = opt.openInterest > 0 ? opt.volume / opt.openInterest : 0;
-                        candidates.push({
-                            type: direction,
-                            strike: parseFloat(strikePrice),
-                            expiry,
-                            confidence: Math.round(totalScore),
-                            reason: `Delta ${delta.toFixed(2)} | Vol/OI: ${volToOiRatio.toFixed(1)}x`,
-                            contractPrice: (opt.bid + opt.ask) / 2 || opt.last,
-                            volume: opt.volume,
-                            openInterest: opt.openInterest,
-                            probabilityITM: delta,
-                            iv: greeks.impliedVolatility,
-                            symbol: opt.symbol,
-                            strategy: "Golden Strike"
-                        } as any);
+                // Batch Fetch Greeks
+                if (optionSymbolsToFetch.length > 0) {
+                    console.log(`[DayDream] 🇬🇷 Fetching greeks for ${optionSymbolsToFetch.length} symbols...`);
+                    for (const cand of tempCandidates) {
+                        try {
+                            const greeks = await publicClient.getGreeks(cand.symbol);
+                            if (greeks) {
+                                const delta = Math.abs(greeks.delta);
+                                if (delta >= 0.20 && delta <= 0.80) {
+                                    candidates.push({
+                                        ...cand,
+                                        confidence: Math.round(totalScore),
+                                        reason: `Delta ${delta.toFixed(2)} | Vol/OI: ${(cand.openInterest > 0 ? cand.volume / cand.openInterest : 0).toFixed(1)}x`,
+                                        probabilityITM: delta,
+                                        iv: greeks.impliedVolatility
+                                    } as any);
+                                }
+                            }
+                            // Small delay to prevent 403
+                            await new Promise(r => setTimeout(r, 200));
+                        } catch (e) {
+                            console.error(`[DayDream] Greek error for ${cand.symbol}:`, e);
+                        }
                     }
                 }
-            } else {
-                console.warn(`[DayDream] ❌ No options data for ${symbol} on ${expiry}`);
+
+                console.log(`[DayDream] 🎯 ${symbol} found ${candidates.length} candidate options`);
+
+                const topOptions = candidates
+                    .sort((a, b) => ((b.volume || 0) + (b.openInterest || 0)) - ((a.volume || 0) + (a.openInterest || 0)))
+                    .slice(0, 3);
+
+                results.push({
+                    symbol,
+                    direction,
+                    confidence: Math.round(totalScore),
+                    reason: `${direction} Bias: Tech (${techScore}) + News/Social (${Math.round((newsSentiment.score + socialSentiment.score) / 2)})`,
+                    options: topOptions,
+                    technicalScore: techScore,
+                    sentimentScore: newsSentiment.score,
+                    socialScore: socialSentiment.score
+                });
             }
-
-            const topOptions = candidates
-                .sort((a, b) => ((b.volume || 0) + (b.openInterest || 0)) - ((a.volume || 0) + (a.openInterest || 0)))
-                .slice(0, 3);
-
-            results.push({
-                symbol,
-                direction,
-                confidence: Math.round(totalScore),
-                reason: `${direction} Bias: Tech (${techScore}) + News/Social (${Math.round((newsSentiment.score + socialSentiment.score) / 2)})`,
-                options: topOptions,
-                technicalScore: techScore,
-                sentimentScore: newsSentiment.score,
-                socialScore: socialSentiment.score
-            });
 
         } catch (e) {
             console.error(`[DayDream] Error for ${symbol}:`, e);

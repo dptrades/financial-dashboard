@@ -13,7 +13,7 @@ export interface TimeframeData {
     timeframe: '10m' | '1h' | '4h' | '1d' | '1w';
     open: number;
     close: number;
-    ema9: number | null;
+    ema10: number | null;
     ema21: number | null;
     ema50: number | null;
     ema200: number | null;
@@ -38,7 +38,7 @@ export interface TimeframeData {
         gapHigh: number;
     } | null;
     priceRelToEma: {
-        ema9: number; // % distance
+        ema10: number; // % distance
         ema21: number;
         ema50: number;
         ema200: number;
@@ -319,11 +319,12 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
             // HYBRID STITCH: Inject live price into intraday datasets
             if (livePrice > 0 && (tf === '10m' || tf === '1h')) {
                 const lastBar = data[data.length - 1];
-                const oneDayInMs = 24 * 60 * 60 * 1000;
-                const isStale = (Date.now() - lastBar.time) > oneDayInMs;
+                // Staleness check: allow up to 5 days (covers long holiday weekends)
+                const stalenessThreshold = 5 * 24 * 60 * 60 * 1000;
+                const isStale = (Date.now() - lastBar.time) > stalenessThreshold;
 
-                // 1. Time-Staleness Check (Market is active but data is old)
-                if (isStale && marketSession !== 'OFF' && marketSession !== 'OFF' as any) {
+                // 1. Time-Staleness Check (Market is active but data is really old)
+                if (isStale && marketSession !== 'OFF') {
                     console.warn(`[MarketData] ${symbol} ${tf} data is stale. Skipping.`);
                     return;
                 }
@@ -331,7 +332,7 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
                 // 2. Price Consistency Check (Prevents showing EMAs at $200 when price is $350)
                 const deviation = Math.abs(livePrice - lastBar.close) / lastBar.close;
                 if (deviation > 0.15 && !isStale) {
-                    console.warn(`[MarketData] ${symbol} ${tf} price deviation too high (${(deviation * 100).toFixed(1)}%). Possible data mismatch. skipping.`);
+                    console.warn(`[MarketData] ${symbol} ${tf} price deviation too high. skipping.`);
                     return;
                 }
 
@@ -348,13 +349,13 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
 
             // Calculate % distance from EMAs
             const getDiff = (price: number, ema: number | undefined) => ema ? ((price - ema) / ema) * 100 : 0;
-            const ema9Diff = getDiff(last.close, last.ema9);
+            const ema10Diff = getDiff(last.close, last.ema10);
             const ema21Diff = getDiff(last.close, last.ema21);
             const ema50Diff = getDiff(last.close, last.ema50);
             const ema200Diff = getDiff(last.close, last.ema200);
 
             // Check if "Near" (within 0.5%)
-            const isNear = [Math.abs(ema9Diff), Math.abs(ema21Diff), Math.abs(ema50Diff), Math.abs(ema200Diff)].some(d => d < 0.5);
+            const isNear = [Math.abs(ema10Diff), Math.abs(ema21Diff), Math.abs(ema50Diff), Math.abs(ema200Diff)].some(d => d < 0.5);
 
             // Determine Trend
             let trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = 'NEUTRAL';
@@ -378,7 +379,7 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
                 timeframe: tf,
                 open: last.open,
                 close: last.close,
-                ema9: last.ema9 || null,
+                ema10: last.ema10 || null,
                 ema21: last.ema21 || null,
                 ema50: last.ema50 || null,
                 ema200: last.ema200 || null,
@@ -390,7 +391,7 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
                 vwap: last.vwap || null,
                 fvg: last.fvg,
                 priceRelToEma: {
-                    ema9: ema9Diff,
+                    ema10: ema10Diff,
                     ema21: ema21Diff,
                     ema50: ema50Diff,
                     ema200: ema200Diff,

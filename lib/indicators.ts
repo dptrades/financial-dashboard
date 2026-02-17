@@ -12,7 +12,7 @@ export const calculateIndicators = (data: OHLCVData[], vwapAnchor: VWAPAnchor = 
     // -------------------------------------------------------------------------
     // 1. STANDARD INDICATORS
     // -------------------------------------------------------------------------
-    const ema9 = EMA.calculate({ period: 9, values: closes });
+    const ema10 = EMA.calculate({ period: 10, values: closes });
     const ema21 = EMA.calculate({ period: 21, values: closes });
     const ema50 = EMA.calculate({ period: 50, values: closes });
     const ema200 = EMA.calculate({ period: 200, values: closes });
@@ -52,14 +52,21 @@ export const calculateIndicators = (data: OHLCVData[], vwapAnchor: VWAPAnchor = 
 
         return {
             ...d,
-            ema9: getVal(ema9, i, 8),
+            ema10: getVal(ema10, i, 9),
             ema21: getVal(ema21, i, 20),
             ema50: getVal(ema50, i, 49),
             ema200: getVal(ema200, i, 199),
             rsi14: getVal(rsi14, i, 14),
             vwap: getVal(vwap, i, 0),
-            macd: getVal(macd, i, 25), // MACD starts after slowPeriod-1? library specific, usually slow-1
-            bollinger: getVal(bb, i, 19) // BB starts after period-1
+            macd: getVal(macd, i, 25),
+            bollinger: (() => {
+                const b = getVal(bb, i, 19);
+                if (!b) return undefined;
+                return {
+                    ...b,
+                    pb: b.upper !== b.lower ? (d.close - b.lower) / (b.upper - b.lower) : 0.5
+                };
+            })()
         };
     });
 
@@ -135,3 +142,134 @@ export const calculateIndicators = (data: OHLCVData[], vwapAnchor: VWAPAnchor = 
 
     return results;
 };
+
+/**
+ * Unified Technical Confluence Scorer
+ * Synchronizes logic between Scanners and Deep Dive
+ */
+export interface ConfluenceResult {
+    bullScore: number;
+    bearScore: number;
+    bullSignals: string[];
+    bearSignals: string[];
+    trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+    strength: number; // 0-100 normalized tech score
+}
+
+export function calculateConfluenceScore(latest: IndicatorData): ConfluenceResult {
+    let bullScore = 0;
+    let bearScore = 0;
+    const bullSignals: string[] = [];
+    const bearSignals: string[] = [];
+
+    const price = latest.close;
+    const rsi = latest.rsi14 || 50;
+    const ema10 = latest.ema10;
+    const ema21 = latest.ema21;
+    const ema50 = latest.ema50;
+    const ema200 = latest.ema200;
+
+    // 1. EMA STACK CORE (The Foundation)
+    if (ema50) {
+        if (price > ema50) {
+            bullScore += 15;
+            bullSignals.push('Price > EMA50');
+        } else {
+            bearScore += 15;
+            bearSignals.push('Price < EMA50');
+        }
+    }
+
+    if (ema200) {
+        if (price > ema200) {
+            bullScore += 5;
+            bullSignals.push('Price > EMA200');
+        } else {
+            bearScore += 5;
+            bearSignals.push('Price < EMA200');
+        }
+    }
+
+    if (ema10 && ema21 && ema50) {
+        if (ema10 > ema21 && ema21 > ema50) {
+            bullScore += 10;
+            bullSignals.push('EMA Stack Bullish (Short > Mid > Long)');
+        } else if (ema10 < ema21 && ema21 < ema50) {
+            bearScore += 10;
+            bearSignals.push('EMA Stack Bearish (Short < Mid < Long)');
+        }
+    }
+
+    // 2. MOMENTUM (RSI)
+    if (rsi > 60 && rsi <= 70) {
+        bullScore += 5;
+        bullSignals.push('Strong Bullish Momentum');
+    } else if (rsi >= 30 && rsi < 40) {
+        bearScore += 5;
+        bearSignals.push('Developing Bearish Momentum');
+    } else if (rsi < 30) {
+        bullScore += 10;
+        bullSignals.push('RSI Oversold ⚠️');
+    } else if (rsi > 80) {
+        bearScore += 10;
+        bearSignals.push('RSI Overbought ⚠️');
+    }
+
+    // 3. TREND CONFIRMATION (MACD)
+    if (latest.macd && latest.macd.MACD !== undefined && latest.macd.signal !== undefined) {
+        if (latest.macd.MACD > latest.macd.signal) {
+            bullScore += 10;
+            bullSignals.push('MACD Bullish Cross');
+        } else {
+            bearScore += 10;
+            bearSignals.push('MACD Bearish Cross');
+        }
+    }
+
+    // 4. VOLATILITY BANDS (Bollinger)
+    if (latest.bollinger && latest.bollinger.pb !== undefined) {
+        const pb = latest.bollinger.pb;
+        if (pb < 0) {
+            bullScore += 10;
+            bullSignals.push('Bollinger Breakout (Overextended Down)');
+        } else if (pb > 1) {
+            bearScore += 10;
+            bearSignals.push('Bollinger Breakout (Overextended Up)');
+        } else if (pb < 0.2) {
+            bullScore += 5;
+            bullSignals.push('Price at Lower BB (Support)');
+        } else if (pb > 0.8) {
+            bearScore += 5;
+            bearSignals.push('Price at Upper BB (Resistance)');
+        } else if (latest.bollinger.middle && price > latest.bollinger.middle && pb < 0.8) {
+            bullScore += 5;
+            bullSignals.push('Bollinger Uptrend');
+        } else if (latest.bollinger.middle && price < latest.bollinger.middle && pb > 0.2) {
+            bearScore += 5;
+            bearSignals.push('Bollinger Downtrend');
+        }
+    }
+
+    // FINAL CALCULATIONS
+    const isBull = bullScore > bearScore && bullScore >= 15;
+    const isBear = bearScore > bullScore && bearScore >= 15;
+
+    // Normalized Tech Strength (0-100)
+    // Starting at 50, adding spread weight
+    const rawSpread = Math.abs(bullScore - bearScore);
+    let strength = 50;
+    if (bullScore > bearScore) {
+        strength = Math.min(100, 50 + (rawSpread * 0.8));
+    } else if (bearScore > bullScore) {
+        strength = Math.max(0, 50 - (rawSpread * 0.8));
+    }
+
+    return {
+        bullScore,
+        bearScore,
+        bullSignals,
+        bearSignals,
+        trend: isBull ? 'BULLISH' : (isBear ? 'BEARISH' : 'NEUTRAL'),
+        strength
+    };
+}

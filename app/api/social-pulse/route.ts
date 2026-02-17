@@ -149,6 +149,8 @@ export async function GET(request: Request) {
                 return item._isVerified;
             });
 
+        console.log(`[SocialPulse] Final formatted data count: ${formattedData.length}`);
+
         // Update Cache
         global._socialPulseCache = {
             data: formattedData,

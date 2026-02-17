@@ -1,6 +1,6 @@
 import YahooFinance from 'yahoo-finance2';
 const yahooFinance = new YahooFinance();
-import { calculateIndicators } from './indicators';
+import { calculateIndicators, calculateConfluenceScore } from './indicators';
 import { calculateSentimentScore } from './news';
 import { getNewsData } from './news-service';
 import { fetchAlpacaBars } from './alpaca';
@@ -160,7 +160,10 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
 
     // Limit total symbols to prevent timeout (Raised limit for Sectors + Picks coverage)
     symbolsToScan = symbolsToScan.slice(0, 300);
-    console.log(`📊 Total symbols to scan: ${symbolsToScan.length}`);
+    console.log(`📊 [Scanner] Total symbols to scan: ${symbolsToScan.length}`);
+    if (symbolsToScan.length === 0) {
+        console.error("❌ [Scanner] No symbols in watchlist!");
+    }
 
     // 4. Batch Processing Helper
     const processBatch = async (batch: string[]) => {
@@ -209,48 +212,11 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                 const indicators = calculateIndicators(cleanData);
                 const latest = indicators[indicators.length - 1];
 
-                let techScore = 50;
-                let trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = 'NEUTRAL';
+                // Synchronized Technical Scoring
+                const confluence = calculateConfluenceScore(latest);
+                const techScore = confluence.strength;
+                const trend = confluence.trend;
                 const rsi = latest.rsi14 || 50;
-
-                if (latest.close > (latest.ema50 || 0) && (latest.ema50 || 0) > (latest.ema200 || 0)) {
-                    techScore += 15; trend = 'BULLISH';
-                } else if (latest.close < (latest.ema50 || 0)) {
-                    techScore -= 15; trend = 'BEARISH';
-                }
-                if (rsi > 50 && rsi < 70) techScore += 5;
-                if (rsi < 30) techScore += 10;
-                if (rsi > 80) techScore -= 10;
-
-                // MACD Logic
-                let macdSignal: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = 'NEUTRAL';
-                if (latest.macd && latest.macd.MACD !== undefined && latest.macd.signal !== undefined) {
-                    if (latest.macd.MACD > latest.macd.signal) {
-                        techScore += 10;
-                        macdSignal = 'BULLISH';
-                    } else {
-                        techScore -= 5;
-                        macdSignal = 'BEARISH';
-                    }
-                }
-
-                // Bollinger Logic
-                let bollingerState = 'Neutral';
-                if (latest.bollinger && latest.bollinger.upper && latest.bollinger.lower && latest.bollinger.middle) {
-                    const bandwidth = (latest.bollinger.upper - latest.bollinger.lower) / latest.bollinger.middle;
-                    // Expansion check: if price is near upper band
-                    if (latest.close > latest.bollinger.middle && latest.close < latest.bollinger.upper) {
-                        techScore += 5;
-                        bollingerState = 'Uptrend';
-                    }
-                    // Breakout
-                    if (latest.close > latest.bollinger.upper) {
-                        techScore += 10; // Momentum breakout
-                        bollingerState = 'Breakout';
-                    }
-                }
-
-                techScore = Math.max(0, Math.min(100, techScore));
 
 
                 // 3. Process Fundamentals (Graceful Fallback)
@@ -439,7 +405,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
         timestamp: Date.now()
     };
     isScanning = false;
-
+    console.log(`🏁 [Scanner] Scan complete. Found ${results.length} stocks. Returning top ${sorted.slice(0, 50).length}.`);
     return sorted.slice(0, 50);
 }
 
@@ -549,32 +515,11 @@ export async function scanAlphaHunter(forceRefresh = false): Promise<ConvictionS
                 const indicators = calculateIndicators(cleanData);
                 const latest = indicators[indicators.length - 1];
 
-                let techScore = 50;
-                let trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = 'NEUTRAL';
+                // Synchronized Technical Scoring
+                const confluence = calculateConfluenceScore(latest);
+                const techScore = confluence.strength;
+                const trend = confluence.trend;
                 const rsi = latest.rsi14 || 50;
-
-                if (latest.close > (latest.ema50 || 0) && (latest.ema50 || 0) > (latest.ema200 || 0)) {
-                    techScore += 15; trend = 'BULLISH';
-                } else if (latest.close < (latest.ema50 || 0)) {
-                    techScore -= 15; trend = 'BEARISH';
-                }
-                if (rsi > 50 && rsi < 70) techScore += 5;
-                else if (rsi < 30) techScore += 10;
-                else if (rsi > 80) techScore -= 10;
-
-                // MACD Logic (Synchronized)
-                if (latest.macd && latest.macd.MACD !== undefined && latest.macd.signal !== undefined) {
-                    if (latest.macd.MACD > latest.macd.signal) techScore += 10;
-                    else techScore -= 5;
-                }
-
-                // Bollinger Logic (Synchronized)
-                if (latest.bollinger && latest.bollinger.upper && latest.bollinger.lower && latest.bollinger.middle) {
-                    if (latest.close > latest.bollinger.middle && latest.close < latest.bollinger.upper) techScore += 5;
-                    if (latest.close > latest.bollinger.upper) techScore += 10;
-                }
-
-                techScore = Math.max(0, Math.min(100, techScore));
 
 
                 // 3. Process Fundamentals (Graceful Fallback)

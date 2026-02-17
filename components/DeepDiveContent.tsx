@@ -245,7 +245,7 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true, onRefr
                                 <tr>
                                     <th className="p-3 w-12 text-center">TF</th>
                                     <th className="p-3">Trend</th>
-                                    <th className="p-3">EMA 9</th>
+                                    <th className="p-3">EMA 10</th>
                                     <th className="p-3">EMA 21</th>
                                     <th className="p-3">EMA 50</th>
                                     <th className="p-3">EMA 200</th>
@@ -270,7 +270,7 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true, onRefr
                                         </td>
 
                                         {/* EMA Columns First */}
-                                        <EmaCell price={tf.close} ema={tf.ema9} label="9" />
+                                        <EmaCell price={tf.close} ema={tf.ema10} label="10" />
                                         <EmaCell price={tf.close} ema={tf.ema21} label="21" />
                                         <EmaCell price={tf.close} ema={tf.ema50} label="50" />
                                         <EmaCell price={tf.close} ema={tf.ema200} label="200" />

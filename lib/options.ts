@@ -2,6 +2,7 @@ import type { OptionRecommendation } from '../types/options';
 import type { IndicatorData } from '../types/financial';
 import { publicClient, PublicOptionChain } from './public-api';
 import { schwabClient } from './schwab';
+import { calculateConfluenceScore } from './indicators';
 export type { OptionRecommendation } from '../types/options';
 
 // In-memory cache for PCR and unusual volume
@@ -96,87 +97,24 @@ export async function generateOptionSignal(
     // Safety check for ATR to prevent NaN strikes
     const effectiveAtr = (atr && !isNaN(atr) && atr > 0) ? atr : (currentPrice * 0.02);
 
-    let bullScore = 0;
-    let bearScore = 0;
-    const bullSignals: string[] = [];
-    const bearSignals: string[] = [];
+    const confluence = indicators ? calculateConfluenceScore(indicators) : { bullScore: 0, bearScore: 0, bullSignals: [], bearSignals: [], strength: 50, trend: 'NEUTRAL' };
+    const bullScore = confluence.bullScore;
+    const bearScore = confluence.bearScore;
+    const bullSignals = confluence.bullSignals;
+    const bearSignals = confluence.bearSignals;
 
-    const ema9 = indicators?.ema9;
-    const ema21 = indicators?.ema21;
-    const ema200 = indicators?.ema200;
+    const isCall = (bullScore > bearScore && bullScore >= 15);
+    const isPut = (bearScore > bullScore && bearScore >= 15);
+    const direction: 'CALL' | 'PUT' | 'WAIT' = isCall ? 'CALL' : isPut ? 'PUT' : 'WAIT';
 
-    if (ema50) {
-        if (currentPrice > ema50) {
-            bullScore += 5;
-            bullSignals.push('Price > EMA50');
-        } else {
-            bearScore += 5;
-            bearSignals.push('Price < EMA50');
-        }
-    }
-    if (ema200) {
-        if (currentPrice > ema200) {
-            bullScore += 5;
-            bullSignals.push('Price > EMA200');
-        } else {
-            bearScore += 5;
-            bearSignals.push('Price < EMA200');
-        }
-    }
-
-    if (ema9 && ema21 && ema50) {
-        if (ema9 > ema21 && ema21 > ema50) {
-            bullScore += 10; bullSignals.push('EMA Stack Bullish');
-        } else if (ema9 < ema21 && ema21 < ema50) {
-            bearScore += 10; bearSignals.push('EMA Stack Bearish');
-        }
-    }
-
-    if (rsi >= 40 && rsi <= 60) {
-        if (trend === 'bullish') { bullScore += 5; bullSignals.push('RSI Trend Neutral-Bullish'); }
-        else if (trend === 'bearish') { bearScore += 5; bearSignals.push('RSI Trend Neutral-Bearish'); }
-    } else if (rsi > 60 && rsi <= 70) {
-        bullScore += 10; bullSignals.push('RSI Strong Momentum');
-    } else if (rsi >= 30 && rsi < 40) {
-        bearScore += 10; bearSignals.push('RSI Weak Momentum');
-    } else if (rsi > 70) {
-        bearScore += 10; bearSignals.push('RSI Overbought ⚠️');
-    } else if (rsi < 30) {
-        bullScore += 10; bullSignals.push('RSI Oversold ⚠️');
-    }
-
-    const macd = indicators?.macd;
-    if (macd) {
-        if (macd.MACD !== undefined && macd.signal !== undefined) {
-            if (macd.MACD > macd.signal) {
-                bullScore += 10; bullSignals.push('MACD Bullish Cross');
-            } else {
-                bearScore += 10; bearSignals.push('MACD Bearish Cross');
-            }
-        }
-    }
-
-    const bb = indicators?.bollinger;
-    if (bb && bb.pb !== undefined) {
-        if (bb.pb < 0.2) {
-            bullScore += 10; bullSignals.push('Price at Lower BB (Bounce)');
-        } else if (bb.pb > 0.8) {
-            bearScore += 10; bearSignals.push('Price at Upper BB (Rejection)');
-        }
-    }
-
-    if (bullScore > bearScore && bullScore >= 20) {
-        var direction: 'CALL' | 'PUT' | 'WAIT' = 'CALL';
-    } else if (bearScore > bullScore && bearScore >= 20) {
-        var direction: 'CALL' | 'PUT' | 'WAIT' = 'PUT';
-    } else {
+    if (direction === 'WAIT') {
         const fallbackSignals = bullScore >= bearScore ? bullSignals : bearSignals;
         return {
             type: 'WAIT',
             strike: 0,
             expiry: '',
             confidence: 50,
-            reason: `Neutral trend.${fallbackSignals.slice(0, 2).join(', ')} `,
+            reason: `Scanning Confluence. ${fallbackSignals.slice(0, 1).join(', ') || 'Monitoring Price Action'}`,
             technicalConfirmations: 0,
             fundamentalConfirmations: fundamentalConfirmations || 1,
             socialConfirmations: socialConfirmations || 1,
@@ -184,9 +122,22 @@ export async function generateOptionSignal(
         };
     }
 
-    const isCall = direction === 'CALL';
-    const signals = isCall ? bullSignals : bearSignals;
+    const signals = direction === 'CALL' ? bullSignals : bearSignals;
     const techConfirmations = signals.length;
+
+    // Unified Multi-Factor Confidence Score (Base 60)
+    // - Up to +15 from Tech Spread (Bull vs Bear)
+    // - Up to +10 from Fundamentals
+    // - Up to +10 from Social Pulse
+    const rawSpread = Math.abs(bullScore - bearScore);
+    const calculatedConfidence = Math.min(
+        99,
+        60 +
+        (rawSpread * 0.5) + // Technical weight
+        ((fundamentalConfirmations || 0) * 5) + // Fundamental weight
+        ((socialConfirmations || 0) * 5) // Social weight
+    );
+
     const strikeOffset = effectiveAtr * 0.5;
     const intendedStrike = roundToStrike(isCall ? currentPrice + strikeOffset : currentPrice - strikeOffset);
 
@@ -255,13 +206,7 @@ export async function generateOptionSignal(
         ? ["High Reddit Mention Frequency", "Positive StockTwits Sentiment", "Bullish Options Flow"]
         : ["Moderate Retail Interest", "Stable Institutional Sentiment"];
 
-    const calculatedConfidence = Math.min(
-        95,
-        60 +
-        (techConfirmations * 5) +
-        ((fundamentalConfirmations || 0) * 5) +
-        ((socialConfirmations || 0) * 5)
-    );
+    // Score is now unified at the top
 
     // If no real option was found, we must wait.
     if (!realOption) {
@@ -304,7 +249,7 @@ export async function generateOptionSignal(
         strike: realOption.strike,
         expiry: realOption.expiration,
         confidence: calculatedConfidence,
-        reason: `${techConfirmations} indicator confluence.`,
+        reason: `${techConfirmations} Tech Signals Aligned. ${signals[0]} Detected.`,
         entryPrice: currentPrice,
         entryCondition: "Market Order",
         stopLoss: parseFloat(stopLoss.toFixed(2)),
