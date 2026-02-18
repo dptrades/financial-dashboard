@@ -181,7 +181,7 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true, onRefr
                     {/* P/C Ratio */}
                     <CompactMetric
                         label="P/C Ratio"
-                        value={data.putCallRatio?.volumeRatio || 'N/A'}
+                        value={data.putCallRatio ? data.putCallRatio.volumeRatio : 'N/A'}
                         subValue={
                             data.putCallRatio
                                 ? (data.putCallRatio.volumeRatio < 0.7 ? 'Bullish' : data.putCallRatio.volumeRatio > 1.0 ? 'Bearish' : 'Neutral')

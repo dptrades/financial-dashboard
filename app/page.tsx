@@ -495,23 +495,14 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-end gap-2">
-                {isMarketActive() ? (
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[10px] text-blue-400 font-bold uppercase tracking-wider animate-pulse">
-                    <Activity className="w-3 h-3" />
-                    Live Feed Active
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-end gap-0.5">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/80 border border-gray-700/50 rounded-lg text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                      Market Closed
-                    </div>
-                    <div className="text-[9px] text-gray-400 font-mono">
-                      Next update: {getNextMarketOpen().toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <LivePriceDisplay
+                symbol={symbol}
+                enabled={true}
+                refreshKey={priceRefreshKey}
+                showChange={false}
+                fallbackPrice={stats?.currentPrice}
+                className="status-badge-only"
+              />
             </div>
           </header>
 

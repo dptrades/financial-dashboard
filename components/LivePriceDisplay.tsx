@@ -9,6 +9,7 @@ interface LivePriceDisplayProps {
     enabled?: boolean;
     showChange?: boolean;
     refreshKey?: number; // Parent-driven refresh trigger (synchronized 60s timer)
+    className?: string;
 }
 
 interface PriceData {
@@ -22,7 +23,7 @@ interface PriceData {
     source?: string;
 }
 
-export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true, showChange = false, refreshKey }: LivePriceDisplayProps) {
+export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true, showChange = false, refreshKey, className }: LivePriceDisplayProps) {
     const [priceData, setPriceData] = useState<PriceData | null>(null);
     const [isLive, setIsLive] = useState(false);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -66,6 +67,8 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
                 } else {
                     setIsLive(false);
                 }
+            } else {
+                console.error(`[LivePriceDisplay] Fetch failed for ${symbol}: Status ${res.status}`);
             }
         } catch (e) {
             console.error('Error fetching live price:', e);
@@ -76,15 +79,16 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
     // Fetch on mount + whenever parent's refreshKey changes (synchronized 60s timer)
     useEffect(() => {
         fetchLivePrice();
-    }, [symbol, refreshKey]);
+    }, [fetchLivePrice, refreshKey]); // Now depends on fetchLivePrice which depends on enabled
 
     // Reset when symbol changes
-    useEffect(() => {
-        setPriceData(null);
-        setIsLive(false);
-        setLastUpdate(null);
-        setPriceFlash(null);
-    }, [symbol]);
+    // Reset when symbol changes
+    // useEffect(() => {
+    //     setPriceData(null);
+    //     setIsLive(false);
+    //     setLastUpdate(null);
+    //     setPriceFlash(null);
+    // }, [symbol]);
 
     const displayPrice = isLive ? (priceData?.price ?? fallbackPrice) : (priceData?.regularMarketPrice ?? fallbackPrice);
     const change = isLive ? (priceData?.change ?? 0) : (priceData?.regularMarketChange ?? 0);
@@ -98,8 +102,29 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
     const isOff = priceData?.marketSession === 'OFF';
     const isPost = priceData?.marketSession === 'POST' || priceData?.marketSession === 'PRE';
 
+    if (className === 'status-badge-only') {
+        return (
+            <div className="flex flex-col items-end gap-2">
+                {isLive ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[10px] text-blue-400 font-bold uppercase tracking-wider animate-pulse">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
+                        Live Feed Active
+                    </div>
+                ) : isPost ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg text-[10px] text-purple-400 font-bold uppercase tracking-wider">
+                        {priceData?.marketSession === 'POST' ? 'After Hours' : 'Pre-Market'}
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/80 border border-gray-700/50 rounded-lg text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                        Market Closed
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     return (
-        <div className="flex items-center gap-3">
+        <div className={`flex items-center gap-3 ${className || ''}`}>
             {/* Price */}
             <span
                 className={`text-2xl font-bold transition-colors duration-300 ${priceFlash === 'up' ? 'text-green-400' :
@@ -143,6 +168,7 @@ export default function LivePriceDisplay({ symbol, fallbackPrice, enabled = true
                     Market Closed
                 </span>
             )}
+
 
             {/* Source */}
             {priceData?.source && (

@@ -9,7 +9,7 @@ export const REFRESH_INTERVALS = {
     AUTO_REFRESH: 15 * 60 * 1000, // 15 Minutes (Universal for Alpha Hunter, Top Picks, etc)
 };
 
-const isMarketHoliday = (date: Date): boolean => {
+export const isMarketHoliday = (date: Date): boolean => {
     const year = date.getFullYear();
     const month = date.getMonth(); // 0-indexed
     const day = date.getDate();

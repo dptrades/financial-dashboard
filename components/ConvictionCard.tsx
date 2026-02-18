@@ -41,10 +41,10 @@ export default function ConvictionCard({ stock, onSelect }: Props) {
                     <p className="text-xs text-gray-100 mb-2 truncate max-w-[180px]">{stock.name}</p>
                     <div className="flex items-baseline gap-3">
                         <div className="text-3xl font-mono text-white">
-                            ${stock.price.toFixed(2)}
+                            ${stock.price?.toFixed(2) ?? 'N/A'}
                         </div>
                         <div className={`text-sm font-bold px-2 py-0.5 rounded ${stock.change24h >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                            {stock.change24h > 0 ? '+' : ''}{stock.change24h.toFixed(2)}%
+                            {stock.change24h > 0 ? '+' : ''}{stock.change24h?.toFixed(2) ?? '0.00'}%
                         </div>
                     </div>
                 </div>

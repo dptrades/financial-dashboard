@@ -20,6 +20,7 @@ export async function GET(request: Request) {
         const ticker = symbol.toUpperCase();
         const marketSession = publicClient.getMarketSession();
 
+
         // 1. Use centralized waterfall (returns null if all sources fail)
         const liveResult = await fetchLivePrice(ticker);
         const price = liveResult?.price || 0;

@@ -230,8 +230,9 @@ export async function generateOptionSignal(
     }
 
     const marketSession = publicClient.getMarketSession();
-    const isMarketOpen = marketSession === 'REG' || marketSession === 'PRE' || marketSession === 'POST';
-    const volumeThreshold = isMarketOpen ? 2 : 0; // Relax volume requirement during OFF hours to show the "Plan"
+    // Only enforce liquidity threshold during REGULAR market hours
+    const isRegularMarket = marketSession === 'REG';
+    const volumeThreshold = isRegularMarket ? 2 : 0; // Allow 0 volume in PRE/POST to show the "Plan"
 
     // If volume is too low DURING market hours, downgrade to WAIT
     if ((realOption.volume || 0) < volumeThreshold) {

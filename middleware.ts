@@ -12,6 +12,7 @@ export async function middleware(request: NextRequest) {
     // Paths that don't require authentication
     if (
         request.nextUrl.pathname.startsWith('/api/auth') ||
+        request.nextUrl.pathname.startsWith('/api/live-price') ||
         request.nextUrl.pathname.startsWith('/_next') ||
         request.nextUrl.pathname.includes('.') // Static files
     ) {

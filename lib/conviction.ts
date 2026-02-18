@@ -17,6 +17,16 @@ export type { ConvictionStock } from '../types/stock';
 // Enable dynamic discovery - expand search beyond mega caps
 const ENABLE_SMART_DISCOVERY = true;
 
+// STRICT Mega Cap Watchlist for "Top Picks" Widget (The "Magnificent 7" + Global Titans)
+const MEGA_CAP_WATCHLIST = [
+    'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', // Mag 7
+    'AVGO', 'LLY', 'UNH', 'V', 'JPM', 'XOM', 'WMT', 'MA',    // Top Non-Tech
+    'JNJ', 'PG', 'HD', 'COST', 'ABBV', 'MRK', 'KO', 'PEP',   // Top Consumer/Pharma
+    'BAC', 'CSCO', 'AMD', 'NFLX', 'CRM', 'ADBE', 'DIS',      // Top Tech/Media
+    'MCD', 'TMO', 'ABT', 'LIN', 'ACN', 'DHR', 'TXN', 'QCOM', // Industrial/Tech
+    'PM', 'CAT', 'IBM', 'GE', 'UBER', 'ISRG', 'INTU', 'QCOM' // Key Leaders
+];
+
 // High Mega Cap & Large Cap Stocks - Explicitly includes Top 50 + Sector Leaders
 const CONVICTION_WATCHLIST = Array.from(new Set([
     // --- TOP 50 MEGACAPS (Global Leaders) ---
@@ -131,8 +141,8 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
     console.log("🚀 Starting Mega-Cap Conviction Scan (Top Picks)...");
     console.log("🔑 Public.com API Status:", publicClient.isConfigured() ? "Configured (Live) ✅" : "Missing (Estimated) ⚠️");
 
-    // Build symbol list - combine static watchlist with dynamic discoveries
-    let symbolsToScan: string[] = [...CONVICTION_WATCHLIST];
+    // Build symbol list - strictly use MEGA CAPS
+    let symbolsToScan: string[] = [...MEGA_CAP_WATCHLIST];
     let discoveryMap = new Map<string, DiscoveredStock>();
 
     // TOP PICKS: Strictly S&P 500 & Nasdaq top companies
@@ -341,7 +351,7 @@ export async function scanConviction(forceRefresh = false): Promise<ConvictionSt
                 return {
                     symbol,
                     name: (quote?.price as any)?.longName || (quote?.price as any)?.shortName || (quote as any)?.displayName || symbol,
-                    price: finalPrice,
+                    price: finalPrice || 0,
                     score: Math.round(finalScore),
                     technicalScore: Math.round(techScore),
                     fundamentalScore: Math.round(fundScore),

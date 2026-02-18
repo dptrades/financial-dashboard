@@ -56,9 +56,9 @@ export async function fetchAlpacaBars(symbol: string, timeframe: '1Day' | '1Hour
         let url = `${DATA_URL}/stocks/${symbol}/bars?timeframe=${timeframe}&limit=${apiLimit}&start=${startIso}&adjustment=raw&feed=iex`;
 
         // extended_hours is only valid for intraday timeframes
-        if (timeframe !== '1Day') {
-            url += '&extended_hours=true';
-        }
+        // if (timeframe !== '1Day') {
+        //    url += '&extended_hours=true';
+        // }
 
         console.log(`[Alpaca] Fetching ${url}`);
 
