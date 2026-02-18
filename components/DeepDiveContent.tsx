@@ -260,7 +260,7 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true, onRefr
                                         </td>
 
                                         {/* EMA Columns First */}
-                                        <EmaCell price={tf.close} ema={tf.ema10} label="10" />
+                                        <EmaCell price={tf.close} ema={tf.ema9} label="9" />
                                         <EmaCell price={tf.close} ema={tf.ema21} label="21" />
                                         <EmaCell price={tf.close} ema={tf.ema50} label="50" />
                                         <EmaCell price={tf.close} ema={tf.ema200} label="200" />

@@ -13,7 +13,7 @@ export interface TimeframeData {
     timeframe: '10m' | '1h' | '4h' | '1d' | '1w';
     open: number;
     close: number;
-    ema10: number | null;
+    ema9: number | null;
     ema21: number | null;
     ema50: number | null;
     ema200: number | null;
@@ -38,7 +38,7 @@ export interface TimeframeData {
         gapHigh: number;
     } | null;
     priceRelToEma: {
-        ema10: number; // % distance
+        ema9: number; // % distance
         ema21: number;
         ema50: number;
         ema200: number;
@@ -386,13 +386,13 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
 
             // Calculate % distance from EMAs
             const getDiff = (price: number, ema: number | undefined) => ema ? ((price - ema) / ema) * 100 : 0;
-            const ema10Diff = getDiff(last.close, last.ema10);
+            const ema9Diff = getDiff(last.close, last.ema9);
             const ema21Diff = getDiff(last.close, last.ema21);
             const ema50Diff = getDiff(last.close, last.ema50);
             const ema200Diff = getDiff(last.close, last.ema200);
 
             // Check if "Near" (within 0.5%)
-            const isNear = [Math.abs(ema10Diff), Math.abs(ema21Diff), Math.abs(ema50Diff), Math.abs(ema200Diff)].some(d => d < 0.5);
+            const isNear = [Math.abs(ema9Diff), Math.abs(ema21Diff), Math.abs(ema50Diff), Math.abs(ema200Diff)].some(d => d < 0.5);
 
             // Determine Trend
             let trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = 'NEUTRAL';
@@ -416,7 +416,7 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
                 timeframe: tf,
                 open: last.open,
                 close: last.close,
-                ema10: last.ema10 || null,
+                ema9: last.ema9 || null,
                 ema21: last.ema21 || null,
                 ema50: last.ema50 || null,
                 ema200: last.ema200 || null,
@@ -428,7 +428,7 @@ export async function fetchMultiTimeframeAnalysis(symbol: string, forceRefresh: 
                 vwap: last.vwap || null,
                 fvg: last.fvg,
                 priceRelToEma: {
-                    ema10: ema10Diff,
+                    ema9: ema9Diff,
                     ema21: ema21Diff,
                     ema50: ema50Diff,
                     ema200: ema200Diff,

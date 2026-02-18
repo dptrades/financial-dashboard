@@ -72,7 +72,7 @@ export default function PriceChart({ data }: PriceChartProps) {
 
                         <div className="col-span-2 h-1 border-b border-gray-800 my-1"></div>
 
-                        {data.ema10 && <><span className="text-[#FBBF24]">EMA 10:</span> <span className="text-right text-[#FBBF24] font-mono">{data.ema10.toFixed(2)}</span></>}
+                        {data.ema9 && <><span className="text-[#FBBF24]">EMA 9:</span> <span className="text-right text-[#FBBF24] font-mono">{data.ema9.toFixed(2)}</span></>}
                         {data.ema21 && <><span className="text-[#F87171]">EMA 21:</span> <span className="text-right text-[#F87171] font-mono">{data.ema21.toFixed(2)}</span></>}
                         {data.ema50 && <><span className="text-[#818CF8]">EMA 50:</span> <span className="text-right text-[#818CF8] font-mono">{data.ema50.toFixed(2)}</span></>}
                         {data.ema200 && <><span className="text-[#34D399]">EMA 200:</span> <span className="text-right text-[#34D399] font-mono">{data.ema200.toFixed(2)}</span></>}
@@ -111,7 +111,7 @@ export default function PriceChart({ data }: PriceChartProps) {
                         </div>
 
                         {/* Indicators */}
-                        {activeData.ema10 && <div className="text-[#FBBF24]">EMA10: {activeData.ema10.toFixed(2)}</div>}
+                        {activeData.ema9 && <div className="text-[#FBBF24]">EMA9: {activeData.ema9.toFixed(2)}</div>}
                         {activeData.ema21 && <div className="text-[#F87171]">EMA21: {activeData.ema21.toFixed(2)}</div>}
                         {activeData.ema50 && <div className="text-[#818CF8]">EMA50: {activeData.ema50.toFixed(2)}</div>}
                         {activeData.ema200 && <div className="text-[#34D399]">EMA200: {activeData.ema200.toFixed(2)}</div>}
@@ -188,11 +188,11 @@ export default function PriceChart({ data }: PriceChartProps) {
                         {/* Indicators */}
                         <Line
                             type="monotone"
-                            dataKey="ema10"
+                            dataKey="ema9"
                             stroke="#FBBF24" // Amber
                             dot={false}
                             strokeWidth={1}
-                            name="EMA 10"
+                            name="EMA 9"
                             connectNulls
                         />
                         <Line

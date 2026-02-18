@@ -12,7 +12,7 @@ export const calculateIndicators = (data: OHLCVData[], vwapAnchor: VWAPAnchor = 
     // -------------------------------------------------------------------------
     // 1. STANDARD INDICATORS
     // -------------------------------------------------------------------------
-    const ema10 = EMA.calculate({ period: 10, values: closes });
+    const ema9 = EMA.calculate({ period: 9, values: closes });
     const ema21 = EMA.calculate({ period: 21, values: closes });
     const ema50 = EMA.calculate({ period: 50, values: closes });
     const ema200 = EMA.calculate({ period: 200, values: closes });
@@ -52,7 +52,7 @@ export const calculateIndicators = (data: OHLCVData[], vwapAnchor: VWAPAnchor = 
 
         return {
             ...d,
-            ema10: getVal(ema10, i, 9),
+            ema9: getVal(ema9, i, 8),
             ema21: getVal(ema21, i, 20),
             ema50: getVal(ema50, i, 49),
             ema200: getVal(ema200, i, 199),
@@ -164,7 +164,7 @@ export function calculateConfluenceScore(latest: IndicatorData): ConfluenceResul
 
     const price = latest.close;
     const rsi = latest.rsi14 || 50;
-    const ema10 = latest.ema10;
+    const ema9 = latest.ema9;
     const ema21 = latest.ema21;
     const ema50 = latest.ema50;
     const ema200 = latest.ema200;
@@ -190,11 +190,11 @@ export function calculateConfluenceScore(latest: IndicatorData): ConfluenceResul
         }
     }
 
-    if (ema10 && ema21 && ema50) {
-        if (ema10 > ema21 && ema21 > ema50) {
+    if (ema9 && ema21 && ema50) {
+        if (ema9 > ema21 && ema21 > ema50) {
             bullScore += 10;
             bullSignals.push('EMA Stack Bullish (Short > Mid > Long)');
-        } else if (ema10 < ema21 && ema21 < ema50) {
+        } else if (ema9 < ema21 && ema21 < ema50) {
             bearScore += 10;
             bearSignals.push('EMA Stack Bearish (Short < Mid < Long)');
         }
