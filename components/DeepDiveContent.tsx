@@ -235,7 +235,7 @@ export default function DeepDiveContent({ symbol, showOptionsFlow = true, onRefr
                                 <tr>
                                     <th className="p-3 w-12 text-center">TF</th>
                                     <th className="p-3">Trend</th>
-                                    <th className="p-3">EMA 10</th>
+                                    <th className="p-3">EMA 9</th>
                                     <th className="p-3">EMA 21</th>
                                     <th className="p-3">EMA 50</th>
                                     <th className="p-3">EMA 200</th>
